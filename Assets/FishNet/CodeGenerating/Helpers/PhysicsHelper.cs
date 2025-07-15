@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using SR = System.Reflection;
 
-
 namespace FishNet.CodeGenerating.Helping
 {
     internal class PhysicsHelper : CodegenBase
@@ -25,16 +24,16 @@ namespace FishNet.CodeGenerating.Helping
         public override bool ImportReferences()
         {
             SR.MethodInfo locMi;
-            //GetScene.
+            // GetScene.
             locMi = typeof(GameObject).GetMethod("get_scene");
-            GetScene_MethodRef = base.ImportReference(locMi);
+            GetScene_MethodRef = ImportReference(locMi);
 
-            //Physics.SyncTransform.
+            // Physics.SyncTransform.
             foreach (SR.MethodInfo mi in typeof(Physics).GetMethods())
             {
                 if (mi.Name == nameof(Physics.SyncTransforms))
                 {
-                    Physics3D_SyncTransforms_MethodRef = base.ImportReference(mi);
+                    Physics3D_SyncTransforms_MethodRef = ImportReference(mi);
                     break;
                 }
             }
@@ -42,17 +41,17 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (mi.Name == nameof(Physics2D.SyncTransforms))
                 {
-                    Physics2D_SyncTransforms_MethodRef = base.ImportReference(mi);
+                    Physics2D_SyncTransforms_MethodRef = ImportReference(mi);
                     break;
                 }
             }
 
-            //PhysicsScene.Simulate.
+            // PhysicsScene.Simulate.
             foreach (SR.MethodInfo mi in typeof(PhysicsScene).GetMethods())
             {
                 if (mi.Name == nameof(PhysicsScene.Simulate))
                 {
-                    Physics3D_Simulate_MethodRef = base.ImportReference(mi);
+                    Physics3D_Simulate_MethodRef = ImportReference(mi);
                     break;
                 }
             }
@@ -60,17 +59,17 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (mi.Name == nameof(PhysicsScene2D.Simulate))
                 {
-                    Physics2D_Simulate_MethodRef = base.ImportReference(mi);
+                    Physics2D_Simulate_MethodRef = ImportReference(mi);
                     break;
                 }
             }
 
-            //GetPhysicsScene.
+            // GetPhysicsScene.
             foreach (SR.MethodInfo mi in typeof(PhysicsSceneExtensions).GetMethods())
             {
                 if (mi.Name == nameof(PhysicsSceneExtensions.GetPhysicsScene))
                 {
-                    GetPhysicsScene3D_MethodRef = base.ImportReference(mi);
+                    GetPhysicsScene3D_MethodRef = ImportReference(mi);
                     break;
                 }
             }
@@ -78,14 +77,13 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (mi.Name == nameof(PhysicsSceneExtensions2D.GetPhysicsScene2D))
                 {
-                    GetPhysicsScene2D_MethodRef = base.ImportReference(mi);
+                    GetPhysicsScene2D_MethodRef = ImportReference(mi);
                     break;
                 }
             }
 
             return true;
         }
-
 
         /// <summary>
         /// Returns instructions to get a physics scene from a gameObject.
@@ -105,7 +103,7 @@ namespace FishNet.CodeGenerating.Helping
 
             //gameObject.scene.GetPhysics...
             insts.Add(processor.Create(OpCodes.Ldloc, gameObjectVd));
-            insts.Add(processor.Create(GetScene_MethodRef.GetCallOpCode(base.Session), GetScene_MethodRef));
+            insts.Add(processor.Create(GetScene_MethodRef.GetCallOpCode(Session), GetScene_MethodRef));
             if (threeDimensional)
                 insts.Add(processor.Create(OpCodes.Call, GetPhysicsScene3D_MethodRef));
             else

@@ -6,7 +6,6 @@ using UnityEngine.UI;
 
 namespace FishNet.Example
 {
-
     public class NetworkHudCanvases : MonoBehaviour
     {
         #region Types.
@@ -76,14 +75,14 @@ namespace FishNet.Example
         /// </summary>
         private LocalConnectionState _serverState = LocalConnectionState.Stopped;
 #if !ENABLE_INPUT_SYSTEM
-    /// <summary>
-    /// EventSystem for the project.
-    /// </summary>
-    private EventSystem _eventSystem;
+        /// <summary>
+        /// EventSystem for the project.
+        /// </summary>
+        private EventSystem _eventSystem;
 #endif
         #endregion
 
-        void OnGUI()
+        private void OnGUI()
         {
 #if ENABLE_INPUT_SYSTEM
             string GetNextStateText(LocalConnectionState state)
@@ -109,7 +108,7 @@ namespace FishNet.Example
 
             Vector2 buttonSize = new Vector2(165f, 42f);
             style.fontSize = 26;
-            //Server button.
+            // Server button.
             if (Application.platform != RuntimePlatform.WebGLPlayer)
             {
                 if (GUILayout.Button($"{GetNextStateText(_serverState)} Server", GUILayout.Width(buttonSize.x), GUILayout.Height(buttonSize.y)))
@@ -117,7 +116,7 @@ namespace FishNet.Example
                 GUILayout.Space(10f);
             }
 
-            //Client button.
+            // Client button.
             if (GUILayout.Button($"{GetNextStateText(_clientState)} Client", GUILayout.Width(buttonSize.x), GUILayout.Height(buttonSize.y)))
                 OnClick_Client();
 
@@ -130,10 +129,10 @@ namespace FishNet.Example
         private void Start()
         {
 #if !ENABLE_INPUT_SYSTEM
-        SetEventSystem();
-        BaseInputModule inputModule = FindObjectOfType<BaseInputModule>();
-        if (inputModule == null)
-            gameObject.AddComponent<StandaloneInputModule>();
+            SetEventSystem();
+            BaseInputModule inputModule = FindObjectOfType<BaseInputModule>();
+            if (inputModule == null)
+                gameObject.AddComponent<StandaloneInputModule>();
 #else
             _serverIndicator.transform.gameObject.SetActive(false);
             _clientIndicator.transform.gameObject.SetActive(false);
@@ -159,7 +158,6 @@ namespace FishNet.Example
                 OnClick_Client();
         }
 
-
         private void OnDestroy()
         {
             if (_networkManager == null)
@@ -172,8 +170,8 @@ namespace FishNet.Example
         /// <summary>
         /// Updates img color baased on state.
         /// </summary>
-        /// <param name="state"></param>
-        /// <param name="img"></param>
+        /// <param name = "state"></param>
+        /// <param name = "img"></param>
         private void UpdateColor(LocalConnectionState state, ref Image img)
         {
             Color c;
@@ -187,20 +185,17 @@ namespace FishNet.Example
             img.color = c;
         }
 
-
         private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
         {
             _clientState = obj.ConnectionState;
             UpdateColor(obj.ConnectionState, ref _clientIndicator);
         }
 
-
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj)
         {
             _serverState = obj.ConnectionState;
             UpdateColor(obj.ConnectionState, ref _serverIndicator);
         }
-
 
         public void OnClick_Server()
         {
@@ -215,7 +210,6 @@ namespace FishNet.Example
             DeselectButtons();
         }
 
-
         public void OnClick_Client()
         {
             if (_networkManager == null)
@@ -229,25 +223,23 @@ namespace FishNet.Example
             DeselectButtons();
         }
 
-
         private void SetEventSystem()
         {
 #if !ENABLE_INPUT_SYSTEM
-        if (_eventSystem != null)
-            return;
-        _eventSystem = FindObjectOfType<EventSystem>();
-        if (_eventSystem == null)
-            _eventSystem = gameObject.AddComponent<EventSystem>();
+            if (_eventSystem != null)
+                return;
+            _eventSystem = FindObjectOfType<EventSystem>();
+            if (_eventSystem == null)
+                _eventSystem = gameObject.AddComponent<EventSystem>();
 #endif
         }
 
         private void DeselectButtons()
         {
 #if !ENABLE_INPUT_SYSTEM
-        SetEventSystem();
-        _eventSystem?.SetSelectedGameObject(null);
+            SetEventSystem();
+            _eventSystem?.SetSelectedGameObject(null);
 #endif
         }
     }
-
 }

@@ -7,7 +7,6 @@ namespace FishNet.Example.ColliderRollbacks
     {
         [SerializeField]
         private Text _text;
-
         private static TextCanvas _instance;
 
         private void Awake()
@@ -22,8 +21,5 @@ namespace FishNet.Example.ColliderRollbacks
         {
             _text.text = text;
         }
-
     }
-
-
 }

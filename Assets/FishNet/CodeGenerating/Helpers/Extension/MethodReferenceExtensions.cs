@@ -5,10 +5,8 @@ using System;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-
     internal static class MethodReferenceExtensions
     {
-
         /// <summary>
         /// Returns a custom attribute.
         /// </summary>
@@ -21,8 +19,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Makes a generic method with specified arguments.
         /// </summary>
-        /// <param name="method"></param>
-        /// <param name="genericArguments"></param>
+        /// <param name = "method"></param>
+        /// <param name = "genericArguments"></param>
         /// <returns></returns>
         public static GenericInstanceMethod MakeGenericMethod(this MethodReference method, params TypeReference[] genericArguments)
         {
@@ -35,7 +33,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Makes a generic method with the same arguments as the original.
         /// </summary>
-        /// <param name="method"></param>
+        /// <param name = "method"></param>
         /// <returns></returns>
         public static GenericInstanceMethod MakeGenericMethod(this MethodReference method)
         {
@@ -78,7 +76,6 @@ namespace FishNet.CodeGenerating.Helping.Extension
             }
         }
 
-
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
@@ -95,14 +92,15 @@ namespace FishNet.CodeGenerating.Helping.Extension
             MethodDefinition md = mr.CachedResolve(session);
             return MethodDefinitionExtensions.RemoveEndRet(md, session);
         }
+
         /// <summary>
         /// Given a method of a generic class such as ArraySegment`T.get_Count,
         /// and a generic instance such as ArraySegment`int
         /// Creates a reference to the specialized method  ArraySegment`int`.get_Count
         /// <para> Note that calling ArraySegment`T.get_Count directly gives an invalid IL error </para>
         /// </summary>
-        /// <param name="self"></param>
-        /// <param name="instanceType"></param>
+        /// <param name = "self"></param>
+        /// <param name = "instanceType"></param>
         /// <returns></returns>
         public static MethodReference MakeHostInstanceGeneric(this MethodReference self, CodegenSession session, GenericInstanceType instanceType)
         {
@@ -121,14 +119,15 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
             return session.ImportReference(reference);
         }
+
         /// <summary>
         /// Given a method of a generic class such as ArraySegment`T.get_Count,
         /// and a generic instance such as ArraySegment`int
         /// Creates a reference to the specialized method  ArraySegment`int`.get_Count
         /// <para> Note that calling ArraySegment`T.get_Count directly gives an invalid IL error </para>
         /// </summary>
-        /// <param name="self"></param>
-        /// <param name="instanceType"></param>
+        /// <param name = "self"></param>
+        /// <param name = "instanceType"></param>
         /// <returns></returns>
         public static MethodReference MakeHostInstanceGeneric(this MethodReference self, TypeReference typeRef, params TypeReference[] args)
         {
@@ -148,10 +147,12 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
             return reference;
         }
+
         public static bool Is<T>(this MethodReference method, string name)
         {
             return method.DeclaringType.Is<T>() && method.Name == name;
         }
+
         public static bool Is<T>(this TypeReference td)
         {
             return Is(td, typeof(T));
@@ -165,10 +166,5 @@ namespace FishNet.CodeGenerating.Helping.Extension
             }
             return td.FullName == t.FullName;
         }
-
-
-
     }
-
-
 }

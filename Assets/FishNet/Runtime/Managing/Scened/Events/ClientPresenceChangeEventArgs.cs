@@ -8,7 +8,6 @@ namespace FishNet.Managing.Scened
     /// </summary>
     public struct ClientPresenceChangeEventArgs
     {
-
         /// <summary>
         /// Scene on the server which the client's presence has changed.
         /// </summary>
@@ -29,6 +28,4 @@ namespace FishNet.Managing.Scened
             Added = added;
         }
     }
-
-
 }

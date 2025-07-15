@@ -52,6 +52,7 @@ namespace FishNet.Component.Transforming.Beta
             GraphicalTransform = graphicalTransform;
             InitializingTimeManager = initializingNetworkBehaviour.TimeManager;
         }
+
         /// <summary>
         /// Sets values used at runtime. NetworkBehaviour is nullified when calling this method.
         /// </summary>
@@ -61,6 +62,5 @@ namespace FishNet.Component.Transforming.Beta
             GraphicalTransform = graphicalTransform;
             InitializingTimeManager = timeManager;
         }
-     
     }
 }

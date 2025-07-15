@@ -12,7 +12,5 @@ namespace FishNet.Serializing
     /// Extensions to Read methods. Used by Read<T>.
     /// </summary>
     [APIExclude]
-    public static class ReaderExtensions
-    {
-    }
+    public static class ReaderExtensions { }
 }

@@ -12,7 +12,6 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
     {
         [SerializeField]
         private bool _isActive = true;
-
         [Header("Movement")]
         [Tooltip("How much force to apply.")]
         [Range(0f, 1000f)]
@@ -20,8 +19,7 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         private float _force = 10f;
         [Tooltip("How often to apply force.")]
         [SerializeField]
-        private FloatRange _interval = new FloatRange(3f, 10f);
-
+        private FloatRange _interval = new(3f, 10f);
         private uint _nextForceTick = TimeManager.UNSET_TICK;
         private Rigidbody _rigidbody;
 
@@ -32,15 +30,15 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
 
         public override void OnStartNetwork()
         {
-            if (!base.IsServerStarted)
+            if (!IsServerStarted)
             {
-                base.SetTickCallbacks(TickCallback.None);
+                SetTickCallbacks(TickCallback.None);
                 _rigidbody.isKinematic = true;
                 DestroyImmediate(this);
             }
             else
             {
-                base.SetTickCallbacks(TickCallback.Tick);
+                SetTickCallbacks(TickCallback.Tick);
             }
         }
 
@@ -54,15 +52,15 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
             if (!_isActive)
                 return;
 
-            uint tick = base.TimeManager.LocalTick;
+            uint tick = TimeManager.LocalTick;
             if (tick < _nextForceTick)
                 return;
 
-            _nextForceTick = tick + base.TimeManager.TimeToTicks(_interval.RandomInclusive(), TickRounding.RoundUp);
+            _nextForceTick = tick + TimeManager.TimeToTicks(_interval.RandomInclusive(), TickRounding.RoundUp);
 
             Vector3 force = Random.insideUnitSphere * _force;
 
-            //Always ensure vertical movement, and movement away from center.
+            // Always ensure vertical movement, and movement away from center.
             if (Math.Sign(force.x) == Math.Sign(transform.position.x))
                 force.x *= -1f;
             force.y = _force;

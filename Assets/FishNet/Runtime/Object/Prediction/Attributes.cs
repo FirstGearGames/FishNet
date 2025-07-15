@@ -8,6 +8,7 @@ namespace FishNet.Object.Prediction
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class ReplicateAttribute : Attribute { }
+
     /// <summary>
     /// Reconcile methods indicate how to reset your script or object after the server has replicated user data.
     /// </summary>

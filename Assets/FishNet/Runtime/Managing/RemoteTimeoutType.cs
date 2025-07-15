@@ -1,7 +1,5 @@
-﻿
-namespace FishNet.Managing
+﻿namespace FishNet.Managing
 {
-
     public enum RemoteTimeoutType
     {
         /// <summary>
@@ -15,7 +13,6 @@ namespace FishNet.Managing
         /// <summary>
         /// Enable in all builds and editor.
         /// </summary>
-        Development = 2,
+        Development = 2
     }
-
 }

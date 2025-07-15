@@ -1,4 +1,4 @@
-﻿//This file contains values serialized in editor or once at runtime.
+﻿// This file contains values serialized in editor or once at runtime.
 
 using UnityEngine;
 using System;
@@ -6,8 +6,6 @@ using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using FishNet.Managing;
 using FishNet.Utility.Extension;
-
-
 #if UNITY_EDITOR
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -22,31 +20,33 @@ namespace FishNet.Object
         /// <summary>
         /// Networked PrefabId assigned to this Prefab.
         /// </summary>
-        [field: SerializeField, HideInInspector]
-        public ushort PrefabId { get; internal set; } = NetworkObject.UNSET_PREFABID_VALUE;
-
+        [field: SerializeField]
+        [field: HideInInspector]
+        public ushort PrefabId { get; internal set; } = UNSET_PREFABID_VALUE;
         /// <summary>
         /// Spawn collection to use assigned to this Prefab.
         /// </summary>
-        [field: SerializeField, HideInInspector]
+        [field: SerializeField]
+        [field: HideInInspector]
         public ushort SpawnableCollectionId { get; internal set; } = 0;
 
         /// <summary>
         /// Sets SceneId value. This is not synchronized automatically.
         /// </summary>
-        /// <param name="sceneId"></param>
+        /// <param name = "sceneId"></param>
         public void SetSceneId(ulong sceneId) => SceneId = sceneId;
 
         /// <summary>
         /// Hash for the path which this asset resides. This value is set during edit time.
-        /// </summary> 
-        [field: SerializeField, HideInInspector]
+        /// </summary>
+        [field: SerializeField]
+        [field: HideInInspector]
         public ulong AssetPathHash { get; private set; }
 
         /// <summary>
         /// Sets AssetPathhash value.
         /// </summary>
-        /// <param name="value">Value to use.</param>
+        /// <param name = "value">Value to use.</param>
         public void SetAssetPathHash(ulong value) => AssetPathHash = value;
         #endregion
 
@@ -54,13 +54,13 @@ namespace FishNet.Object
         /// <summary>
         /// Network Id for this scene object.
         /// </summary>
-        [field: SerializeField, HideInInspector]
+        [field: SerializeField]
+        [field: HideInInspector]
         internal ulong SceneId { get; private set; }
-
         /// <summary>
-        /// 
         /// </summary>
-        [SerializeField, HideInInspector]
+        [SerializeField]
+        [HideInInspector]
         internal TransformProperties SerializedTransformProperties = new();
         #endregion
 
@@ -68,7 +68,7 @@ namespace FishNet.Object
         /// <summary>
         /// Last time sceneIds were built automatically.
         /// </summary>
-        [System.NonSerialized]
+        [NonSerialized]
         private static double _lastSceneIdAutomaticRebuildTime;
         #endregion
 
@@ -84,10 +84,9 @@ namespace FishNet.Object
                 return;
             }
 
-            SceneId = NetworkObject.UNSET_SCENEID_VALUE;
+            SceneId = UNSET_SCENEID_VALUE;
         }
 
-        
 #if UNITY_EDITOR
         private void OnApplicationQuit()
         {
@@ -104,9 +103,9 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return new();
             if (!scene.IsValid())
-                return  new();
+                return new();
             if (!scene.isLoaded)
-                return  new();
+                return new();
 
             HashSet<ulong> setIds = new();
             uint scenePathHash = scene.path.GetStableHashU32();
@@ -115,25 +114,25 @@ namespace FishNet.Object
             Scenes.GetSceneNetworkObjects(scene, firstOnly: false, errorOnDuplicates: false, ignoreUnsetSceneIds: false, ref sceneNobs);
             System.Random rnd = new();
 
-            //NetworkObjects which need their Ids rebuilt.
+            // NetworkObjects which need their Ids rebuilt.
             List<NetworkObject> rebuildingNobs = new();
 
             foreach (NetworkObject item in sceneNobs)
             {
-                bool canGenerate = (!item.IsSceneObject || !setIds.Add(item.SceneId));
+                bool canGenerate = !item.IsSceneObject || !setIds.Add(item.SceneId);
                 /* If an Id has not been generated yet or if it
                  * already exist then rebuild for this object. */
                 if (force || canGenerate)
                 {
-                    item.SceneId = NetworkObject.UNSET_SCENEID_VALUE;
+                    item.SceneId = UNSET_SCENEID_VALUE;
                     rebuildingNobs.Add(item);
                 }
             }
 
             foreach (NetworkObject item in rebuildingNobs)
             {
-                ulong nextSceneId = NetworkObject.UNSET_SCENEID_VALUE;
-                while (nextSceneId == NetworkObject.UNSET_SCENEID_VALUE || setIds.Contains(nextSceneId))
+                ulong nextSceneId = UNSET_SCENEID_VALUE;
+                while (nextSceneId == UNSET_SCENEID_VALUE || setIds.Contains(nextSceneId))
                 {
                     uint rndId = (uint)(rnd.Next(int.MinValue, int.MaxValue) + int.MaxValue);
                     nextSceneId = CombineHashes(scenePathHash, rndId);
@@ -141,7 +140,7 @@ namespace FishNet.Object
 
                 ulong CombineHashes(uint a, uint b)
                 {
-                    return (b | a);
+                    return b | a;
                 }
 
                 setIds.Add(nextSceneId);
@@ -160,13 +159,13 @@ namespace FishNet.Object
         {
             if (Application.isPlaying)
                 return;
-            //Unity bug, sometimes this can be null depending on editor callback orders.
+            // Unity bug, sometimes this can be null depending on editor callback orders.
             if (gameObject == null)
                 return;
-            //Not a scene object.
+            // Not a scene object.
             if (string.IsNullOrEmpty(gameObject.scene.name))
             {
-                SceneId = NetworkObject.UNSET_SCENEID_VALUE;
+                SceneId = UNSET_SCENEID_VALUE;
                 return;
             }
 
@@ -175,26 +174,26 @@ namespace FishNet.Object
              * missing. */
             if (BuildPipeline.isBuildingPlayer)
             {
-                //If prefab or part of a prefab, not a scene object.            
+                // If prefab or part of a prefab, not a scene object.            
                 if (PrefabUtility.IsPartOfPrefabAsset(this) || IsEditingInPrefabMode() ||
-                    //Not in a scene, another prefab check.
+                    // Not in a scene, another prefab check.
                     !gameObject.scene.IsValid() ||
-                    //Stored on disk, so is a prefab. Somehow prefabutility missed it.
+                    // Stored on disk, so is a prefab. Somehow prefabutility missed it.
                     EditorUtility.IsPersistent(this))
-                    //If here this is a sceneObject, but sceneId is not set.
+                    // If here this is a sceneObject, but sceneId is not set.
                     if (!IsSceneObject)
                         throw new InvalidOperationException($"Networked GameObject {gameObject.name} in scene {gameObject.scene.path} is missing a SceneId. Use the Fish-Networking menu -> Utility -> Reserialize NetworkObjects > Reserialize Scenes. If the problem persist ensures {gameObject.name} does not have any missing script references on it's prefab or in the scene. Also ensure that you have any prefab changes for the object applied.");
             }
-            //If not building check to rebuild sceneIds this for object and the scene its in.
+            // If not building check to rebuild sceneIds this for object and the scene its in.
             else
             {
                 double realtime = EditorApplication.timeSinceStartup;
-                //Only do this once every Xms to prevent excessive rebiulds.
+                // Only do this once every Xms to prevent excessive rebiulds.
                 if (realtime - _lastSceneIdAutomaticRebuildTime < 0.250d)
                     return;
 
-                //Not in a scene, another prefab check.
-                //Stored on disk, so is a prefab. Somehow prefabutility missed it.
+                // Not in a scene, another prefab check.
+                // Stored on disk, so is a prefab. Somehow prefabutility missed it.
                 if (PrefabUtility.IsPartOfPrefabAsset(this) || IsEditingInPrefabMode() || !gameObject.scene.IsValid() || EditorUtility.IsPersistent(this))
                     return;
 

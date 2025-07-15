@@ -6,7 +6,6 @@ namespace FishNet.Serializing.Helping
     public static class Quaternion32Compression
     {
         private const float Maximum = +1.0f / 1.414214f;
-
         private const int BitsPerAxis = 10;
         private const int LargestComponentShift = BitsPerAxis * 3;
         private const int AShift = BitsPerAxis * 2;
@@ -15,20 +14,19 @@ namespace FishNet.Serializing.Helping
         private const int IntMask = (1 << BitsPerAxis) - 1;
 
         /// <summary>
-        /// 
         /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="quaternion"></param>
-        /// <param name="axesFlippingEnabled">True to flip the smaller values when the largest axes is negative. Doing this saves a byte but the rotation numeric values will be reversed when decompressed.</param>
+        /// <param name = "writer"></param>
+        /// <param name = "quaternion"></param>
+        /// <param name = "axesFlippingEnabled">True to flip the smaller values when the largest axes is negative. Doing this saves a byte but the rotation numeric values will be reversed when decompressed.</param>
         public static void Compress(Writer writer, Quaternion quaternion, bool axesFlippingEnabled = true)
         {
             const float precision = 0.00098f;
-            
+
             float absX = Mathf.Abs(quaternion.x);
             float absY = Mathf.Abs(quaternion.y);
             float absZ = Mathf.Abs(quaternion.z);
             float absW = Mathf.Abs(quaternion.w);
-            
+
             ComponentType largestComponent = ComponentType.X;
             float largestAbs = absX;
             float largest = quaternion.x;
@@ -50,17 +48,17 @@ namespace FishNet.Serializing.Helping
                 largestComponent = ComponentType.W;
                 largest = quaternion.w;
             }
-            
-            bool largestIsNegative = (largest < 0);
 
-            //If not flipping axes and any values are less than precision then 0 them out.
+            bool largestIsNegative = largest < 0;
+
+            // If not flipping axes and any values are less than precision then 0 them out.
             if (!axesFlippingEnabled)
             {
                 if (absX < precision)
                     quaternion.x = 0f;
                 if (absY < precision)
                     quaternion.y = 0f;
-                if (absZ < precision)  
+                if (absZ < precision)
                     quaternion.z = 0f;
                 if (absW < precision)
                     quaternion.w = 0f;
@@ -92,8 +90,8 @@ namespace FishNet.Serializing.Helping
                     c = quaternion.z;
                     break;
             }
-            
-            //If it's okay to flip when largest is negative.
+
+            // If it's okay to flip when largest is negative.
             if (largestIsNegative && axesFlippingEnabled)
             {
                 a = -a;
@@ -106,9 +104,9 @@ namespace FishNet.Serializing.Helping
             uint integerC = ScaleToUint(c);
 
             if (!axesFlippingEnabled)
-                writer.WriteBoolean((largest < 0f));
+                writer.WriteBoolean(largest < 0f);
 
-            uint result = (((uint)largestComponent) << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
+            uint result = ((uint)largestComponent << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
             writer.WriteUInt32Unpacked(result);
         }
 
@@ -128,14 +126,13 @@ namespace FishNet.Serializing.Helping
         }
 
         /// <summary>
-        /// 
         /// </summary>
-        /// <param name="reader"></param>
-        /// <param name="axesFlippingEnabled">True if the smaller values were flipped during compression when the largest axes was negative.</param>
+        /// <param name = "reader"></param>
+        /// <param name = "axesFlippingEnabled">True if the smaller values were flipped during compression when the largest axes was negative.</param>
         /// <returns></returns>
         public static Quaternion Decompress(Reader reader, bool axesFlippingEnabled = true)
         {
-            bool largestIsNegative = (axesFlippingEnabled) ? false : reader.ReadBoolean();
+            bool largestIsNegative = axesFlippingEnabled ? false : reader.ReadBoolean();
             uint compressed = reader.ReadUInt32Unpacked();
 
             var largestComponentType = (ComponentType)(compressed >> LargestComponentShift);

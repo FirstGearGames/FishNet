@@ -2,15 +2,14 @@ using System.Collections.Generic;
 
 namespace FishNet.Transporting.Yak
 {
-
     public abstract class CommonSocket
     {
-
         #region Public.
         /// <summary>
         /// Current ConnectionState.
         /// </summary>
         private LocalConnectionState _connectionState = LocalConnectionState.Stopped;
+
         /// <summary>
         /// Returns the current ConnectionState.
         /// </summary>
@@ -20,7 +19,6 @@ namespace FishNet.Transporting.Yak
             return _connectionState;
         }
 
-        
         #endregion
 
         #region Protected.
@@ -43,8 +41,6 @@ namespace FishNet.Transporting.Yak
         /// </summary>
         internal void ClearQueue(ref Queue<LocalPacket> queue)
         {
-            
-        }
+            }
     }
-
 }

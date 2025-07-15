@@ -3,16 +3,15 @@ using System.Linq;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-
     internal static class CustomAttributeExtensions
     {
         /// <summary>
         /// Finds a field within an attribute.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="customAttr"></param>
-        /// <param name="field"></param>
-        /// <param name="defaultValue"></param>
+        /// <typeparam name = "T"></typeparam>
+        /// <param name = "customAttr"></param>
+        /// <param name = "field"></param>
+        /// <param name = "defaultValue"></param>
         /// <returns></returns>
         internal static T GetField<T>(this CustomAttribute customAttr, string field, T defaultValue)
         {
@@ -30,8 +29,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if any of the attributes match IAtrribute.
         /// </summary>
-        /// <typeparam name="TAttribute"></typeparam>
-        /// <param name="attributeProvider"></param>
+        /// <typeparam name = "TAttribute"></typeparam>
+        /// <param name = "attributeProvider"></param>
         /// <returns></returns>
         internal static bool HasCustomAttribute<TAttribute>(this ICustomAttributeProvider attributeProvider)
         {
@@ -41,14 +40,12 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if ca is of type target.
         /// </summary>
-        /// <param name="ca"></param>
-        /// <param name="targetFullName"></param>
+        /// <param name = "ca"></param>
+        /// <param name = "targetFullName"></param>
         /// <returns></returns>
         internal static bool Is(this CustomAttribute ca, string targetFullName)
         {
             return ca.AttributeType.FullName == targetFullName;
         }
     }
-
-
 }

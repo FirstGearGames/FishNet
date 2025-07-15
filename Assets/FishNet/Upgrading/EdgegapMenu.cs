@@ -16,7 +16,7 @@
 //         [MenuItem("Tools/Get Edgegap Hosting", false, 0)]
 //         private static void GetEdgegapHosting()
 //         {
-//             Application.OpenURL("https://firstgeargames.com/FishNet/Edgegap/");
+//             Application.OpenURL("https:// firstgeargames.com/FishNet/Edgegap/");
 //         }
 //
 //
@@ -24,3 +24,4 @@
 // }
 // #endif
 // #endif
+

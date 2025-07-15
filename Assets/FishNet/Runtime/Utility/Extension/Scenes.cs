@@ -7,14 +7,13 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Utility.Extension
 {
-
     public static class Scenes
     {
         /// <summary>
         /// Gets all NetworkObjects in a scene.
         /// </summary>
-        /// <param name="s">Scene to get objects in.</param>
-        /// <param name="firstOnly">True to only return the first NetworkObject within an object chain. False will return nested NetworkObjects.</param>
+        /// <param name = "s">Scene to get objects in.</param>
+        /// <param name = "firstOnly">True to only return the first NetworkObject within an object chain. False will return nested NetworkObjects.</param>
         /// <returns></returns>
         public static void GetSceneNetworkObjects(Scene s, bool firstOnly, bool errorOnDuplicates, bool ignoreUnsetSceneIds, ref List<NetworkObject> result)
         {
@@ -23,16 +22,16 @@ namespace FishNet.Utility.Extension
             List<GameObject> gameObjectCache = CollectionCaches<GameObject>.RetrieveList();
             Dictionary<ulong, NetworkObject> sceneIds = CollectionCaches<ulong, NetworkObject>.RetrieveDictionary();
 
-            //Iterate all root objects for the scene.
+            // Iterate all root objects for the scene.
             s.GetRootGameObjects(gameObjectCache);
             foreach (GameObject go in gameObjectCache)
             {
-                //Get NetworkObjects within children of each root.
+                // Get NetworkObjects within children of each root.
                 go.GetComponentsInChildren(true, nobCacheA);
-                //If network objects are found.
+                // If network objects are found.
                 if (nobCacheA.Count > 0)
                 {
-                    //Add only the first networkobject 
+                    // Add only the first networkobject 
                     if (firstOnly)
                     {
                         /* The easiest way to see if a nob is nested is to
@@ -46,12 +45,12 @@ namespace FishNet.Utility.Extension
                                 continue;
 
                             nob.GetComponentsInParent(true, nobCacheB);
-                            //No extra nobs, only this one.
+                            // No extra nobs, only this one.
                             if (nobCacheB.Count == 1 && !TryDisplayDuplicateError(nob))
                                 result.Add(nob);
                         }
                     }
-                    //Not first only, add them all.
+                    // Not first only, add them all.
                     else
                     {
                         foreach (NetworkObject item in nobCacheA)
@@ -62,7 +61,6 @@ namespace FishNet.Utility.Extension
                                 result.Add(item);
                         }
                     }
-
                 }
             }
 
@@ -74,7 +72,7 @@ namespace FishNet.Utility.Extension
                     return false;
 
                 ulong id = nob.SceneId;
-                //There is a duplicate.
+                // There is a duplicate.
                 if (sceneIds.TryGetValue(id, out NetworkObject originalNob))
                 {
                     string err = $"Object {nob.name} and {originalNob.name} in scene {nob.gameObject.scene.name} have the same sceneId of {id}. This will result in spawning errors. Exit play mode and use the Fish-Networking menu to reserialize sceneIds for scene {nob.gameObject.scene.name}.";
@@ -87,9 +85,6 @@ namespace FishNet.Utility.Extension
                     return false;
                 }
             }
-
         }
-
     }
-
 }

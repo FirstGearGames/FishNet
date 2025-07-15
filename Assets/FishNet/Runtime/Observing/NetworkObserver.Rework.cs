@@ -175,7 +175,7 @@
 //                         Destroy(item);
 //                 }
 //
-//                 //Clean up lists.
+//                 // Clean up lists.
 //                 if (destroyed)
 //                     CollectionCaches<NetworkConnection>.Store(_nonTimedMet);
 //             }
@@ -618,3 +618,4 @@
 //         }
 //     }
 // }
+

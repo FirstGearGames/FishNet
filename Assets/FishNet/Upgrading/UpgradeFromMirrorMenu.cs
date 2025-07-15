@@ -6,19 +6,17 @@ using UnityEngine;
 
 namespace FishNet.Upgrading.Mirror.Editing
 {
-
-    /* IMPORTANT IMPORTANT IMPORTANT IMPORTANT 
-    * If you receive errors about missing Mirror components,
-    * such as NetworkIdentity, then remove MIRROR and any other
-    * MIRROR defines.
-    * Project Settings -> Player -> Other -> Scripting Define Symbols.
-    * 
-    * If you are also using my assets add FGG_ASSETS to the defines, and
-    * then remove it after running this script. */
+    /* IMPORTANT IMPORTANT IMPORTANT IMPORTANT
+     * If you receive errors about missing Mirror components,
+     * such as NetworkIdentity, then remove MIRROR and any other
+     * MIRROR defines.
+     * Project Settings -> Player -> Other -> Scripting Define Symbols.
+     *
+     * If you are also using my assets add FGG_ASSETS to the defines, and
+     * then remove it after running this script. */
     [APIExclude]
     public class UpgradeFromMirrorMenu : MonoBehaviour
     {
-
         /// <summary>
         /// Replaces all components.
         /// </summary>
@@ -51,7 +49,7 @@ namespace FishNet.Upgrading.Mirror.Editing
             string[] currentArr = currentDefines.Split(';');
 
             bool removed = false;
-            //Add any define which doesn't contain MIRROR.
+            // Add any define which doesn't contain MIRROR.
             foreach (string item in currentArr)
             {
                 string itemLower = item.ToLower();
@@ -68,8 +66,6 @@ namespace FishNet.Upgrading.Mirror.Editing
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, changedDefines);
             }
         }
-
-
     }
 }
 #endif

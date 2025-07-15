@@ -14,15 +14,14 @@ namespace FishNet.Transporting.Yak.Server
         /// <summary>
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
-        /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
+        /// <param name = "connectionId">ConnectionId to get ConnectionState for.</param>
         internal RemoteConnectionState GetConnectionState(int connectionId)
         {
             if (connectionId != NetworkConnection.SIMULATED_CLIENTID_VALUE)
                 return RemoteConnectionState.Stopped;
 
             LocalConnectionState state = _client.GetLocalConnectionState();
-            return (state == LocalConnectionState.Started) ? RemoteConnectionState.Started :
-                RemoteConnectionState.Stopped;
+            return state == LocalConnectionState.Started ? RemoteConnectionState.Started : RemoteConnectionState.Stopped;
         }
         #endregion
 
@@ -37,17 +36,13 @@ namespace FishNet.Transporting.Yak.Server
         private ClientSocket _client;
         #endregion
 
-        
-
         /// <summary>
         /// Starts the server.
         /// </summary>
         internal bool StartConnection()
         {
-            
             return true;
         }
-
 
         
 
@@ -63,7 +58,7 @@ namespace FishNet.Transporting.Yak.Server
         /// <summary>
         /// Stops a remote client from the server, disconnecting the client.
         /// </summary>
-        /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
+        /// <param name = "connectionId">ConnectionId of the client to disconnect.</param>
         internal bool StopConnection(int connectionId)
         {
             

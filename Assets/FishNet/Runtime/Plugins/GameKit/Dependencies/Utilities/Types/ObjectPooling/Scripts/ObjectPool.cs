@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.ObjectPooling
 {
-
     public class ObjectPool : MonoBehaviour
     {
         #region Types.
@@ -19,6 +18,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
                 StoreTime = storeTime;
                 ParentPooler = parentPooler;
             }
+
             public readonly float StoreTime;
             public readonly bool ParentPooler;
         }
@@ -66,10 +66,11 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
 
         private void Awake()
         {
-            //Make sure there is only once instance.
+            // Make sure there is only once instance.
             if (_instance != null && _instance != this)
             {
-                if (Debug.isDebugBuild) Debug.LogWarning("Multiple ObjectPool scripts found. This script auto loads itself and does not need to be placed in your scenes.");
+                if (Debug.isDebugBuild)
+                    Debug.LogWarning("Multiple ObjectPool scripts found. This script auto loads itself and does not need to be placed in your scenes.");
                 Destroy(this);
                 return;
             }
@@ -77,13 +78,10 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             {
                 _instance = this;
             }
-
         }
 
-        private void Update()
-        {
-            
-        }
+        private void Update() { }
+
         private void Start()
         {
             StartCoroutine(__CleanupChecks());
@@ -155,7 +153,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Destroys all stored and optionally retrieved objects. Race conditions may be created by this coroutine if trying to retrieve or store objects before it finishes executing.
         /// </summary>
-        /// <param name="destroyActive">True to also destroy active retrieved gameObjects. False will erase active objects from memory, but not destroy them.</param>
+        /// <param name = "destroyActive">True to also destroy active retrieved gameObjects. False will erase active objects from memory, but not destroy them.</param>
         public IEnumerator __Reset(bool destroyActive)
         {
             /* Clear references to which pool is for each prefab,
@@ -199,8 +197,8 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Destroys all Objects within the specified PoolData then clears the PoolData.
         /// </summary>
-        /// <param name="poolData"></param>
-        /// <param name="removeFromList">True to remove from pools list.</param>
+        /// <param name = "poolData"></param>
+        /// <param name = "removeFromList">True to remove from pools list.</param>
         private void DestroyPool(PoolData poolData, bool removeFromList)
         {
             for (int i = 0; i < poolData.Objects.Entries.Count; i++)
@@ -216,7 +214,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns the PoolData which houses the desired prefab.
         /// </summary>
-        /// <param name="prefab">Prefab to return a pool for.</param>
+        /// <param name = "prefab">Prefab to return a pool for.</param>
         /// <returns></returns>
         private PoolData ReturnPoolData(GameObject prefab)
         {
@@ -232,9 +230,9 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Sets the position and rotation of the specified GameObject.
         /// </summary>
-        /// <param name="result"></param>
-        /// <param name="position"></param>
-        /// <param name="rotation"></param>
+        /// <param name = "result"></param>
+        /// <param name = "position"></param>
+        /// <param name = "rotation"></param>
         private void SetGameObjectPositionRotation(GameObject result, Vector3 position, Quaternion rotation)
         {
             result.transform.position = position;
@@ -244,12 +242,13 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="poolObject">Prefab to retrieve.</param>
+        /// <param name = "poolObject">Prefab to retrieve.</param>
         /// <returns></returns>
         public static GameObject Retrieve(GameObject poolObject)
         {
             return _instance.RetrieveInternal(poolObject);
         }
+
         private GameObject RetrieveInternal(GameObject poolObject)
         {
             PoolData pool;
@@ -264,17 +263,19 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
 
             return FinalizeRetrieve(result, pool);
         }
+
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="poolObject">Prefab to retrieve.</param>
-        /// <param name="parent">Parent to attach the retrieved prefab to.</param>
-        /// <param name="instantiateInWorldSpace">Use true when assigning a parent Object to maintain the world position of the Object, instead of setting its position relative to the new parent. Pass false to set the Object's position relative to its new parent.</param>
+        /// <param name = "poolObject">Prefab to retrieve.</param>
+        /// <param name = "parent">Parent to attach the retrieved prefab to.</param>
+        /// <param name = "instantiateInWorldSpace">Use true when assigning a parent Object to maintain the world position of the Object, instead of setting its position relative to the new parent. Pass false to set the Object's position relative to its new parent.</param>
         /// <returns></returns>
         public static GameObject Retrieve(GameObject poolObject, Transform parent, bool instantiateInWorldSpace = true)
         {
             return _instance.RetrieveInternal(poolObject, parent, instantiateInWorldSpace);
         }
+
         public GameObject RetrieveInternal(GameObject poolObject, Transform parent, bool instantiateInWorldSpace = true)
         {
             PoolData pool;
@@ -293,14 +294,15 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="poolObject">Prefab to retrieve.</param>
-        /// <param name="position">Position for the retrieved object.</param>
-        /// <param name="rotation">Orientation for the retrieved object.</param>
+        /// <param name = "poolObject">Prefab to retrieve.</param>
+        /// <param name = "position">Position for the retrieved object.</param>
+        /// <param name = "rotation">Orientation for the retrieved object.</param>
         /// <returns></returns>
         public static GameObject Retrieve(GameObject poolObject, Vector3 position, Quaternion rotation)
         {
             return _instance.RetrieveInternal(poolObject, position, rotation);
         }
+
         private GameObject RetrieveInternal(GameObject poolObject, Vector3 position, Quaternion rotation)
         {
             PoolData pool;
@@ -315,13 +317,14 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
 
             return FinalizeRetrieve(result, pool);
         }
+
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="poolObject">Prefab to retrieve.</param>
-        /// <param name="position">Position for the retrieved object.</param>
-        /// <param name="rotation">Orientation for the retrieved object.</param>
-        /// <param name="parent">Transform to parent the retrieved object to.</param>
+        /// <param name = "poolObject">Prefab to retrieve.</param>
+        /// <param name = "position">Position for the retrieved object.</param>
+        /// <param name = "rotation">Orientation for the retrieved object.</param>
+        /// <param name = "parent">Transform to parent the retrieved object to.</param>
         /// <returns></returns>
         public GameObject Retrieve(GameObject poolObject, Vector3 position, Quaternion rotation, Transform parent)
         {
@@ -341,12 +344,13 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="prefab">Prefab to retrieve.</param>
+        /// <param name = "prefab">Prefab to retrieve.</param>
         /// <returns></returns>
         public static T Retrieve<T>(GameObject prefab)
         {
             return _instance.RetrieveInternal<T>(prefab);
         }
+
         private T RetrieveInternal<T>(GameObject prefab)
         {
             PoolData pool;
@@ -365,14 +369,15 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="prefab">Prefab to retrieve.</param>
-        /// <param name="parent">Parent to attach the retrieved prefab to.</param>
-        /// <param name="instantiateInWorldSpace">Use true when assigning a parent Object to maintain the world position of the Object, instead of setting its position relative to the new parent. Pass false to set the Object's position relative to its new parent.</param>
+        /// <param name = "prefab">Prefab to retrieve.</param>
+        /// <param name = "parent">Parent to attach the retrieved prefab to.</param>
+        /// <param name = "instantiateInWorldSpace">Use true when assigning a parent Object to maintain the world position of the Object, instead of setting its position relative to the new parent. Pass false to set the Object's position relative to its new parent.</param>
         /// <returns></returns>
         public static T Retrieve<T>(GameObject prefab, Transform parent, bool instantiateInWorldSpace = true)
         {
             return _instance.RetrieveInternal<T>(prefab, parent, instantiateInWorldSpace);
         }
+
         private T RetrieveInternal<T>(GameObject prefab, Transform parent, bool instantiateInWorldSpace = true)
         {
             PoolData pool;
@@ -391,14 +396,15 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="prefab">Prefab to retrieve.</param>
-        /// <param name="position">Position for the retrieved object.</param>
-        /// <param name="rotation">Orientation for the retrieved object.</param>
+        /// <param name = "prefab">Prefab to retrieve.</param>
+        /// <param name = "position">Position for the retrieved object.</param>
+        /// <param name = "rotation">Orientation for the retrieved object.</param>
         /// <returns></returns>
         public static T Retrieve<T>(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             return _instance.RetrieveInternal<T>(prefab, position, rotation);
         }
+
         private T RetrieveInternal<T>(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             PoolData pool;
@@ -413,18 +419,20 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
 
             return FinalizeRetrieve(result, pool).GetComponent<T>();
         }
+
         /// <summary>
         /// Returns a pooled object of the specified prefab.
         /// </summary>
-        /// <param name="prefab">Prefab to retrieve.</param>
-        /// <param name="position">Position for the retrieved object.</param>
-        /// <param name="rotation">Orientation for the retrieved object.</param>
-        /// <param name="parent">Transform to parent the retrieved object to.</param>
+        /// <param name = "prefab">Prefab to retrieve.</param>
+        /// <param name = "position">Position for the retrieved object.</param>
+        /// <param name = "rotation">Orientation for the retrieved object.</param>
+        /// <param name = "parent">Transform to parent the retrieved object to.</param>
         /// <returns></returns>
         public static T Retrieve<T>(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent)
         {
             return _instance.RetrieveInternal<T>(prefab, position, rotation, parent);
         }
+
         private T RetrieveInternal<T>(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent)
         {
             PoolData pool;
@@ -443,8 +451,8 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Finalizes the retrieved object by performing additional reset actions before returning git.
         /// </summary>
-        /// <param name="result"></param>
-        /// <param name="pool"></param>
+        /// <param name = "result"></param>
+        /// <param name = "pool"></param>
         /// <returns></returns>
         private GameObject FinalizeRetrieve(GameObject result, PoolData pool)
         {
@@ -459,26 +467,28 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns an object to it's pool.
         /// </summary>
-        /// <param name="instantiatedObject"></param>
-        /// <param name="parentPooler">True to set the objects parent as the ObjectPooler.</param>
+        /// <param name = "instantiatedObject"></param>
+        /// <param name = "parentPooler">True to set the objects parent as the ObjectPooler.</param>
         public static void Store(GameObject instantiatedObject, float delay, bool parentPooler = true)
         {
-
             _instance.StoreInternal(instantiatedObject, delay, parentPooler);
         }
+
         private void StoreInternal(GameObject instantiatedObject, float delay, bool parentPooler = true)
         {
             _delayedStoreObjects[instantiatedObject] = new(Time.time + delay, parentPooler);
         }
+
         /// <summary>
         /// Returns an object to it's pool.
         /// </summary>
-        /// <param name="instantiatedObject"></param>
-        /// <param name="parentPooler">True to set the objects parent as the ObjectPooler.</param>
+        /// <param name = "instantiatedObject"></param>
+        /// <param name = "parentPooler">True to set the objects parent as the ObjectPooler.</param>
         public static void Store(GameObject instantiatedObject, bool parentPooler = true)
         {
             _instance.StoreInternal(instantiatedObject, parentPooler);
         }
+
         private void StoreInternal(GameObject instantiatedObject, bool parentPooler = true)
         {
             //If passed in pool object is null.
@@ -515,12 +525,11 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             }
         }
 
-
         /// <summary>
         /// Returns a poolobject without performing any operations on it.
         /// </summary>
-        /// <param name="prefab"></param>
-        /// <param name="pool">Pool the returned GameObject came from.</param>
+        /// <param name = "prefab"></param>
+        /// <param name = "pool">Pool the returned GameObject came from.</param>
         private GameObject ReturnPooledObject(GameObject prefab, out PoolData pool)
         {
             //If passed in prefab is null.
@@ -548,7 +557,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Creates a pool of the specified prefab with one entry and adds it to the pools list.
         /// </summary>
-        /// <param name="prefab"></param>
+        /// <param name = "prefab"></param>
         /// <returns>Returns the created PoolData.</returns>
         private PoolData CreatePool(GameObject prefab)
         {
@@ -577,9 +586,9 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Adds an object to a specified pool.
         /// </summary>
-        /// <param name="poolObject"></param>
-        /// <param name="pool"></param>
-        /// <param name="parentPooler">True to set the objects parent as the ObjectPooler.</param>
+        /// <param name = "poolObject"></param>
+        /// <param name = "pool"></param>
+        /// <param name = "parentPooler">True to set the objects parent as the ObjectPooler.</param>
         private void AddToPool(GameObject instantiatedObject, PoolData pool, bool parentPooler = true)
         {
             if (instantiatedObject == null)
@@ -604,14 +613,14 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Sets the parent of the specified object to the proper child within the ObjectPooler.
         /// </summary>
-        /// <param name="obj"></param>
+        /// <param name = "obj"></param>
         private void ParentPooler(GameObject poolObject, bool worldPositionStays)
         {
             MakeCollector();
 
             Transform newParent;
             string tag = poolObject.tag;
-            /* Try to set parent from dictionary. If not found then make a new 
+            /* Try to set parent from dictionary. If not found then make a new
              * child object attached to the object pooler and add to dictionary,
              * then use created value. */
             if (!_categoryChildren.TryGetValue(tag, out newParent))
@@ -625,9 +634,5 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
 
             poolObject.transform.SetParent(newParent, worldPositionStays);
         }
-
     }
-
-
-
 }

@@ -3,8 +3,6 @@ using UnityEngine.UI;
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     /// <summary>
     /// Forces a scroolbar to a value over multiple frames.
     /// Often scrollbars will not stay at the right value when a recttransform is redrawn; this solves that problem.
@@ -37,7 +35,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Sets value of the scrollbar.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         public void SetValue(float value)
         {
             _scrollBar.value = value;
@@ -52,13 +50,11 @@ namespace GameKit.Dependencies.Utilities.Types
         {
             if (_updatedFrame == -1)
                 return;
-            if ((Time.frameCount - _updatedFrame) < _fixFrames)
+            if (Time.frameCount - _updatedFrame < _fixFrames)
                 return;
 
             _updatedFrame = -1;
             _scrollBar.value = _value;
         }
     }
-
-
 }

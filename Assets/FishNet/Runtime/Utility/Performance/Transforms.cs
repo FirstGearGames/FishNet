@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Utility.Performance
 {
-
     public static class GetNonAlloc
     {
         /// <summary>
@@ -22,7 +21,5 @@ namespace FishNet.Utility.Performance
         {
             t.GetComponentsInChildren(includeInactive, results);
         }
-
     }
-
 }

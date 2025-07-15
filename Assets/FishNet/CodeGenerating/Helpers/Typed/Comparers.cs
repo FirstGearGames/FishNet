@@ -16,7 +16,6 @@ namespace FishNet.CodeGenerating.Helping
         }
     }
 
-
     internal class TypeReferenceComparer : IEqualityComparer<TypeReference>
     {
         public bool Equals(TypeReference a, TypeReference b)
@@ -29,6 +28,4 @@ namespace FishNet.CodeGenerating.Helping
             return obj.FullName.GetHashCode();
         }
     }
-
-
 }

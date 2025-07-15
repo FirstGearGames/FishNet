@@ -15,10 +15,8 @@ using GameKit.Dependencies.Utilities;
 
 namespace FishNet.CodeGenerating.Helping
 {
-
     internal class ReaderProcessor : CodegenBase
     {
-
         #region Reflection references.
         public TypeDefinition GeneratedReader_TypeDef;
         public MethodDefinition GeneratedReader_OnLoad_MethodDef;
@@ -45,8 +43,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Attributes to use for generated serializers class.
         /// </summary>
-        public const TypeAttributes GENERATED_TYPE_ATTRIBUTES = (TypeAttributes.BeforeFieldInit | TypeAttributes.Class | TypeAttributes.AnsiClass |
-            TypeAttributes.Public | TypeAttributes.AutoClass | TypeAttributes.Abstract | TypeAttributes.Sealed);
+        public const TypeAttributes GENERATED_TYPE_ATTRIBUTES = TypeAttributes.BeforeFieldInit | TypeAttributes.Class | TypeAttributes.AnsiClass | TypeAttributes.Public | TypeAttributes.AutoClass | TypeAttributes.Abstract | TypeAttributes.Sealed;
         /// <summary>
         /// Name to use for InitializeOnce method.
         /// </summary>
@@ -74,7 +71,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Types to exclude from being scanned for auto serialization.
         /// </summary>
-        public static System.Type[] EXCLUDED_AUTO_SERIALIZER_TYPES => WriterProcessor.EXCLUDED_AUTO_SERIALIZER_TYPES;
+        public static Type[] EXCLUDED_AUTO_SERIALIZER_TYPES => WriterProcessor.EXCLUDED_AUTO_SERIALIZER_TYPES;
         /// <summary>
         /// Types to exclude from being scanned for auto serialization.
         /// </summary>
@@ -87,15 +84,15 @@ namespace FishNet.CodeGenerating.Helping
 
         public override bool ImportReferences()
         {
-            TypeReference readerTr = base.ImportReference(typeof(Reader));
-            _readMethodRef = readerTr.CachedResolve(base.Session).GetMethodReference(base.Session, nameof(Reader.Read));
+            TypeReference readerTr = ImportReference(typeof(Reader));
+            _readMethodRef = readerTr.CachedResolve(Session).GetMethodReference(Session, nameof(Reader.Read));
 
             return true;
         }
 
         public bool Process()
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
 
             CreateGeneratedReadersClass();
             FindInstancedReaders();
@@ -103,15 +100,15 @@ namespace FishNet.CodeGenerating.Helping
 
             void CreateGeneratedReadersClass()
             {
-                GeneratedReader_TypeDef = gh.GetOrCreateClass(out _, ReaderProcessor.GENERATED_TYPE_ATTRIBUTES, ReaderProcessor.GENERATED_READERS_CLASS_NAME, null, WriterProcessor.GENERATED_WRITER_NAMESPACE);
+                GeneratedReader_TypeDef = gh.GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_READERS_CLASS_NAME, null, WriterProcessor.GENERATED_WRITER_NAMESPACE);
                 /* If constructor isn't set then try to get or create it
                  * and also add it to methods if were created. */
-                GeneratedReader_OnLoad_MethodDef = gh.GetOrCreateMethod(GeneratedReader_TypeDef, out _, INITIALIZEONCE_METHOD_ATTRIBUTES, INITIALIZEONCE_METHOD_NAME, base.Module.TypeSystem.Void);
+                GeneratedReader_OnLoad_MethodDef = gh.GetOrCreateMethod(GeneratedReader_TypeDef, out _, INITIALIZEONCE_METHOD_ATTRIBUTES, INITIALIZEONCE_METHOD_NAME, Module.TypeSystem.Void);
                 gh.CreateRuntimeInitializeOnLoadMethodAttribute(GeneratedReader_OnLoad_MethodDef);
 
                 ILProcessor ppp = GeneratedReader_OnLoad_MethodDef.Body.GetILProcessor();
                 ppp.Emit(OpCodes.Ret);
-                //GeneratedReaderOnLoadMethodDef.DeclaringType.Methods.Remove(GeneratedReaderOnLoadMethodDef);
+                // GeneratedReaderOnLoadMethodDef.DeclaringType.Methods.Remove(GeneratedReaderOnLoadMethodDef);
             }
 
             void FindInstancedReaders()
@@ -122,10 +119,10 @@ namespace FishNet.CodeGenerating.Helping
                     if (!HasDefaultSerializerAttribute())
                         continue;
 
-                    MethodReference methodRef = base.ImportReference(methodInfo);
+                    MethodReference methodRef = ImportReference(methodInfo);
                     /* TypeReference for the return type
                      * of the read method. */
-                    TypeReference typeRef = base.ImportReference(methodRef.ReturnType);
+                    TypeReference typeRef = ImportReference(methodRef.ReturnType);
 
                     /* If here all checks pass. */
                     AddReaderMethod(typeRef, methodRef, true, true);
@@ -140,30 +137,27 @@ namespace FishNet.CodeGenerating.Helping
 
                         return false;
                     }
-
                 }
             }
 
             return true;
         }
 
-
         /// <summary>
         /// Adds typeRef, methodDef to instanced or readerMethods.
         /// </summary>
-        /// <param name="typeRef"></param>
-        /// <param name="methodRef"></param>
-        /// <param name="useAdd"></param>
+        /// <param name = "typeRef"></param>
+        /// <param name = "methodRef"></param>
+        /// <param name = "useAdd"></param>
         internal void AddReaderMethod(TypeReference typeRef, MethodReference methodRef, bool instanced, bool useAdd)
         {
             string fullName = typeRef.GetFullnameWithoutBrackets();
-            Dictionary<string, MethodReference> dict = (instanced) ?
-                InstancedReaderMethods : StaticReaderMethods;
+            Dictionary<string, MethodReference> dict = instanced ? InstancedReaderMethods : StaticReaderMethods;
 
             if (useAdd)
             {
                 if (dict.ContainsKey(fullName))
-                    base.LogError($"Key {fullName} already exists. First method is {dict[fullName].Name}, new method is {methodRef.Name}.");
+                    LogError($"Key {fullName} already exists. First method is {dict[fullName].Name}, new method is {methodRef.Name}.");
                 else
                     dict.Add(fullName, methodRef);
             }
@@ -173,32 +167,31 @@ namespace FishNet.CodeGenerating.Helping
             }
         }
 
-
         /// <summary>
         /// Creates a Read delegate for readMethodRef and places it within the generated reader/writer constructor.
         /// </summary>
-        /// <param name="readMr"></param>
-        /// <param name="diagnostics"></param>
+        /// <param name = "readMr"></param>
+        /// <param name = "diagnostics"></param>
         internal void CreateInitializeDelegate(MethodReference readMr)
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            ReaderImports ri = base.GetClass<ReaderImports>();
-            WriterProcessor wp = base.GetClass<WriterProcessor>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
+            ReaderImports ri = GetClass<ReaderImports>();
+            WriterProcessor wp = GetClass<WriterProcessor>();
 
             /* If a global serializer is declared for the type
-            * and the method is not the declared serializer then
-            * exit early. */
+             * and the method is not the declared serializer then
+             * exit early. */
             if (wp.DeclaresUseGlobalCustomSerializer(readMr.ReturnType) && readMr.Name.StartsWith(UtilityConstants.GeneratedReaderPrefix))
                 return;
 
-            GeneratedReader_OnLoad_MethodDef.RemoveEndRet(base.Session);
+            GeneratedReader_OnLoad_MethodDef.RemoveEndRet(Session);
 
-            //Check if already exist.
+            // Check if already exist.
             ILProcessor processor = GeneratedReader_OnLoad_MethodDef.Body.GetILProcessor();
             TypeReference dataTypeRef = readMr.ReturnType;
             if (_delegatedTypes.Contains(dataTypeRef))
             {
-                base.LogError($"Generic read already created for {dataTypeRef.FullName}.");
+                LogError($"Generic read already created for {dataTypeRef.FullName}.");
                 return;
             }
             else
@@ -206,7 +199,7 @@ namespace FishNet.CodeGenerating.Helping
                 _delegatedTypes.Add(dataTypeRef);
             }
 
-            //Create a Func<Reader, T> delegate 
+            // Create a Func<Reader, T> delegate 
             processor.Emit(OpCodes.Ldnull);
             processor.Emit(OpCodes.Ldftn, readMr);
 
@@ -214,12 +207,12 @@ namespace FishNet.CodeGenerating.Helping
             MethodReference functionConstructorInstanceMethodRef;
 
             functionGenericInstance = gh.FunctionT2TypeRef.MakeGenericInstanceType(ri.Reader_TypeRef, dataTypeRef);
-            functionConstructorInstanceMethodRef = gh.FunctionT2ConstructorMethodRef.MakeHostInstanceGeneric(base.Session, functionGenericInstance);
+            functionConstructorInstanceMethodRef = gh.FunctionT2ConstructorMethodRef.MakeHostInstanceGeneric(Session, functionGenericInstance);
             processor.Emit(OpCodes.Newobj, functionConstructorInstanceMethodRef);
 
-            //Call delegate to GeneratedReader<T>.Read
+            // Call delegate to GeneratedReader<T>.Read
             GenericInstanceType genericInstance = ri.GenericReader_TypeRef.MakeGenericInstanceType(dataTypeRef);
-            MethodReference genericReadMethodRef = ri.GenericReader_Read_MethodRef.MakeHostInstanceGeneric(base.Session, genericInstance);
+            MethodReference genericReadMethodRef = ri.GenericReader_Read_MethodRef.MakeHostInstanceGeneric(Session, genericInstance);
             processor.Emit(OpCodes.Call, genericReadMethodRef);
 
             processor.Emit(OpCodes.Ret);
@@ -230,40 +223,38 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         private void CreateInstancedReaderExtensions()
         {
-            if (!FishNetILPP.IsFishNetAssembly(base.Session))
+            if (!FishNetILPP.IsFishNetAssembly(Session))
                 return;
 
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            ReaderProcessor gwh = base.GetClass<ReaderProcessor>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
+            ReaderProcessor gwh = GetClass<ReaderProcessor>();
 
-            //List<MethodReference> staticReaders = new List<MethodReference>();
+            // List<MethodReference> staticReaders = new List<MethodReference>();
             foreach (KeyValuePair<string, MethodReference> item in InstancedReaderMethods)
             {
                 MethodReference instancedReadMr = item.Value;
                 if (instancedReadMr.ContainsGenericParameter)
                     continue;
 
-                TypeReference returnTr = base.ImportReference(instancedReadMr.ReturnType);
+                TypeReference returnTr = ImportReference(instancedReadMr.ReturnType);
 
-                MethodDefinition md = new($"InstancedExtension___{instancedReadMr.Name}",
-                    WriterProcessor.GENERATED_METHOD_ATTRIBUTES,
-                    returnTr);
-                //Add extension parameter.
+                MethodDefinition md = new($"InstancedExtension___{instancedReadMr.Name}", WriterProcessor.GENERATED_METHOD_ATTRIBUTES, returnTr);
+                // Add extension parameter.
                 ParameterDefinition readerPd = gh.CreateParameter(md, typeof(Reader), "reader");
-                //Add parameters needed by instanced writer.
-                List<ParameterDefinition> otherPds = md.CreateParameters(base.Session, instancedReadMr.CachedResolve(base.Session));
+                // Add parameters needed by instanced writer.
+                List<ParameterDefinition> otherPds = md.CreateParameters(Session, instancedReadMr.CachedResolve(Session));
                 gh.MakeExtensionMethod(md);
                 //
                 gwh.GeneratedReader_TypeDef.Methods.Add(md);
 
                 ILProcessor processor = md.Body.GetILProcessor();
-                //Load writer.
+                // Load writer.
                 processor.Emit(OpCodes.Ldarg, readerPd);
-                //Load args.
+                // Load args.
                 foreach (ParameterDefinition pd in otherPds)
                     processor.Emit(OpCodes.Ldarg, pd);
-                //Call instanced.
-                processor.Emit(instancedReadMr.GetCallOpCode(base.Session), instancedReadMr);
+                // Call instanced.
+                processor.Emit(instancedReadMr.GetCallOpCode(Session), instancedReadMr);
                 processor.Emit(OpCodes.Ret);
 
                 AddReaderMethod(returnTr, md, false, true);
@@ -276,8 +267,7 @@ namespace FishNet.CodeGenerating.Helping
         internal void RemoveReaderMethod(TypeReference typeRef, bool instanced)
         {
             string fullName = typeRef.GetFullnameWithoutBrackets();
-            Dictionary<string, MethodReference> dict = (instanced) ?
-                InstancedReaderMethods : StaticReaderMethods;
+            Dictionary<string, MethodReference> dict = instanced ? InstancedReaderMethods : StaticReaderMethods;
 
             dict.Remove(fullName);
         }
@@ -289,16 +279,16 @@ namespace FishNet.CodeGenerating.Helping
         {
             ILProcessor processor = methodDef.Body.GetILProcessor();
             List<Instruction> insts = new();
-            MethodReference readMr = GetOrCreateReadMethodReference(readTypeRef);
+            MethodReference readMr = GetOrCreateReadMethodReference(readTypeRef, TypeReferenceTraceText(readTypeRef));
 
             if (readMr != null)
             {
                 TypeReference dataTr = readMr.ReturnType;
-                bool isGlobalSerializer = base.GetClass<WriterProcessor>().DeclaresUseGlobalCustomSerializer(dataTr);
+                bool isGlobalSerializer = GetClass<WriterProcessor>().DeclaresUseGlobalCustomSerializer(dataTr);
 
-                //Make a local variable. 
-                createdVariableDef = base.GetClass<GeneralHelper>().CreateVariable(methodDef, readTypeRef);
-                //pooledReader.ReadBool();
+                // Make a local variable. 
+                createdVariableDef = GetClass<GeneralHelper>().CreateVariable(methodDef, readTypeRef);
+                // pooledReader.ReadBool();
                 insts.Add(processor.Create(OpCodes.Ldarg, readerParameterDef));
 
                 TypeReference valueTr = readTypeRef;
@@ -309,24 +299,24 @@ namespace FishNet.CodeGenerating.Helping
                 {
                     GenericInstanceType git = (GenericInstanceType)valueTr;
                     TypeReference genericTr = git.GenericArguments[0];
-                    readMr = readMr.GetMethodReference(base.Session, genericTr);
+                    readMr = readMr.GetMethodReference(Session, genericTr);
                 }
 
                 if (isGlobalSerializer)
                 {
-                    //Switch out to use Read<T> instead.
-                    TypeReference genericTr = base.ImportReference(readTypeRef);
-                    readMr = _readMethodRef.GetMethodReference(base.Session, genericTr);
+                    // Switch out to use Read<T> instead.
+                    TypeReference genericTr = ImportReference(readTypeRef);
+                    readMr = _readMethodRef.GetMethodReference(Session, genericTr);
                 }
 
                 insts.Add(processor.Create(OpCodes.Call, readMr));
-                //Store into local variable.
+                // Store into local variable.
                 insts.Add(processor.Create(OpCodes.Stloc, createdVariableDef));
                 return insts;
             }
             else
             {
-                base.LogError("Reader not found for " + readTypeRef.ToString());
+                LogError("Reader not found for " + readTypeRef.ToString());
                 createdVariableDef = null;
                 return null;
             }
@@ -334,20 +324,19 @@ namespace FishNet.CodeGenerating.Helping
 
         /// <summary>
         /// Creates a read for fieldRef and populates it into a created variable of class or struct type.
-        /// </summary> 
+        /// </summary>
         internal bool CreateReadIntoClassOrStruct(MethodDefinition readerMd, ParameterDefinition readerPd, MethodReference readMr, VariableDefinition encasingValueVd, FieldReference memberValueFr)
         {
             if (readMr != null)
             {
-                WriterProcessor wp = base.GetClass<WriterProcessor>();
-                bool isGlobalSerializer = (wp.DeclaresUseGlobalCustomSerializer(encasingValueVd.VariableType) || wp.DeclaresUseGlobalCustomSerializer(memberValueFr.FieldType));
+                WriterProcessor wp = GetClass<WriterProcessor>();
+                bool isGlobalSerializer = wp.DeclaresUseGlobalCustomSerializer(encasingValueVd.VariableType) || wp.DeclaresUseGlobalCustomSerializer(memberValueFr.FieldType);
 
                 ILProcessor processor = readerMd.Body.GetILProcessor();
                 /* How to load object instance. If it's a structure
                  * then it must be loaded by address. Otherwise if
                  * class Ldloc can be used. */
-                OpCode loadOpCode = (encasingValueVd.VariableType.IsValueType) ?
-                    OpCodes.Ldloca : OpCodes.Ldloc;
+                OpCode loadOpCode = encasingValueVd.VariableType.IsValueType ? OpCodes.Ldloca : OpCodes.Ldloc;
 
                 /* If generic then find write class for
                  * data type. Currently we only support one generic
@@ -356,33 +345,32 @@ namespace FishNet.CodeGenerating.Helping
                 {
                     GenericInstanceType git = (GenericInstanceType)memberValueFr.FieldType;
                     TypeReference genericTr = git.GenericArguments[0];
-                    readMr = readMr.GetMethodReference(base.Session, genericTr);
+                    readMr = readMr.GetMethodReference(Session, genericTr);
                 }
 
                 processor.Emit(loadOpCode, encasingValueVd);
-                //reader.
+                // reader.
                 processor.Emit(OpCodes.Ldarg, readerPd);
 
                 if (isGlobalSerializer)
                 {
-                    //Switch out to use Read<T> instead.
-                    TypeReference genericTr = base.ImportReference(memberValueFr.FieldType);
-                    readMr = _readMethodRef.GetMethodReference(base.Session, genericTr);
+                    // Switch out to use Read<T> instead.
+                    TypeReference genericTr = ImportReference(memberValueFr.FieldType);
+                    readMr = _readMethodRef.GetMethodReference(Session, genericTr);
                 }
-                //reader.ReadXXXX().
+                // reader.ReadXXXX().
                 processor.Emit(OpCodes.Call, readMr);
-                //obj.Field = result / reader.ReadXXXX().
+                // obj.Field = result / reader.ReadXXXX().
                 processor.Emit(OpCodes.Stfld, memberValueFr);
 
                 return true;
             }
             else
             {
-                base.LogError($"Reader not found for {memberValueFr.FullName}.");
+                LogError($"Reader not found for {memberValueFr.FullName}.");
                 return false;
             }
         }
-
 
         /// <summary>
         /// Creates a read for fieldRef and populates it into a created variable of class or struct type.
@@ -396,8 +384,7 @@ namespace FishNet.CodeGenerating.Helping
                 /* How to load object instance. If it's a structure
                  * then it must be loaded by address. Otherwise if
                  * class Ldloc can be used. */
-                OpCode loadOpCode = (objectVariableDef.VariableType.IsValueType) ?
-                    OpCodes.Ldloca : OpCodes.Ldloc;
+                OpCode loadOpCode = objectVariableDef.VariableType.IsValueType ? OpCodes.Ldloca : OpCodes.Ldloc;
 
                 /* If generic then find write class for
                  * data type. Currently we only support one generic
@@ -406,28 +393,25 @@ namespace FishNet.CodeGenerating.Helping
                 {
                     GenericInstanceType git = (GenericInstanceType)readTr;
                     TypeReference genericTr = git.GenericArguments[0];
-                    readMr = readMr.GetMethodReference(base.Session, genericTr);
+                    readMr = readMr.GetMethodReference(Session, genericTr);
                 }
 
                 processor.Emit(loadOpCode, objectVariableDef);
-                //reader.
+                // reader.
                 processor.Emit(OpCodes.Ldarg, readerPd);
-                //reader.ReadXXXX().
+                // reader.ReadXXXX().
                 processor.Emit(OpCodes.Call, readMr);
-                //obj.Property = result / reader.ReadXXXX().
+                // obj.Property = result / reader.ReadXXXX().
                 processor.Emit(OpCodes.Call, setMr);
 
                 return true;
             }
             else
             {
-                base.LogError($"Reader not found for {readTr.FullName}.");
+                LogError($"Reader not found for {readTr.FullName}.");
                 return false;
             }
         }
-
-
-
 
         /// <summary>
         /// Creates generic write delegates for all currently known write types.
@@ -435,27 +419,25 @@ namespace FishNet.CodeGenerating.Helping
         internal void CreateInitializeDelegates()
         {
             foreach (KeyValuePair<string, MethodReference> item in StaticReaderMethods)
-                base.GetClass<ReaderProcessor>().CreateInitializeDelegate(item.Value);
+                GetClass<ReaderProcessor>().CreateInitializeDelegate(item.Value);
         }
-
 
         /// <summary>
         /// Returns if typeRef has a deserializer.
         /// </summary>
-        /// <param name="typeRef"></param>
-        /// <param name="createMissing"></param>
+        /// <param name = "typeRef"></param>
+        /// <param name = "createMissing"></param>
         /// <returns></returns>
         internal bool HasDeserializer(TypeReference typeRef, bool createMissing)
         {
-            bool result = (GetInstancedReadMethodReference(typeRef) != null) ||
-                (GetStaticReadMethodReference(typeRef) != null) || base.GetClass<WriterProcessor>().DeclaresUseGlobalCustomSerializer(typeRef);
+            bool result = GetInstancedReadMethodReference(typeRef) != null || GetStaticReadMethodReference(typeRef) != null || GetClass<WriterProcessor>().DeclaresUseGlobalCustomSerializer(typeRef);
 
             if (!result && createMissing)
             {
-                if (!base.GetClass<GeneralHelper>().HasNonSerializableAttribute(typeRef.CachedResolve(base.Session)))
+                if (!GetClass<GeneralHelper>().HasNonSerializableAttribute(typeRef.CachedResolve(Session)))
                 {
-                    MethodReference methodRef = CreateReader(typeRef);
-                    result = (methodRef != null);
+                    MethodReference methodRef = CreateReader(typeRef, TypeReferenceTraceText(typeRef));
+                    result = methodRef != null;
                 }
             }
 
@@ -474,7 +456,7 @@ namespace FishNet.CodeGenerating.Helping
             else
                 CreateReadPackedWhole(processor, readerParameterDef, resultVariableDef);
 
-            //If (true or == -1) jmp to endIf. True is null.
+            // If (true or == -1) jmp to endIf. True is null.
             processor.Emit(OpCodes.Ldloc, resultVariableDef);
             if (useBool)
             {
@@ -482,54 +464,53 @@ namespace FishNet.CodeGenerating.Helping
             }
             else
             {
-                //-1
+                // -1
                 processor.Emit(OpCodes.Ldc_I4_M1);
                 processor.Emit(OpCodes.Bne_Un_S, endIf);
             }
-            //Insert null.
+            // Insert null.
             processor.Emit(OpCodes.Ldnull);
-            //Exit method.
+            // Exit method.
             processor.Emit(OpCodes.Ret);
-            //End of if check.
+            // End of if check.
             processor.Append(endIf);
         }
 
         /// <summary>
         /// Creates a call to WriteBoolean with value.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="writerParameterDef"></param>
-        /// <param name="value"></param>
+        /// <param name = "processor"></param>
+        /// <param name = "writerParameterDef"></param>
+        /// <param name = "value"></param>
         internal void CreateReadBool(ILProcessor processor, ParameterDefinition readerParameterDef, VariableDefinition localBoolVariableDef)
         {
-            MethodReference readBoolMethodRef = GetReadMethodReference(base.GetClass<GeneralHelper>().GetTypeReference(typeof(bool)));
+            MethodReference readBoolMethodRef = GetReadMethodReference(GetClass<GeneralHelper>().GetTypeReference(typeof(bool)));
             processor.Emit(OpCodes.Ldarg, readerParameterDef);
-            processor.Emit(readBoolMethodRef.GetCallOpCode(base.Session), readBoolMethodRef);
+            processor.Emit(readBoolMethodRef.GetCallOpCode(Session), readBoolMethodRef);
             processor.Emit(OpCodes.Stloc, localBoolVariableDef);
         }
 
         /// <summary>
         /// Creates a call to WritePackWhole with value.
         /// </summary>
-        /// <param name="processor"></param>
-        /// <param name="value"></param>
+        /// <param name = "processor"></param>
+        /// <param name = "value"></param>
         internal void CreateReadPackedWhole(ILProcessor processor, ParameterDefinition readerParameterDef, VariableDefinition resultVariableDef)
         {
-            //Reader.
+            // Reader.
             processor.Emit(OpCodes.Ldarg, readerParameterDef);
-            //Reader.ReadPackedWhole().
-            MethodReference readPwMr = base.GetClass<ReaderImports>().Reader_ReadPackedWhole_MethodRef;
-            processor.Emit(readPwMr.GetCallOpCode(base.Session), readPwMr);
+            // Reader.ReadPackedWhole().
+            MethodReference readPwMr = GetClass<ReaderImports>().Reader_ReadPackedWhole_MethodRef;
+            processor.Emit(readPwMr.GetCallOpCode(Session), readPwMr);
             processor.Emit(OpCodes.Conv_I4);
             processor.Emit(OpCodes.Stloc, resultVariableDef);
         }
-
 
         #region GetReaderMethodReference.
         /// <summary>
         /// Returns the MethodReference for typeRef.
         /// </summary>
-        /// <param name="typeRef"></param>
+        /// <param name = "typeRef"></param>
         /// <returns></returns>
         internal MethodReference GetInstancedReadMethodReference(TypeReference typeRef)
         {
@@ -537,10 +518,11 @@ namespace FishNet.CodeGenerating.Helping
             InstancedReaderMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
+
         /// <summary>
         /// Returns the MethodReference for typeRef.
         /// </summary>
-        /// <param name="typeRef"></param>
+        /// <param name = "typeRef"></param>
         /// <returns></returns>
         internal MethodReference GetStaticReadMethodReference(TypeReference typeRef)
         {
@@ -548,11 +530,12 @@ namespace FishNet.CodeGenerating.Helping
             StaticReaderMethods.TryGetValue(fullName, out MethodReference methodRef);
             return methodRef;
         }
+
         /// <summary>
         /// Returns the MethodReference for typeRef favoring instanced or static. Returns null if not found.
         /// </summary>
-        /// <param name="typeRef"></param>
-        /// <param name="favorInstanced"></param>
+        /// <param name = "typeRef"></param>
+        /// <param name = "favorInstanced"></param>
         /// <returns></returns>
         internal MethodReference GetReadMethodReference(TypeReference typeRef)
         {
@@ -573,37 +556,38 @@ namespace FishNet.CodeGenerating.Helping
 
             return result;
         }
+
         /// <summary>
         /// Returns the MethodReference for typeRef favoring instanced or static.
         /// </summary>
-        /// <param name="typeRef"></param>
-        /// <param name="favorInstanced"></param>
+        /// <param name = "typeRef"></param>
+        /// <param name = "favorInstanced"></param>
         /// <returns></returns>
-        internal MethodReference GetOrCreateReadMethodReference(TypeReference typeRef)
+        internal MethodReference GetOrCreateReadMethodReference(TypeReference typeRef, string typeTrace)
         {
 #pragma warning disable CS0219
             bool favorInstanced = false;
 #pragma warning restore CS0219
-            //Try to get existing writer, if not present make one.
+            // Try to get existing writer, if not present make one.
             MethodReference readMethodRef = GetReadMethodReference(typeRef);
             if (readMethodRef == null)
-                readMethodRef = CreateReader(typeRef);
+                readMethodRef = CreateReader(typeRef, typeTrace);
 
-            //If still null then return could not be generated.
+            // If still null then return could not be generated.
             if (readMethodRef == null)
             {
-                base.LogError($"Could not create deserializer for {typeRef.FullName}.");
+                LogError($"Could not create deserializer for {typeRef.FullName}.");
             }
-            //Otherwise, check if generic and create writes for generic parameters.
+            // Otherwise, check if generic and create writes for generic parameters.
             else if (typeRef.IsGenericInstance)
             {
                 GenericInstanceType git = (GenericInstanceType)typeRef;
                 foreach (TypeReference item in git.GenericArguments)
                 {
-                    MethodReference result = GetOrCreateReadMethodReference(item);
+                    MethodReference result = GetOrCreateReadMethodReference(item, TypeReferenceTraceText(typeRef));
                     if (result == null)
                     {
-                        base.LogError($"Could not create deserializer for {item.FullName}.");
+                        LogError($"Could not create deserializer for {item.FullName}.");
                         return null;
                     }
                 }
@@ -613,67 +597,65 @@ namespace FishNet.CodeGenerating.Helping
         }
         #endregion
 
-
         /// <summary>
-        /// Generates a reader for objectTypeReference if one does not already exist. 
+        /// Generates a reader for objectTypeReference if one does not already exist.
         /// </summary>
-        /// <param name="objectTr"></param>
+        /// <param name = "objectTr"></param>
         /// <returns></returns>
-        internal MethodReference CreateReader(TypeReference objectTr)
+        internal MethodReference CreateReader(TypeReference objectTr, string typeTrace)
         {
             MethodReference resultMr = null;
             TypeDefinition objectTypeDef;
 
-            SerializerType serializerType = base.GetClass<GeneratorHelper>().GetSerializerType(objectTr, false, out objectTypeDef);
+            SerializerType serializerType = GetClass<GeneratorHelper>().GetSerializerType(objectTr, false, out objectTypeDef, typeTrace);
             if (serializerType != SerializerType.Invalid)
             {
-                //Array.
+                // Array.
                 if (serializerType == SerializerType.Array)
                     resultMr = CreateArrayReaderMethodReference(objectTr);
-                //Enum.
+                // Enum.
                 else if (serializerType == SerializerType.Enum)
                     resultMr = CreateEnumReaderMethodDefinition(objectTr);
-                else if (serializerType == SerializerType.Dictionary
-                    || serializerType == SerializerType.List)
+                else if (serializerType == SerializerType.Dictionary || serializerType == SerializerType.List || serializerType == SerializerType.HashSet)
                     resultMr = CreateGenericCollectionReaderMethodReference(objectTr, serializerType);
-                //NetworkBehaviour.
+                // NetworkBehaviour.
                 else if (serializerType == SerializerType.NetworkBehaviour)
                     resultMr = GetNetworkBehaviourReaderMethodReference(objectTr);
-                //Nullable.
+                // Nullable.
                 else if (serializerType == SerializerType.Nullable)
                     resultMr = CreateNullableReaderMethodReference(objectTr);
-                //Class or struct.
+                // Class or struct.
                 else if (serializerType == SerializerType.ClassOrStruct)
                     resultMr = CreateClassOrStructReaderMethodReference(objectTr);
             }
 
-            //If was not created.
+            // If was not created.
             if (resultMr == null)
                 RemoveFromStaticReaders(objectTr);
 
             return resultMr;
         }
 
-
         /// <summary>
         /// Removes from static writers.
         /// </summary>
         private void RemoveFromStaticReaders(TypeReference tr)
         {
-            base.GetClass<ReaderProcessor>().RemoveReaderMethod(tr, false);
+            GetClass<ReaderProcessor>().RemoveReaderMethod(tr, false);
         }
+
         /// <summary>
         /// Adds to static writers.
         /// </summary>
         private void AddToStaticReaders(TypeReference tr, MethodReference mr)
         {
-            base.GetClass<ReaderProcessor>().AddReaderMethod(tr, mr.CachedResolve(base.Session), false, true);
+            GetClass<ReaderProcessor>().AddReaderMethod(tr, mr.CachedResolve(Session), false, true);
         }
 
         /// <summary>
         /// Generates a reader for objectTypeReference if one does not already exist.
         /// </summary>
-        /// <param name="objectTr"></param>
+        /// <param name = "objectTr"></param>
         /// <returns></returns>
         private MethodReference CreateEnumReaderMethodDefinition(TypeReference objectTr)
         {
@@ -682,27 +664,26 @@ namespace FishNet.CodeGenerating.Helping
 
             ILProcessor processor = createdReaderMd.Body.GetILProcessor();
 
-            //Get type reference for enum type. eg byte int
-            TypeReference underlyingTypeRef = objectTr.CachedResolve(base.Session).GetEnumUnderlyingTypeReference();
-            //Get read method for underlying type.
-            MethodReference readMethodRef = base.GetClass<ReaderProcessor>().GetOrCreateReadMethodReference(underlyingTypeRef);
+            // Get type reference for enum type. eg byte int
+            TypeReference underlyingTypeRef = objectTr.CachedResolve(Session).GetEnumUnderlyingTypeReference();
+            // Get read method for underlying type.
+            MethodReference readMethodRef = GetClass<ReaderProcessor>().GetOrCreateReadMethodReference(underlyingTypeRef, TypeReferenceTraceText(objectTr));
             if (readMethodRef == null)
                 return null;
 
             ParameterDefinition readerParameterDef = createdReaderMd.Parameters[0];
-            //reader.ReadXXX().
+            // reader.ReadXXX().
             processor.Emit(OpCodes.Ldarg, readerParameterDef);
             processor.Emit(OpCodes.Call, readMethodRef);
 
             processor.Emit(OpCodes.Ret);
-            return base.ImportReference(createdReaderMd);
+            return ImportReference(createdReaderMd);
         }
-
 
         /// <summary>
         /// Creates a read for a class type which inherits NetworkBehaviour.
         /// </summary>
-        /// <param name="objectTr"></param>
+        /// <param name = "objectTr"></param>
         /// <returns></returns>
         private MethodReference GetNetworkBehaviourReaderMethodReference(TypeReference objectTr)
         {
@@ -710,13 +691,13 @@ namespace FishNet.CodeGenerating.Helping
             AddToStaticReaders(objectTr, createdReaderMd);
 
             ILProcessor processor = createdReaderMd.Body.GetILProcessor();
-            TypeReference networkBehaviourTypeRef = base.GetClass<GeneralHelper>().GetTypeReference(typeof(NetworkBehaviour));
+            TypeReference networkBehaviourTypeRef = GetClass<GeneralHelper>().GetTypeReference(typeof(NetworkBehaviour));
 
             processor.Emit(OpCodes.Ldarg_0);
-            processor.Emit(OpCodes.Call, base.GetClass<ReaderProcessor>().GetReadMethodReference(networkBehaviourTypeRef));
+            processor.Emit(OpCodes.Call, GetClass<ReaderProcessor>().GetReadMethodReference(networkBehaviourTypeRef));
             processor.Emit(OpCodes.Castclass, objectTr);
             processor.Emit(OpCodes.Ret);
-            return base.ImportReference(createdReaderMd);
+            return ImportReference(createdReaderMd);
         }
 
         /// <summary>
@@ -724,108 +705,107 @@ namespace FishNet.CodeGenerating.Helping
         /// </summary>
         private MethodReference CreateArrayReaderMethodReference(TypeReference objectTr)
         {
-            ReaderImports ri = base.GetClass<ReaderImports>();
+            ReaderImports ri = GetClass<ReaderImports>();
             TypeReference valueTr = objectTr.GetElementType();
 
-            //Write not found.
-            if (GetOrCreateReadMethodReference(valueTr) == null)
+            // Write not found.
+            if (GetOrCreateReadMethodReference(valueTr, TypeReferenceTraceText(objectTr)) == null)
                 return null;
 
             MethodDefinition createdMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdMd);
 
-            //Find instanced writer to use.
+            // Find instanced writer to use.
             MethodReference instancedWriteMr = ri.Reader_ReadArray_MethodRef;
-            //Make generic.
+            // Make generic.
             GenericInstanceMethod writeGim = instancedWriteMr.MakeGenericMethod(new TypeReference[] { valueTr });
             CallInstancedReader(createdMd, writeGim);
 
-            return base.ImportReference(createdMd);
+            return ImportReference(createdMd);
         }
-
 
         /// <summary>
         /// Creates a reader for a dictionary.
         /// </summary>
         private MethodReference CreateDictionaryReaderMethodReference(TypeReference objectTr)
         {
-            ReaderProcessor rp = base.GetClass<ReaderProcessor>();
+            ReaderProcessor rp = GetClass<ReaderProcessor>();
 
             GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
-            base.ImportReference(genericInstance);
+            ImportReference(genericInstance);
             TypeReference keyTr = genericInstance.GenericArguments[0];
             TypeReference valueTr = genericInstance.GenericArguments[1];
 
             /* Try to get instanced first for collection element type, if it doesn't exist then try to
              * get/or make a one. */
-            MethodReference keyWriteMr = rp.GetOrCreateReadMethodReference(keyTr);
-            MethodReference valueWriteMr = rp.GetOrCreateReadMethodReference(valueTr);
+            MethodReference keyWriteMr = rp.GetOrCreateReadMethodReference(keyTr, TypeReferenceTraceText(objectTr));
+            MethodReference valueWriteMr = rp.GetOrCreateReadMethodReference(valueTr, TypeReferenceTraceText(objectTr));
             if (keyWriteMr == null || valueWriteMr == null)
                 return null;
 
             MethodDefinition createdReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdReaderMd);
 
-            GenericInstanceMethod readDictGim = base.GetClass<ReaderImports>().Reader_ReadDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
+            GenericInstanceMethod readDictGim = GetClass<ReaderImports>().Reader_ReadDictionary_MethodRef.MakeGenericMethod(new TypeReference[] { keyTr, valueTr });
             CallInstancedReader(createdReaderMd, readDictGim);
 
-            return base.ImportReference(createdReaderMd);
+            return ImportReference(createdReaderMd);
         }
-
 
         /// <summary>
         /// Creates a writer for a variety of generic collections.
         /// </summary>
         private MethodReference CreateGenericCollectionReaderMethodReference(TypeReference objectTr, SerializerType st)
         {
-            ReaderImports ri = base.GetClass<ReaderImports>();
-            //Make value field generic.
+            ReaderImports ri = GetClass<ReaderImports>();
+            // Make value field generic.
             GenericInstanceType genericInstance = (GenericInstanceType)objectTr;
-            base.ImportReference(genericInstance);
+            ImportReference(genericInstance);
             TypeReference valueTr = genericInstance.GenericArguments[0];
 
             List<TypeReference> genericArguments = new();
-            //Make sure all arguments have writers.
+            // Make sure all arguments have writers.
             foreach (TypeReference gaTr in genericInstance.GenericArguments)
             {
-                //Writer not found.
-                if (GetOrCreateReadMethodReference(gaTr) == null)
+                // Writer not found.
+                if (GetOrCreateReadMethodReference(gaTr, TypeReferenceTraceText(objectTr)) == null)
                 {
-                    base.LogError($"Reader could not be found or created for type {gaTr.FullName}.");
+                    LogError($"Reader could not be found or created for type {gaTr.FullName}.");
                     return null;
                 }
                 genericArguments.Add(gaTr);
             }
-            MethodReference valueWriteMr = GetOrCreateReadMethodReference(valueTr);
+            MethodReference valueWriteMr = GetOrCreateReadMethodReference(valueTr, TypeReferenceTraceText(objectTr));
             if (valueWriteMr == null)
                 return null;
 
             MethodDefinition createdMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdMd);
 
-            //Find instanced writer to use.
+            // Find instanced writer to use.
             MethodReference instancedReadMr;
             if (st == SerializerType.Dictionary)
                 instancedReadMr = ri.Reader_ReadDictionary_MethodRef;
             else if (st == SerializerType.List)
                 instancedReadMr = ri.Reader_ReadList_MethodRef;
+            else if (st == SerializerType.HashSet)
+                instancedReadMr = ri.Reader_ReadHashSet_MethodRef;
             else
                 instancedReadMr = null;
 
-            //Not found.
+            // Not found.
             if (instancedReadMr == null)
             {
-                base.LogError($"Instanced reader not found for SerializerType {st} on object {objectTr.Name}.");
+                LogError($"Instanced reader not found for SerializerType {st} on object {objectTr.Name}.");
                 return null;
             }
 
-            //Make generic.
+            // Make generic.
             GenericInstanceMethod writeGim = instancedReadMr.MakeGenericMethod(genericArguments.ToArray());
             CallInstancedReader(createdMd, writeGim);
 
-            return base.ImportReference(createdMd);
+            return ImportReference(createdMd);
         }
-
 
         /// <summary>
         /// Calls an instanced writer from a static writer.
@@ -835,15 +815,15 @@ namespace FishNet.CodeGenerating.Helping
             ParameterDefinition readerPd = staticReaderMd.Parameters[0];
             ILProcessor processor = staticReaderMd.Body.GetILProcessor();
             processor.Emit(OpCodes.Ldarg, readerPd);
-            processor.Emit(instancedReaderMr.GetCallOpCode(base.Session), instancedReaderMr);
+            processor.Emit(instancedReaderMr.GetCallOpCode(Session), instancedReaderMr);
             processor.Emit(OpCodes.Ret);
         }
 
         ///// <summary>
         ///// Create a reader for a list.
         ///// </summary>
-        //private MethodReference CreateGenericTypeReader(TypeReference objectTr, SerializerType st)
-        //{
+        // private MethodReference CreateGenericTypeReader(TypeReference objectTr, SerializerType st)
+        // {
         //    ReaderProcessor rp = base.GetClass<ReaderProcessor>();
 
         //    if (st != SerializerType.List && st != SerializerType.ListCache)
@@ -875,42 +855,41 @@ namespace FishNet.CodeGenerating.Helping
 
         //    ParameterDefinition readerPd = typedReaderMd.Parameters[0];
 
-        //    //Find add method for list.
+        //    // Find add method for list.
         //    MethodReference readerGim = readerMd.GetMethodReference(base.Session, elementTr);
         //    ILProcessor processor = readerMd.CachedResolve(base.Session).Body.GetILProcessor();
         //    processor.Emit(OpCodes.Ldarg, readerPd);
         //    processor.Emit(OpCodes.Call, readerGim);
 
         //    return elementReadMr;
-        //}
-
+        // }
 
         /// <summary>
         /// Creates a reader method for a struct or class objectTypeRef.
         /// </summary>
-        /// <param name="objectTr"></param>
+        /// <param name = "objectTr"></param>
         /// <returns></returns>
         private MethodReference CreateNullableReaderMethodReference(TypeReference objectTr)
         {
-            ReaderProcessor rp = base.GetClass<ReaderProcessor>();
+            ReaderProcessor rp = GetClass<ReaderProcessor>();
 
             GenericInstanceType objectGit = objectTr as GenericInstanceType;
             TypeReference valueTr = objectGit.GenericArguments[0];
 
-            //Make sure object has a ctor.
-            MethodDefinition objectCtorMd = objectTr.GetConstructor(base.Session, 1);
+            // Make sure object has a ctor.
+            MethodDefinition objectCtorMd = objectTr.GetConstructor(Session, 1);
             if (objectCtorMd == null)
             {
-                base.LogError($"{objectTr.Name} can't be deserialized because the nullable type does not have a constructor.");
+                LogError($"{objectTr.Name} can't be deserialized because the nullable type does not have a constructor.");
                 return null;
             }
 
-            //Get the reader for the value.
-            MethodReference valueReaderMr = rp.GetOrCreateReadMethodReference(valueTr);
+            // Get the reader for the value.
+            MethodReference valueReaderMr = rp.GetOrCreateReadMethodReference(valueTr, TypeReferenceTraceText(objectTr));
             if (valueReaderMr == null)
                 return null;
 
-            TypeDefinition objectTd = objectTr.CachedResolve(base.Session);
+            TypeDefinition objectTd = objectTr.CachedResolve(Session);
             MethodDefinition createdReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdReaderMd);
 
@@ -918,145 +897,142 @@ namespace FishNet.CodeGenerating.Helping
 
             ParameterDefinition readerPd = createdReaderMd.Parameters[0];
             // create local for return value
-            VariableDefinition resultVd = base.GetClass<GeneralHelper>().CreateVariable(createdReaderMd, objectTr);
+            VariableDefinition resultVd = GetClass<GeneralHelper>().CreateVariable(createdReaderMd, objectTr);
 
-            //Read if null into boolean.
-            VariableDefinition nullBoolVd = createdReaderMd.CreateVariable(base.Session, typeof(bool));
+            // Read if null into boolean.
+            VariableDefinition nullBoolVd = createdReaderMd.CreateVariable(Session, typeof(bool));
             rp.CreateReadBool(processor, readerPd, nullBoolVd);
 
             Instruction afterReturnNullInst = processor.Create(OpCodes.Nop);
             processor.Emit(OpCodes.Ldloc, nullBoolVd);
             processor.Emit(OpCodes.Brfalse, afterReturnNullInst);
-            //Return a null result.
-            base.GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, resultVd, objectTd);
+            // Return a null result.
+            GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, resultVd, objectTd);
             processor.Emit(OpCodes.Ldloc, resultVd);
             processor.Emit(OpCodes.Ret);
             processor.Append(afterReturnNullInst);
 
-            MethodReference initMr = objectCtorMd.MakeHostInstanceGeneric(base.Session, objectGit);
+            MethodReference initMr = objectCtorMd.MakeHostInstanceGeneric(Session, objectGit);
             processor.Emit(OpCodes.Ldarg, readerPd);
             processor.Emit(OpCodes.Call, valueReaderMr);
             processor.Emit(OpCodes.Newobj, initMr);
             processor.Emit(OpCodes.Ret);
 
-            return base.ImportReference(createdReaderMd);
+            return ImportReference(createdReaderMd);
         }
-
 
         /// <summary>
         /// Creates a reader method for a struct or class objectTypeRef.
         /// </summary>
-        /// <param name="objectTr"></param>
+        /// <param name = "objectTr"></param>
         /// <returns></returns>
         private MethodReference CreateClassOrStructReaderMethodReference(TypeReference objectTr)
         {
             MethodDefinition createdReaderMd = CreateStaticReaderStubMethodDefinition(objectTr);
             AddToStaticReaders(objectTr, createdReaderMd);
 
-            TypeDefinition objectTypeDef = objectTr.CachedResolve(base.Session);
+            TypeDefinition objectTypeDef = objectTr.CachedResolve(Session);
             ILProcessor processor = createdReaderMd.Body.GetILProcessor();
 
             ParameterDefinition readerParameterDef = createdReaderMd.Parameters[0];
             // create local for return value
-            VariableDefinition objectVariableDef = base.GetClass<GeneralHelper>().CreateVariable(createdReaderMd, objectTr);
+            VariableDefinition objectVariableDef = GetClass<GeneralHelper>().CreateVariable(createdReaderMd, objectTr);
 
-            //If not a value type create a return null check.
+            // If not a value type create a return null check.
             if (!objectTypeDef.IsValueType)
             {
-                VariableDefinition nullVariableDef = base.GetClass<GeneralHelper>().CreateVariable(createdReaderMd, typeof(bool));
-                //Load packed whole value into sizeVariableDef, exit if null indicator.
-                base.GetClass<ReaderProcessor>().CreateRetOnNull(processor, readerParameterDef, nullVariableDef, true);
+                VariableDefinition nullVariableDef = GetClass<GeneralHelper>().CreateVariable(createdReaderMd, typeof(bool));
+                // Load packed whole value into sizeVariableDef, exit if null indicator.
+                GetClass<ReaderProcessor>().CreateRetOnNull(processor, readerParameterDef, nullVariableDef, true);
             }
 
             /* If here then not null. */
-            //See if to use non-alloc reads.
-            if (objectTr.CachedResolve(base.Session).HasCustomAttribute<ReadUnallocatedAttribute>())
+            // See if to use non-alloc reads.
+            if (objectTr.CachedResolve(Session).HasCustomAttribute<ReadUnallocatedAttribute>())
             {
-                //Make a new instance of object type and set to objectVariableDef.
-                base.GetClass<GeneralHelper>().SetVariableDefinitionFromCaches(processor, objectVariableDef, objectTypeDef);
+                // Make a new instance of object type and set to objectVariableDef.
+                GetClass<GeneralHelper>().SetVariableDefinitionFromCaches(processor, objectVariableDef, objectTypeDef);
             }
             else
             {
-                //Make a new instance of object type and set to objectVariableDef.
-                base.GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
+                // Make a new instance of object type and set to objectVariableDef.
+                GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
             }
 
             if (!ReadFieldsAndProperties(createdReaderMd, readerParameterDef, objectVariableDef, objectTr))
                 return null;
-            /* //codegen scriptableobjects seem to climb too high up to UnityEngine.Object when
+            /* // codegen scriptableobjects seem to climb too high up to UnityEngine.Object when
              * creating serializers/deserialized. Make sure this is not possible. */
 
-            //Load result and return it.
+            // Load result and return it.
             processor.Emit(OpCodes.Ldloc, objectVariableDef);
             processor.Emit(OpCodes.Ret);
 
-            return base.ImportReference(createdReaderMd);
+            return ImportReference(createdReaderMd);
         }
-
 
         /// <summary>
         /// Reads all fields of objectTypeRef.
-        /// </summary>  
+        /// </summary>
         private bool ReadFieldsAndProperties(MethodDefinition readerMd, ParameterDefinition readerPd, VariableDefinition encasingValueVd, TypeReference objectTr)
         {
-            ReaderProcessor rp = base.GetClass<ReaderProcessor>();
+            ReaderProcessor rp = GetClass<ReaderProcessor>();
 
-            //This probably isn't needed but I'm too afraid to remove it.
-            if (objectTr.Module != base.Module)
-                objectTr = base.ImportReference(objectTr.CachedResolve(base.Session));
+            // This probably isn't needed but I'm too afraid to remove it.
+            if (objectTr.Module != Module)
+                objectTr = ImportReference(objectTr.CachedResolve(Session));
 
-            //Fields.
-            foreach (FieldDefinition fieldDef in objectTr.FindAllSerializableFields(base.Session
-                , ReaderProcessor.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
+            string traceText;
+            
+            // Fields.
+            foreach (FieldDefinition fieldDef in objectTr.FindAllSerializableFields(Session, EXCLUDED_AUTO_SERIALIZER_TYPES, EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                FieldReference importedFr = base.ImportReference(fieldDef);
-                if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr))
+                traceText = FieldDefinitionTraceText(fieldDef);
+                
+                FieldReference importedFr = ImportReference(fieldDef);
+                if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr, traceText))
                     rp.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, encasingValueVd, importedFr);
             }
 
-            //Properties.
-            foreach (PropertyDefinition propertyDef in objectTr.FindAllSerializableProperties(base.Session
-                , ReaderProcessor.EXCLUDED_AUTO_SERIALIZER_TYPES, ReaderProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
+            // Properties.
+            foreach (PropertyDefinition propertyDef in objectTr.FindAllSerializableProperties(Session, EXCLUDED_AUTO_SERIALIZER_TYPES, EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr))
+                traceText = PropertyDefinitionTraceText(propertyDef);
+                
+                if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr, traceText))
                 {
-                    MethodReference setMr = base.Module.ImportReference(propertyDef.SetMethod);
+                    MethodReference setMr = Module.ImportReference(propertyDef.SetMethod);
                     rp.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, encasingValueVd, setMr, propertyDef.PropertyType);
                 }
             }
 
-            //Gets or creates writer method and outputs it. Returns true if method is found or created.
-            bool GetReadMethod(TypeReference tr, out MethodReference readMr)
+            // Gets or creates writer method and outputs it. Returns true if method is found or created.
+            bool GetReadMethod(TypeReference tr, out MethodReference readMr, string lTraceText)
             {
-                tr = base.ImportReference(tr);
-                readMr = rp.GetOrCreateReadMethodReference(tr);
-                return (readMr != null);
+                tr = ImportReference(tr);
+                readMr = rp.GetOrCreateReadMethodReference(tr, lTraceText);
+                return readMr != null;
             }
 
             return true;
         }
 
-
         /// <summary>
         /// Creates the stub for a new reader method.
         /// </summary>
-        /// <param name="objectTypeRef"></param>
+        /// <param name = "objectTypeRef"></param>
         /// <returns></returns>
         public MethodDefinition CreateStaticReaderStubMethodDefinition(TypeReference objectTypeRef, string nameExtension = WriterProcessor.GENERATED_WRITER_NAMESPACE)
         {
             string methodName = $"{UtilityConstants.GeneratedReaderPrefix}{objectTypeRef.FullName}{nameExtension}s";
             // create new reader for this type
-            TypeDefinition readerTypeDef = base.GetClass<GeneralHelper>().GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_READERS_CLASS_NAME, null);
-            MethodDefinition readerMethodDef = readerTypeDef.AddMethod(methodName,
-                    ReaderProcessor.GENERATED_METHOD_ATTRIBUTES,
-                    objectTypeRef);
+            TypeDefinition readerTypeDef = GetClass<GeneralHelper>().GetOrCreateClass(out _, GENERATED_TYPE_ATTRIBUTES, GENERATED_READERS_CLASS_NAME, null);
+            MethodDefinition readerMethodDef = readerTypeDef.AddMethod(methodName, GENERATED_METHOD_ATTRIBUTES, objectTypeRef);
 
-            base.GetClass<GeneralHelper>().CreateParameter(readerMethodDef, base.GetClass<ReaderImports>().Reader_TypeRef, "reader");
+            GetClass<GeneralHelper>().CreateParameter(readerMethodDef, GetClass<ReaderImports>().Reader_TypeRef, "reader");
             readerMethodDef.Body.InitLocals = true;
 
             return readerMethodDef;
         }
-
-
     }
 }

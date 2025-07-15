@@ -8,7 +8,7 @@ namespace FishNet.CodeGenerating.Helping
     internal class NetworkConnectionImports : CodegenBase
     {
         #region Reflection references.
-        //Names.
+        // Names.
         internal string FullName;
         public MethodReference IsLocalClient_Get_MethodRef;
         #endregion
@@ -22,7 +22,7 @@ namespace FishNet.CodeGenerating.Helping
         public override bool ImportReferences()
         {
             Type type = typeof(NetworkConnection);
-            base.ImportReference(type);
+            ImportReference(type);
 
             FullName = type.FullName;
 
@@ -30,13 +30,12 @@ namespace FishNet.CodeGenerating.Helping
             {
                 if (pi.Name == nameof(NetworkConnection.IsLocalClient))
                 {
-                    IsLocalClient_Get_MethodRef = base.ImportReference(pi.GetMethod);
+                    IsLocalClient_Get_MethodRef = ImportReference(pi.GetMethod);
                     break;
                 }
             }
 
             return true;
         }
-
     }
 }

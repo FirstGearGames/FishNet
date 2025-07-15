@@ -77,7 +77,7 @@ namespace FishNet.Serializing
             bool bLargerThanA = ReadBoolean();
             ulong diff = ReadUnsignedPackedWhole();
 
-            return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+            return bLargerThanA ? valueA + diff : valueA - diff;
         }
 
         /// <summary>
@@ -87,7 +87,7 @@ namespace FishNet.Serializing
         private long ReadDifference8_16_32(long valueA)
         {
             long diff = ReadSignedPackedWhole();
-            return (valueA + diff);
+            return valueA + diff;
         }
         #endregion
 
@@ -100,18 +100,18 @@ namespace FishNet.Serializing
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
                 if (unsigned)
-                    return (ReadUInt8Unpacked() / (float)DOUBLE_ACCURACY);
+                    return ReadUInt8Unpacked() / (float)DOUBLE_ACCURACY;
                 else
-                    return (ReadInt8Unpacked() / (float)DOUBLE_ACCURACY);
+                    return ReadInt8Unpacked() / (float)DOUBLE_ACCURACY;
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
             {
                 if (unsigned)
-                    return (ReadUInt16Unpacked() / (float)DOUBLE_ACCURACY);
+                    return ReadUInt16Unpacked() / (float)DOUBLE_ACCURACY;
                 else
-                    return (ReadInt16Unpacked() / (float)DOUBLE_ACCURACY);
+                    return ReadInt16Unpacked() / (float)DOUBLE_ACCURACY;
             }
-            //Everything else is unpacked.
+            // Everything else is unpacked.
             else
             {
                 return ReadSingleUnpacked();
@@ -128,11 +128,11 @@ namespace FishNet.Serializing
             if (unsigned)
             {
                 bool bLargerThanA = dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger);
-                return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+                return bLargerThanA ? valueA + diff : valueA - diff;
             }
             else
             {
-                return (valueA + diff);
+                return valueA + diff;
             }
         }
 
@@ -169,25 +169,25 @@ namespace FishNet.Serializing
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
                 if (unsigned)
-                    return (ReadUInt8Unpacked() / DOUBLE_ACCURACY);
+                    return ReadUInt8Unpacked() / DOUBLE_ACCURACY;
                 else
-                    return (ReadInt8Unpacked() / DOUBLE_ACCURACY);
+                    return ReadInt8Unpacked() / DOUBLE_ACCURACY;
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
             {
                 if (unsigned)
-                    return (ReadUInt16Unpacked() / DOUBLE_ACCURACY);
+                    return ReadUInt16Unpacked() / DOUBLE_ACCURACY;
                 else
-                    return (ReadInt16Unpacked() / DOUBLE_ACCURACY);
+                    return ReadInt16Unpacked() / DOUBLE_ACCURACY;
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
             {
                 if (unsigned)
-                    return (ReadUInt32Unpacked() / DOUBLE_ACCURACY);
+                    return ReadUInt32Unpacked() / DOUBLE_ACCURACY;
                 else
-                    return (ReadInt32Unpacked() / DOUBLE_ACCURACY);
+                    return ReadInt32Unpacked() / DOUBLE_ACCURACY;
             }
-            //Unpacked.
+            // Unpacked.
             else if (dpt.FastContains(UDeltaPrecisionType.Unset))
             {
                 return ReadDoubleUnpacked();
@@ -205,16 +205,16 @@ namespace FishNet.Serializing
         public double ReadDeltaDouble(UDeltaPrecisionType dpt, double valueA, bool unsigned)
         {
             double diff = ReadDeltaDouble(dpt, unsigned);
-            //8.
+            // 8.
 
             if (unsigned)
             {
                 bool bLargerThanA = dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger);
-                return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+                return bLargerThanA ? valueA + diff : valueA - diff;
             }
             else
             {
-                return (valueA + diff);
+                return valueA + diff;
             }
         }
 
@@ -251,32 +251,32 @@ namespace FishNet.Serializing
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
                 if (unsigned)
-                    return (ReadUInt8Unpacked() / DECIMAL_ACCURACY);
+                    return ReadUInt8Unpacked() / DECIMAL_ACCURACY;
                 else
-                    return (ReadInt8Unpacked() / DECIMAL_ACCURACY);
+                    return ReadInt8Unpacked() / DECIMAL_ACCURACY;
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
             {
                 if (unsigned)
-                    return (ReadUInt16Unpacked() / DECIMAL_ACCURACY);
+                    return ReadUInt16Unpacked() / DECIMAL_ACCURACY;
                 else
-                    return (ReadInt16Unpacked() / DECIMAL_ACCURACY);
+                    return ReadInt16Unpacked() / DECIMAL_ACCURACY;
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
             {
                 if (unsigned)
-                    return (ReadUInt32Unpacked() / DECIMAL_ACCURACY);
+                    return ReadUInt32Unpacked() / DECIMAL_ACCURACY;
                 else
-                    return (ReadInt32Unpacked() / DECIMAL_ACCURACY);
+                    return ReadInt32Unpacked() / DECIMAL_ACCURACY;
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt64))
             {
                 if (unsigned)
-                    return (ReadUInt64Unpacked() / DECIMAL_ACCURACY);
+                    return ReadUInt64Unpacked() / DECIMAL_ACCURACY;
                 else
-                    return (ReadInt64Unpacked() / DECIMAL_ACCURACY);
+                    return ReadInt64Unpacked() / DECIMAL_ACCURACY;
             }
-            //Unpacked.
+            // Unpacked.
             else if (dpt.FastContains(UDeltaPrecisionType.Unset))
             {
                 return ReadDecimalUnpacked();
@@ -298,11 +298,11 @@ namespace FishNet.Serializing
             if (unsigned)
             {
                 bool bLargerThanA = dpt.FastContains(UDeltaPrecisionType.NextValueIsLarger);
-                return (bLargerThanA) ? (valueA + diff) : (valueA - diff);
+                return bLargerThanA ? valueA + diff : valueA - diff;
             }
             else
             {
-                return (valueA + diff);
+                return valueA + diff;
             }
         }
 
@@ -399,7 +399,7 @@ namespace FishNet.Serializing
         {
             int startRemaining = Remaining;
 
-            //Number of entries written.
+            // Number of entries written.
             int count = (int)ReadUInt8Unpacked();
             if (collection == null || collection.Length < count)
                 collection = new T[count];
@@ -420,8 +420,8 @@ namespace FishNet.Serializing
             T prev = lastReadReplicate;
             for (int i = 0; i < count; i++)
             {
-                //Tick read is for.
-                uint readTick = (tick + (uint)i);
+                // Tick read is for.
+                uint readTick = tick + (uint)i;
                 /* If readTick is equal or lesser than lastReadReplicate
                  * then there is no reason to process the data other than getting
                  * it out of the reader. */
@@ -432,11 +432,11 @@ namespace FishNet.Serializing
                 else
                 {
                     T value = ReadDelta(prev);
-                    //Apply tick.
+                    // Apply tick.
                     value.SetTick(readTick);
-                    //Assign to collection.
+                    // Assign to collection.
                     collection[i] = value;
-                    //Update previous.
+                    // Update previous.
                     prev = value;
                 }
             }

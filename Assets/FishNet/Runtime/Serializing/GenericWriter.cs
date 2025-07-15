@@ -28,11 +28,11 @@ namespace FishNet.Serializing
 
             bool isGenerated = value.Method.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix);
 
-            //If not generated then unset any generated delta serializer.
+            // If not generated then unset any generated delta serializer.
             if (!isGenerated && GenericDeltaWriter<T>.HasCustomSerializer)
                 GenericDeltaWriter<T>.Write = null;
 
-            //Set has custom serializer if value being used is not a generated method.
+            // Set has custom serializer if value being used is not a generated method.
             HasCustomSerializer = !isGenerated;
             Write = value;
         }

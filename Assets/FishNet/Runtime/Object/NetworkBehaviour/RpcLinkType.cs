@@ -3,8 +3,6 @@ using FishNet.Transporting;
 
 namespace FishNet.Object
 {
-
-
     internal struct RpcLinkType
     {
         /// <summary>
@@ -27,5 +25,4 @@ namespace FishNet.Object
             LinkPacketId = linkPacketId;
         }
     }
-
 }

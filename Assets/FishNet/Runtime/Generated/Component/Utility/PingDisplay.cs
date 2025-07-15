@@ -51,7 +51,7 @@ namespace FishNet.Component.Utility
 
         private void OnGUI()
         {
-            //Only clients can see pings.
+            // Only clients can see pings.
             if (!InstanceFinder.IsClientStarted)
                 return;
 
@@ -104,8 +104,5 @@ namespace FishNet.Component.Utility
             GUI.Label(new(horizontal, vertical, width, height), $"Ping: {ping}ms", _style);
         }
 #endif
-
     }
-
-
 }

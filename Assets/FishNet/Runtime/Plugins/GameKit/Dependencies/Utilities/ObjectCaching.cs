@@ -36,7 +36,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref Dictionary<T1, T2> value)
         {
@@ -47,7 +47,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(Dictionary<T1, T2> value)
         {
             if (value == null)
@@ -79,7 +79,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref Dictionary<T1, T2> value)
         {
@@ -90,7 +90,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(Dictionary<T1, T2> value)
         {
             if (value == null)
@@ -119,7 +119,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref Dictionary<T1, T2> value)
         {
@@ -130,7 +130,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(Dictionary<T1, T2> value)
         {
             if (value == null)
@@ -152,7 +152,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for ResettableRingBuffer.
         /// </summary>
-        private readonly static Stack<ResettableRingBuffer<T>> _resettableRingBufferCache = new();
+        private static readonly Stack<ResettableRingBuffer<T>> _resettableRingBufferCache = new();
 
         /// <summary>
         /// Retrieves a collection.
@@ -182,6 +182,12 @@ namespace GameKit.Dependencies.Utilities
         /// Retrieves a collection.
         /// </summary>
         /// <returns></returns>
+        public static SortedSet<T> RetrieveSortedSet() => CollectionCaches<T>.RetrieveSortedSet();
+
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
         public static HashSet<T> RetrieveHashSet() => CollectionCaches<T>.RetrieveHashSet();
 
         /// <summary>
@@ -200,8 +206,8 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array from the beginning.</param>
+        /// <param name = "value">Value to store.</param>
+        /// <param name = "count">Number of entries in the array from the beginning.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref ResettableRingBuffer<T> value)
         {
@@ -212,8 +218,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array from the beginning.</param>
+        /// <param name = "value">Value to store.</param>
+        /// <param name = "count">Number of entries in the array from the beginning.</param>
         public static void Store(ResettableRingBuffer<T> value)
         {
             if (value == null)
@@ -227,8 +233,8 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array from the beginning.</param>
+        /// <param name = "value">Value to store.</param>
+        /// <param name = "count">Number of entries in the array from the beginning.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref T[] value, int count)
         {
@@ -239,8 +245,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array from the beginning.</param>
+        /// <param name = "value">Value to store.</param>
+        /// <param name = "count">Number of entries in the array from the beginning.</param>
         public static void Store(T[] value, int count)
         {
             if (value == null)
@@ -256,7 +262,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref List<T> value)
         {
@@ -267,7 +273,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(List<T> value)
         {
             if (value == null)
@@ -284,7 +290,35 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref SortedSet<T> value)
+        {
+            Store(value);
+            value = default;
+        }
+
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name = "value">Value to store.</param>
+        public static void Store(SortedSet<T> value)
+        {
+            if (value == null)
+                return;
+
+            foreach (T item in value)
+                ResettableObjectCaches<T>.Store(item);
+
+            value.Clear();
+            CollectionCaches<T>.Store(value);
+        }
+
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref HashSet<T> value)
         {
@@ -295,7 +329,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(HashSet<T> value)
         {
             if (value == null)
@@ -312,7 +346,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref Queue<T> value)
         {
@@ -323,7 +357,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(Queue<T> value)
         {
             if (value == null)
@@ -340,7 +374,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref BasicQueue<T> value)
         {
@@ -351,7 +385,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(BasicQueue<T> value)
         {
             if (value == null)
@@ -384,7 +418,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores an instance of T and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref T value)
         {
@@ -395,7 +429,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores an instance of T.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(T value)
         {
             if (value == null)
@@ -435,7 +469,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref Dictionary<T1, T2> value)
         {
@@ -446,7 +480,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(Dictionary<T1, T2> value)
         {
             if (value == null)
@@ -465,23 +499,27 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for arrays.
         /// </summary>
-        private readonly static Stack<T[]> _arrayCache = new();
+        private static readonly Stack<T[]> _arrayCache = new();
         /// <summary>
         /// Cache for lists.
         /// </summary>
-        private readonly static Stack<List<T>> _listCache = new();
+        private static readonly Stack<List<T>> _listCache = new();
+        /// <summary>
+        /// Cache for sortedset.
+        /// </summary>
+        private static readonly Stack<SortedSet<T>> _sortedSetCache = new();
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private readonly static Stack<Queue<T>> _queueCache = new();
+        private static readonly Stack<Queue<T>> _queueCache = new();
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private readonly static Stack<BasicQueue<T>> _basicQueueCache = new();
+        private static readonly Stack<BasicQueue<T>> _basicQueueCache = new();
         /// <summary>
         /// Cache for hashset.
         /// </summary>
-        private readonly static Stack<HashSet<T>> _hashsetCache = new();
+        private static readonly Stack<HashSet<T>> _hashSetCache = new();
 
         /// <summary>
         /// Retrieves a collection.
@@ -504,6 +542,19 @@ namespace GameKit.Dependencies.Utilities
         {
             List<T> result;
             if (!_listCache.TryPop(out result))
+                result = new();
+
+            return result;
+        }
+
+        /// <summary>
+        /// Retrieves a collection.
+        /// </summary>
+        /// <returns></returns>
+        public static SortedSet<T> RetrieveSortedSet()
+        {
+            SortedSet<T> result;
+            if (!_sortedSetCache.TryPop(out result))
                 result = new();
 
             return result;
@@ -570,7 +621,7 @@ namespace GameKit.Dependencies.Utilities
         public static HashSet<T> RetrieveHashSet()
         {
             HashSet<T> result;
-            if (!_hashsetCache.TryPop(out result))
+            if (!_hashSetCache.TryPop(out result))
                 result = new();
 
             return result;
@@ -583,7 +634,7 @@ namespace GameKit.Dependencies.Utilities
         public static HashSet<T> RetrieveHashSet(T entry)
         {
             HashSet<T> result;
-            if (!_hashsetCache.TryPop(out result))
+            if (!_hashSetCache.TryPop(out result))
                 return new();
 
             result.Add(entry);
@@ -594,8 +645,8 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array set default, from the beginning.</param>
+        /// <param name = "value">Value to store.</param>
+        /// <param name = "count">Number of entries in the array set default, from the beginning.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref T[] value, int count)
         {
@@ -606,8 +657,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
-        /// <param name="count">Number of entries in the array from the beginning.</param>
+        /// <param name = "value">Value to store.</param>
+        /// <param name = "count">Number of entries in the array from the beginning.</param>
         public static void Store(T[] value, int count)
         {
             if (value == null)
@@ -623,7 +674,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref List<T> value)
         {
@@ -634,7 +685,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(List<T> value)
         {
             if (value == null)
@@ -648,7 +699,32 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void StoreAndDefault(ref SortedSet<T> value)
+        {
+            Store(value);
+            value = default;
+        }
+
+        /// <summary>
+        /// Stores a collection.
+        /// </summary>
+        /// <param name = "value">Value to store.</param>
+        public static void Store(SortedSet<T> value)
+        {
+            if (value == null)
+                return;
+
+            value.Clear();
+            _sortedSetCache.Push(value);
+        }
+
+        /// <summary>
+        /// Stores a collection and sets the original reference to default.
+        /// Method will not execute if value is null.
+        /// </summary>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref Queue<T> value)
         {
@@ -659,7 +735,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(Queue<T> value)
         {
             if (value == null)
@@ -673,7 +749,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref BasicQueue<T> value)
         {
@@ -684,7 +760,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(BasicQueue<T> value)
         {
             if (value == null)
@@ -698,7 +774,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores a collection and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref HashSet<T> value)
         {
@@ -709,14 +785,14 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a collection.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         public static void Store(HashSet<T> value)
         {
             if (value == null)
                 return;
 
             value.Clear();
-            _hashsetCache.Push(value);
+            _hashSetCache.Push(value);
         }
     }
 
@@ -747,7 +823,7 @@ namespace GameKit.Dependencies.Utilities
         /// Stores an instance of T and sets the original reference to default.
         /// Method will not execute if value is null.
         /// </summary>
-        /// <param name="value">Value to store.</param>
+        /// <param name = "value">Value to store.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAndDefault(ref T value)
         {
@@ -758,7 +834,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stores a value to the stack.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         public static void Store(T value)
         {
             if (value == null)

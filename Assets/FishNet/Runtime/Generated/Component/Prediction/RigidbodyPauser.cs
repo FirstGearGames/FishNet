@@ -163,15 +163,16 @@ namespace FishNet.Component.Prediction
             List<Rigidbody> rigidbodies = CollectionCaches<Rigidbody>.RetrieveList();
             foreach (Rigidbody rb in rbs)
                 rigidbodies.Add(rb);
-            
+
             UpdateRigidbodies(rigidbodies);
 
             CollectionCaches<Rigidbody>.Store(rigidbodies);
         }
+
         /// <summary>
         /// Assigns rigidbodies manually and initializes component.
         /// </summary>
-        private void UpdateRigidbodies(List<Rigidbody> rbs) 
+        private void UpdateRigidbodies(List<Rigidbody> rbs)
         {
             _rigidbodyDatas.Clear();
 
@@ -189,15 +190,16 @@ namespace FishNet.Component.Prediction
             List<Rigidbody2D> rigidbodies = CollectionCaches<Rigidbody2D>.RetrieveList();
             foreach (Rigidbody2D rb in rbs)
                 rigidbodies.Add(rb);
-            
+
             UpdateRigidbodies2D(rigidbodies);
 
             CollectionCaches<Rigidbody2D>.Store(rigidbodies);
         }
+
         /// <summary>
         /// Assigns rigidbodies manually and initializes component.
         /// </summary>
-        private void UpdateRigidbodies2D(List<Rigidbody2D> rbs) 
+        private void UpdateRigidbodies2D(List<Rigidbody2D> rbs)
         {
             _rigidbody2dDatas.Clear();
 
@@ -210,17 +212,17 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Assigns rigidbodies.
         /// </summary>
-        /// <param name="rbs">Rigidbodies2D to use.</param>
+        /// <param name = "rbs">Rigidbodies2D to use.</param>
         public void UpdateRigidbodies(Transform t, RigidbodyType rbType, bool getInChildren)
         {
             _rigidbodyType = rbType;
             _getInChildren = getInChildren;
 
-            //3D.
+            // 3D.
             if (rbType == RigidbodyType.Rigidbody)
             {
                 List<Rigidbody> rigidbodies = CollectionCaches<Rigidbody>.RetrieveList();
-                
+
                 if (getInChildren)
                 {
                     Rigidbody[] rbs = t.GetComponentsInChildren<Rigidbody>();
@@ -233,15 +235,15 @@ namespace FishNet.Component.Prediction
                     if (rb != null)
                         rigidbodies.Add(rb);
                 }
-                
+
                 UpdateRigidbodies(rigidbodies);
                 CollectionCaches<Rigidbody>.Store(rigidbodies);
             }
-            //2D.
+            // 2D.
             else
             {
                 List<Rigidbody2D> rigidbodies = CollectionCaches<Rigidbody2D>.RetrieveList();
-                
+
                 if (getInChildren)
                 {
                     Rigidbody2D[] rbs = t.GetComponentsInChildren<Rigidbody2D>();
@@ -254,7 +256,7 @@ namespace FishNet.Component.Prediction
                     if (rb != null)
                         rigidbodies.Add(rb);
                 }
-                
+
                 UpdateRigidbodies2D(rigidbodies);
                 CollectionCaches<Rigidbody2D>.Store(rigidbodies);
             }
@@ -275,7 +277,7 @@ namespace FishNet.Component.Prediction
              * they are not updating from a new scene, where the root
              * may have moved them */
 
-            //3D.
+            // 3D.
             if (_rigidbodyType == RigidbodyType.Rigidbody)
             {
                 for (int i = 0; i < _rigidbodyDatas.Count; i++)
@@ -287,7 +289,7 @@ namespace FishNet.Component.Prediction
                     }
                 }
 
-                //Sets isKinematic status and returns if successful.
+                // Sets isKinematic status and returns if successful.
                 bool PauseRigidbody(int index)
                 {
                     RigidbodyData rbData = _rigidbodyDatas[index];
@@ -299,12 +301,12 @@ namespace FishNet.Component.Prediction
                     _rigidbodyDatas[index] = rbData;
                     rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
                     rb.isKinematic = true;
-                    //rb.detectCollisions = false;
+                    // rb.detectCollisions = false;
 
                     return true;
                 }
             }
-            //2D.
+            // 2D.
             else
             {
                 for (int i = 0; i < _rigidbody2dDatas.Count; i++)
@@ -316,7 +318,7 @@ namespace FishNet.Component.Prediction
                     }
                 }
 
-                //Sets isKinematic status and returns if successful.
+                // Sets isKinematic status and returns if successful.
                 bool PauseRigidbody(int index)
                 {
                     Rigidbody2DData rbData = _rigidbody2dDatas[index];
@@ -344,7 +346,7 @@ namespace FishNet.Component.Prediction
                 return;
             Paused = false;
 
-            //3D.
+            // 3D.
             if (_rigidbodyType == RigidbodyType.Rigidbody)
             {
                 for (int i = 0; i < _rigidbodyDatas.Count; i++)
@@ -356,7 +358,7 @@ namespace FishNet.Component.Prediction
                     }
                 }
 
-                //Sets isKinematic status and returns if successful.
+                // Sets isKinematic status and returns if successful.
                 bool UnpauseRigidbody(int index)
                 {
                     RigidbodyData rbData = _rigidbodyDatas[index];
@@ -373,7 +375,7 @@ namespace FishNet.Component.Prediction
 
                     // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                     rb.isKinematic = rbData.IsKinematic;
-                    //rb.detectCollisions = rbData.DetectCollisions;
+                    // rb.detectCollisions = rbData.DetectCollisions;
                     rb.collisionDetectionMode = rbData.CollisionDetectionMode;
                     if (!rb.isKinematic)
                     {
@@ -383,7 +385,7 @@ namespace FishNet.Component.Prediction
                     return true;
                 }
             }
-            //2D.
+            // 2D.
             else
             {
                 for (int i = 0; i < _rigidbody2dDatas.Count; i++)
@@ -395,7 +397,7 @@ namespace FishNet.Component.Prediction
                     }
                 }
 
-                //Sets isKinematic status and returns if successful.
+                // Sets isKinematic status and returns if successful.
                 bool UnpauseRigidbody(int index)
                 {
                     Rigidbody2DData rbData = _rigidbody2dDatas[index];

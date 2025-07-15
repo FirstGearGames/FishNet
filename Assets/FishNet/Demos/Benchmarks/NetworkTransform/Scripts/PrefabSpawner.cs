@@ -14,11 +14,9 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         [Header("General")]
         [SerializeField]
         private NetworkObject _prefab;
-
         [Header("Spawning")]
         [SerializeField]
         private int _count = 500;
-
         [Header("Display")]
         [SerializeField]
         private Text _displayText;
@@ -27,7 +25,6 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         // private float _xyRange = 15f;
         // [SerializeField]
         // private float _zRange = 100f;
-
         private float _resetBandwidthTime = float.NegativeInfinity;
 
         public override void OnStartServer()
@@ -44,13 +41,13 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
             for (int i = 0; i < _count; i++)
             {
                 NetworkObject nob = Instantiate(prefab, currentPosition, Quaternion.identity);
-                base.Spawn(nob);
+                Spawn(nob);
             }
         }
 
         public override void OnSpawnServer(NetworkConnection connection)
         {
-            //Reset bandwidth half a second after spawning in objects for a client.
+            // Reset bandwidth half a second after spawning in objects for a client.
             _resetBandwidthTime = Time.time + 1f;
         }
 
@@ -58,13 +55,13 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
         {
             if (_displayText == null)
                 return;
-            if (!base.IsServerInitialized)
+            if (!IsServerInitialized)
                 return;
 
             if (_resetBandwidthTime != float.NegativeInfinity && Time.time >= _resetBandwidthTime)
             {
                 _resetBandwidthTime = float.NegativeInfinity;
-                BandwidthDisplay bd = GameObject.FindObjectOfType<BandwidthDisplay>();
+                BandwidthDisplay bd = FindObjectOfType<BandwidthDisplay>();
                 if (bd != null)
                 {
                     bd.ResetAverages();
@@ -72,20 +69,20 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
                 }
             }
 
-            uint updateFrequency = (uint)Mathf.FloorToInt((float)base.TimeManager.TickRate / 4f);
+            uint updateFrequency = (uint)Mathf.FloorToInt((float)TimeManager.TickRate / 4f);
             if (updateFrequency < 1)
                 updateFrequency = 1;
 
-            if (base.TimeManager.LocalTick % updateFrequency == 0)
+            if (TimeManager.LocalTick % updateFrequency == 0)
             {
                 _displayText.text = "Spawned: " + _count;
-                _displayText.text += Environment.NewLine + "Tick Rate: " + base.TimeManager.TickRate;
+                _displayText.text += Environment.NewLine + "Tick Rate: " + TimeManager.TickRate;
 
-                BandwidthDisplay bd = base.NetworkManager.gameObject.GetComponent<BandwidthDisplay>();
+                BandwidthDisplay bd = NetworkManager.gameObject.GetComponent<BandwidthDisplay>();
                 ulong serverOutAverage = bd.ServerAverages.GetAverage(inAverage: false);
 
                 float perTransformAverage = (float)serverOutAverage / _count;
-                _displayText.text += Environment.NewLine + "Average Per Transform: " + $"{NetworkTraficStatistics.FormatBytesToLargest(perTransformAverage)}/s";
+                _displayText.text += Environment.NewLine + "Average Per Transform: " + $"{NetworkTrafficStatistics.FormatBytesToLargest(perTransformAverage)}/s";
             }
         }
     }

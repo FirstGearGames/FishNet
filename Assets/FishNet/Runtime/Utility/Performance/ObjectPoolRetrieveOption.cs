@@ -1,7 +1,5 @@
-﻿
-namespace FishNet.Utility.Performance
+﻿namespace FishNet.Utility.Performance
 {
-
     public static class RetrieveOptionExtensions
     {
         public static bool FastContains(this ObjectPoolRetrieveOption whole, ObjectPoolRetrieveOption part) => (whole & part) == part;
@@ -19,7 +17,6 @@ namespace FishNet.Utility.Performance
         /// True to treat supplied transform properties as local space.
         /// False will treat the properties as world space.
         /// </summary>
-        LocalSpace = 2,
+        LocalSpace = 2
     }
 }
-

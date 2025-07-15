@@ -3,7 +3,6 @@ using System;
 
 namespace FishNet.Managing.Timing
 {
-
     [APIExclude]
     public class MovingAverage : IDisposable
     {
@@ -47,11 +46,10 @@ namespace FishNet.Managing.Timing
             _samples = new float[sampleSize];
         }
 
-
         /// <summary>
         /// Computes a new windowed average each time a new sample arrives
         /// </summary>
-        /// <param name="newSample"></param>
+        /// <param name = "newSample"></param>
         public void ComputeAverage(float newSample)
         {
             if (_samples.Length <= 1)
@@ -63,7 +61,7 @@ namespace FishNet.Managing.Timing
             _sampleAccumulator += newSample;
             _samples[_writeIndex] = newSample;
 
-            //Increase writeIndex.
+            // Increase writeIndex.
             _writeIndex++;
             _writtenSamples = Math.Max(_writtenSamples, _writeIndex);
             if (_writeIndex >= _samples.Length)
@@ -72,13 +70,12 @@ namespace FishNet.Managing.Timing
             Average = _sampleAccumulator / _writtenSamples;
 
             /* If samples are full then drop off
-            * the oldest sample. This will always be
-            * the one just after written. The entry isn't
-            * actually removed from the array but will
-            * be overwritten next sample. */
+             * the oldest sample. This will always be
+             * the one just after written. The entry isn't
+             * actually removed from the array but will
+             * be overwritten next sample. */
             if (_writtenSamples >= _samples.Length)
                 _sampleAccumulator -= _samples[_writeIndex];
-
         }
 
         /// <summary>
@@ -96,6 +93,4 @@ namespace FishNet.Managing.Timing
             Reset();
         }
     }
-
-
 }

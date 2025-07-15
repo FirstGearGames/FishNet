@@ -20,7 +20,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// True if the object for which this SyncType is for has been initialized for the network.
         /// </summary>
-        public bool IsNetworkInitialized => (IsInitialized && (NetworkBehaviour.IsServerStarted || NetworkBehaviour.IsClientStarted));
+        public bool IsNetworkInitialized => IsInitialized && (NetworkBehaviour.IsServerInitialized || NetworkBehaviour.IsClientInitialized);
         /// <summary>
         /// True if a SyncObject, false if a SyncVar.
         /// </summary>
@@ -37,7 +37,7 @@ namespace FishNet.Object.Synchronizing.Internal
         internal float SendRate => Settings.SendRate;
         /// <summary>
         /// True if this SyncVar needs to send data.
-        /// </summary>        
+        /// </summary>
         public bool IsDirty { get; private set; }
         /// <summary>
         /// NetworkManager this uses.
@@ -73,7 +73,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Sets a new currentChannel.
         /// </summary>
-        /// <param name="channel"></param>
+        /// <param name = "channel"></param>
         internal void SetCurrentChannel(Channel channel) => _currentChannel = channel;
         #endregion
 
@@ -176,7 +176,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Checks channel and corrects if not valid.
         /// </summary>
-        /// <param name="c"></param>
+        /// <param name = "c"></param>
         private void CheckChannel(ref Channel c)
         {
             if (c == Channel.Unreliable && IsSyncObject)
@@ -247,7 +247,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Called after OnStartXXXX has occurred for the NetworkBehaviour.
         /// </summary>
-        /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
+        /// <param name = "asServer">True if OnStartServer was called, false if OnStartClient.</param>
         [MakePublic]
         protected internal virtual void OnStartCallback(bool asServer)
         {
@@ -260,7 +260,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Called before OnStopXXXX has occurred for the NetworkBehaviour.
         /// </summary>
-        /// <param name="asServer">True if OnStopServer was called, false if OnStopClient.</param>
+        /// <param name = "asServer">True if OnStopServer was called, false if OnStopClient.</param>
         [MakePublic]
         protected internal virtual void OnStopCallback(bool asServer)
         {
@@ -273,7 +273,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// True if can set values and send them over the network.
         /// </summary>
-        /// <param name="log"></param>
+        /// <param name = "log"></param>
         /// <returns></returns>
         protected bool CanNetworkSetValues(bool log = true)
         {
@@ -290,12 +290,12 @@ namespace FishNet.Object.Synchronizing.Internal
              * being networked. */
             if (!IsNetworkInitialized)
                 return true;
-            //If server is active then values can be set no matter what.
+            // If server is active then values can be set no matter what.
             if (NetworkBehaviour.IsServerStarted)
                 return true;
             /* If here then server is not active and additional
              * checks must be performed. */
-            bool result = (Settings.WritePermission == WritePermission.ClientUnsynchronized) || (Settings.ReadPermission == ReadPermission.ExcludeOwner && NetworkBehaviour.IsOwner);
+            bool result = Settings.WritePermission == WritePermission.ClientUnsynchronized || (Settings.ReadPermission == ReadPermission.ExcludeOwner && NetworkBehaviour.IsOwner);
             if (!result && log)
                 LogServerNotActiveWarning();
 
@@ -314,10 +314,10 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Dirties this Sync and the NetworkBehaviour.
         /// </summary>
-        /// <param name="sendRpc">True to send current dirtied values immediately as a RPC. When this occurs values will arrive in the order they are sent and interval is ignored.</param>
-        protected bool Dirty() //bool sendRpc = false)
+        /// <param name = "sendRpc">True to send current dirtied values immediately as a RPC. When this occurs values will arrive in the order they are sent and interval is ignored.</param>
+        protected bool Dirty() // bool sendRpc = false)
         {
-            //if (sendRpc)
+            // if (sendRpc)
             //    NextSyncTick = 0;
             /* Reset channel even if already dirty.
              * This is because the value might have changed
@@ -338,7 +338,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// This is typically used when the value is changing through user code, causing supplier to be unknown.
         /// </summary>
         /// <returns></returns>
-        protected bool CanInvokeCallbackAsServer() => (!IsNetworkInitialized || NetworkBehaviour.IsServerStarted);
+        protected bool CanInvokeCallbackAsServer() => !IsNetworkInitialized || NetworkBehaviour.IsServerStarted;
 
         /// <summary>
         /// Reads a change Id and returns true if the change is new.
@@ -355,7 +355,7 @@ namespace FishNet.Object.Synchronizing.Internal
             bool rolledOver = reader.ReadBoolean();
             ushort id = reader.ReadUInt16();
 
-            //Only check lastReadId if its not unset.
+            // Only check lastReadId if its not unset.
             if (_lastReadChangeId != UNSET_CHANGE_ID)
             {
                 /* If not rolledOver then Id should always be larger
@@ -403,45 +403,36 @@ namespace FishNet.Object.Synchronizing.Internal
             writer.WriteUInt16(_lastWrittenChangeId);
         }
 
-#if !FISHNET_STABLE_SYNCTYPES        
         /// <summary>
         /// Returns true if values are being read as clientHost.
         /// </summary>
-        /// <param name="asServer">True if reading as server.</param>
+        /// <param name = "asServer">True if reading as server.</param>
         /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
-        protected bool IsReadAsClientHost(bool asServer) => (!asServer && NetworkManager.IsServerStarted);
+        protected bool IsReadAsClientHost(bool asServer) => !asServer && NetworkManager.IsServerStarted;
 
         /// <summary>
         /// Returns true if values are being read as clientHost.
         /// </summary>
-        /// <param name="asServer">True if reading as server.</param>
+        /// <param name = "asServer">True if reading as server.</param>
         /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
         protected bool CanReset(bool asServer)
         {
-            bool clientStarted = (IsNetworkInitialized && NetworkManager.IsClientStarted);
+            bool clientStarted = IsNetworkInitialized && NetworkManager.IsClientStarted;
             return (asServer && !clientStarted) || (!asServer && NetworkBehaviour.IsDeinitializing);
         }
-#else
-        /// <summary>
-        /// Returns true if values are being read as clientHost.
-        /// </summary>
-        /// <param name="asServer">True if reading as server.</param>
-        /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
-        protected bool IsReadAsClientHost(bool asServer) => (!asServer && (NetworkManager != null && NetworkManager.IsServerStarted));
-#endif
 
         /// <summary>
         /// Outputs values which may be helpful on how to process a read operation.
         /// </summary>
-        /// <param name="newChangeId">True if the changeId read is not old data.</param>
-        /// <param name="asClientHost">True if being read as clientHost.</param>
-        /// <param name="canModifyValues">True if can modify values from the read, typically when asServer or not asServer and not clientHost.</param>
+        /// <param name = "newChangeId">True if the changeId read is not old data.</param>
+        /// <param name = "asClientHost">True if being read as clientHost.</param>
+        /// <param name = "canModifyValues">True if can modify values from the read, typically when asServer or not asServer and not clientHost.</param>
         /// <remarks>This method is currently under evaluation and may change at any time.</remarks>
         protected void SetReadArguments(PooledReader reader, bool asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues)
         {
             newChangeId = ReadChangeId(reader);
             asClientHost = IsReadAsClientHost(asServer);
-            canModifyValues = (newChangeId && !asClientHost);
+            canModifyValues = newChangeId && !asClientHost;
         }
 
         /// <summary>
@@ -449,13 +440,13 @@ namespace FishNet.Object.Synchronizing.Internal
         /// </summary>
         internal void ResetDirty()
         {
-            //If not a sync object and using unreliable channel.
+            // If not a sync object and using unreliable channel.
             if (!IsSyncObject && Settings.Channel == Channel.Unreliable)
             {
-                //Check if dirty can be unset or if another tick must be run using reliable.
+                // Check if dirty can be unset or if another tick must be run using reliable.
                 if (_currentChannel == Channel.Unreliable)
                     _currentChannel = Channel.Reliable;
-                //Already sent reliable, can undirty. Channel will reset next time this dirties.
+                // Already sent reliable, can undirty. Channel will reset next time this dirties.
                 else
                     IsDirty = false;
             }
@@ -469,7 +460,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// True if dirty and enough time has passed to write changes.
         /// </summary>
-        internal bool IsNextSyncTimeMet(uint tick) => (IsDirty && tick >= NextSyncTick);
+        internal bool IsNextSyncTimeMet(uint tick) => IsDirty && tick >= NextSyncTick;
 
         [Obsolete("Use IsNextSyncTimeMet.")] //Remove on V5
         internal bool SyncTimeMet(uint tick) => IsNextSyncTimeMet(tick);
@@ -477,7 +468,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// Writes current value.
         /// </summary>
-        /// <param name="resetSyncTick">True to set the next time data may sync.</param>
+        /// <param name = "resetSyncTick">True to set the next time data may sync.</param>
         [MakePublic]
         protected internal virtual void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {

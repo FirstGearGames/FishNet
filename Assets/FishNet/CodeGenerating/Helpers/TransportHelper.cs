@@ -5,7 +5,7 @@ namespace FishNet.CodeGenerating.Helping
 {
     internal class TransportHelper : CodegenBase
     {
-        #region Reflection references.        
+        #region Reflection references.
         internal TypeReference Channel_TypeRef;
         #endregion
 
@@ -17,20 +17,18 @@ namespace FishNet.CodeGenerating.Helping
             Channel_TypeRef = null;
         }
 
-
         /// <summary>
         /// Imports references needed by this helper.
         /// </summary>
-        /// <param name="moduleDef"></param>
+        /// <param name = "moduleDef"></param>
         /// <returns></returns>
         public override bool ImportReferences()
         {
             ResetValues();
 
-            Channel_TypeRef = base.ImportReference(typeof(Channel));
+            Channel_TypeRef = ImportReference(typeof(Channel));
 
             return true;
         }
-
     }
 }

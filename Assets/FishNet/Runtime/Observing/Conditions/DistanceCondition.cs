@@ -15,7 +15,6 @@ namespace FishNet.Component.Observing
     {
         #region Serialized.
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("Maximum distance a client must be within this object to see it.")]
         [SerializeField]
@@ -35,17 +34,18 @@ namespace FishNet.Component.Observing
         /// </summary>
         /// <returns></returns>
         public float GetMaximumDistance() => _maximumDistance;
+
         /// <summary>
         /// Sets the maximum distance value.
         /// </summary>
-        /// <param name="value">New value.</param>
+        /// <param name = "value">New value.</param>
         public void SetMaximumDistance(float value)
         {
             _maximumDistance = value;
-            _sqrMaximumDistance = (_maximumDistance * _maximumDistance);
+            _sqrMaximumDistance = _maximumDistance * _maximumDistance;
 
-            float maxDistanceHide = (_maximumDistance * (1f + _hideDistancePercent));
-            _sqrHideMaximumDistance = (maxDistanceHide * maxDistanceHide);
+            float maxDistanceHide = _maximumDistance * (1f + _hideDistancePercent);
+            _sqrHideMaximumDistance = maxDistanceHide * maxDistanceHide;
         }
 
         /// <summary>
@@ -76,19 +76,19 @@ namespace FishNet.Component.Observing
         /// <summary>
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
-        /// <param name="connection">Connection which the condition is being checked for.</param>
-        /// <param name="currentlyAdded">True if the connection currently has visibility of this object.</param>
-        /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
+        /// <param name = "connection">Connection which the condition is being checked for.</param>
+        /// <param name = "currentlyAdded">True if the connection currently has visibility of this object.</param>
+        /// <param name = "notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
         public override bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed)
         {
-            //If here then checks are being processed.
+            // If here then checks are being processed.
             notProcessed = false;
 
-            float sqrMaximumDistance = (currentlyAdded) ? _sqrHideMaximumDistance : _sqrMaximumDistance;
+            float sqrMaximumDistance = currentlyAdded ? _sqrHideMaximumDistance : _sqrMaximumDistance;
             Vector3 thisPosition = NetworkObject.transform.position;
             foreach (NetworkObject nob in connection.Objects)
             {
-                //If within distance.
+                // If within distance.
                 if (Vector3.SqrMagnitude(nob.transform.position - thisPosition) <= sqrMaximumDistance)
                     return true;
             }

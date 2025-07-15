@@ -13,177 +13,173 @@ using System;
 using System.IO;
 using System.Threading;
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public sealed class AssemblyDefinition : ICustomAttributeProvider, ISecurityDeclarationProvider, IDisposable
+    {
+        internal ModuleDefinition main_module;
+        private Collection<ModuleDefinition> modules;
+        private Collection<CustomAttribute> custom_attributes;
+        private Collection<SecurityDeclaration> security_declarations;
+        public AssemblyNameDefinition Name { get; set; }
+        public string FullName
+        {
+            get { return Name != null ? Name.FullName : string.Empty; }
+        }
+        public MetadataToken MetadataToken
+        {
+            get { return new(TokenType.Assembly, 1); }
+            set { }
+        }
+        public Collection<ModuleDefinition> Modules
+        {
+            get
+            {
+                if (modules != null)
+                    return modules;
 
-	public sealed class AssemblyDefinition : ICustomAttributeProvider, ISecurityDeclarationProvider, IDisposable {
+                if (main_module.HasImage)
+                    return main_module.Read(ref modules, this, (_, reader) => reader.ReadModules());
 
-		AssemblyNameDefinition name;
+                Interlocked.CompareExchange(ref modules, new(1) { main_module }, null);
+                return modules;
+            }
+        }
+        public ModuleDefinition MainModule
+        {
+            get { return main_module; }
+        }
+        public MethodDefinition EntryPoint
+        {
+            get { return main_module.EntryPoint; }
+            set { main_module.EntryPoint = value; }
+        }
+        public bool HasCustomAttributes
+        {
+            get
+            {
+                if (custom_attributes != null)
+                    return custom_attributes.Count > 0;
 
-		internal ModuleDefinition main_module;
-		Collection<ModuleDefinition> modules;
-		Collection<CustomAttribute> custom_attributes;
-		Collection<SecurityDeclaration> security_declarations;
+                return this.GetHasCustomAttributes(main_module);
+            }
+        }
+        public Collection<CustomAttribute> CustomAttributes
+        {
+            get { return custom_attributes ?? this.GetCustomAttributes(ref custom_attributes, main_module); }
+        }
+        public bool HasSecurityDeclarations
+        {
+            get
+            {
+                if (security_declarations != null)
+                    return security_declarations.Count > 0;
 
-		public AssemblyNameDefinition Name {
-			get { return name; }
-			set { name = value; }
-		}
+                return this.GetHasSecurityDeclarations(main_module);
+            }
+        }
+        public Collection<SecurityDeclaration> SecurityDeclarations
+        {
+            get { return security_declarations ?? this.GetSecurityDeclarations(ref security_declarations, main_module); }
+        }
+        internal AssemblyDefinition() { }
 
-		public string FullName {
-			get { return name != null ? name.FullName : string.Empty; }
-		}
+        public void Dispose()
+        {
+            if (this.modules == null)
+            {
+                main_module.Dispose();
+                return;
+            }
 
-		public MetadataToken MetadataToken {
-			get { return new MetadataToken (TokenType.Assembly, 1); }
-			set { }
-		}
+            var modules = Modules;
+            for (int i = 0; i < modules.Count; i++)
+                modules[i].Dispose();
+        }
 
-		public Collection<ModuleDefinition> Modules {
-			get {
-				if (modules != null)
-					return modules;
+        public static AssemblyDefinition CreateAssembly(AssemblyNameDefinition assemblyName, string moduleName, ModuleKind kind)
+        {
+            return CreateAssembly(assemblyName, moduleName, new ModuleParameters { Kind = kind });
+        }
 
-				if (main_module.HasImage)
-					return main_module.Read (ref modules, this, (_, reader) => reader.ReadModules ());
+        public static AssemblyDefinition CreateAssembly(AssemblyNameDefinition assemblyName, string moduleName, ModuleParameters parameters)
+        {
+            if (assemblyName == null)
+                throw new ArgumentNullException("assemblyName");
+            if (moduleName == null)
+                throw new ArgumentNullException("moduleName");
+            Mixin.CheckParameters(parameters);
+            if (parameters.Kind == ModuleKind.NetModule)
+                throw new ArgumentException("kind");
 
-				Interlocked.CompareExchange (ref modules, new Collection<ModuleDefinition> (1) { main_module }, null);
-				return modules;
-			}
-		}
+            var assembly = ModuleDefinition.CreateModule(moduleName, parameters).Assembly;
+            assembly.Name = assemblyName;
 
-		public ModuleDefinition MainModule {
-			get { return main_module; }
-		}
+            return assembly;
+        }
 
-		public MethodDefinition EntryPoint {
-			get { return main_module.EntryPoint; }
-			set { main_module.EntryPoint = value; }
-		}
+        public static AssemblyDefinition ReadAssembly(string fileName)
+        {
+            return ReadAssembly(ModuleDefinition.ReadModule(fileName));
+        }
 
-		public bool HasCustomAttributes {
-			get {
-				if (custom_attributes != null)
-					return custom_attributes.Count > 0;
+        public static AssemblyDefinition ReadAssembly(string fileName, ReaderParameters parameters)
+        {
+            return ReadAssembly(ModuleDefinition.ReadModule(fileName, parameters));
+        }
 
-				return this.GetHasCustomAttributes (main_module);
-			}
-		}
+        public static AssemblyDefinition ReadAssembly(Stream stream)
+        {
+            return ReadAssembly(ModuleDefinition.ReadModule(stream));
+        }
 
-		public Collection<CustomAttribute> CustomAttributes {
-			get { return custom_attributes ?? (this.GetCustomAttributes (ref custom_attributes, main_module)); }
-		}
+        public static AssemblyDefinition ReadAssembly(Stream stream, ReaderParameters parameters)
+        {
+            return ReadAssembly(ModuleDefinition.ReadModule(stream, parameters));
+        }
 
-		public bool HasSecurityDeclarations {
-			get {
-				if (security_declarations != null)
-					return security_declarations.Count > 0;
+        private static AssemblyDefinition ReadAssembly(ModuleDefinition module)
+        {
+            var assembly = module.Assembly;
+            if (assembly == null)
+                throw new ArgumentException();
 
-				return this.GetHasSecurityDeclarations (main_module);
-			}
-		}
+            return assembly;
+        }
 
-		public Collection<SecurityDeclaration> SecurityDeclarations {
-			get { return security_declarations ?? (this.GetSecurityDeclarations (ref security_declarations, main_module)); }
-		}
+        public void Write(string fileName)
+        {
+            Write(fileName, new());
+        }
 
-		internal AssemblyDefinition ()
-		{
-		}
+        public void Write(string fileName, WriterParameters parameters)
+        {
+            main_module.Write(fileName, parameters);
+        }
 
-		public void Dispose ()
-		{
-			if (this.modules == null) {
-				main_module.Dispose ();
-				return;
-			}
+        public void Write()
+        {
+            main_module.Write();
+        }
 
-			var modules = this.Modules;
-			for (int i = 0; i < modules.Count; i++)
-				modules [i].Dispose ();
-		}
-		public static AssemblyDefinition CreateAssembly (AssemblyNameDefinition assemblyName, string moduleName, ModuleKind kind)
-		{
-			return CreateAssembly (assemblyName, moduleName, new ModuleParameters { Kind = kind });
-		}
+        public void Write(WriterParameters parameters)
+        {
+            main_module.Write(parameters);
+        }
 
-		public static AssemblyDefinition CreateAssembly (AssemblyNameDefinition assemblyName, string moduleName, ModuleParameters parameters)
-		{
-			if (assemblyName == null)
-				throw new ArgumentNullException ("assemblyName");
-			if (moduleName == null)
-				throw new ArgumentNullException ("moduleName");
-			Mixin.CheckParameters (parameters);
-			if (parameters.Kind == ModuleKind.NetModule)
-				throw new ArgumentException ("kind");
+        public void Write(Stream stream)
+        {
+            Write(stream, new());
+        }
 
-			var assembly = ModuleDefinition.CreateModule (moduleName, parameters).Assembly;
-			assembly.Name = assemblyName;
+        public void Write(Stream stream, WriterParameters parameters)
+        {
+            main_module.Write(stream, parameters);
+        }
 
-			return assembly;
-		}
-
-		public static AssemblyDefinition ReadAssembly (string fileName)
-		{
-			return ReadAssembly (ModuleDefinition.ReadModule (fileName));
-		}
-
-		public static AssemblyDefinition ReadAssembly (string fileName, ReaderParameters parameters)
-		{
-			return ReadAssembly (ModuleDefinition.ReadModule (fileName, parameters));
-		}
-
-		public static AssemblyDefinition ReadAssembly (Stream stream)
-		{
-			return ReadAssembly (ModuleDefinition.ReadModule (stream));
-		}
-
-		public static AssemblyDefinition ReadAssembly (Stream stream, ReaderParameters parameters)
-		{
-			return ReadAssembly (ModuleDefinition.ReadModule (stream, parameters));
-		}
-
-		static AssemblyDefinition ReadAssembly (ModuleDefinition module)
-		{
-			var assembly = module.Assembly;
-			if (assembly == null)
-				throw new ArgumentException ();
-
-			return assembly;
-		}
-
-		public void Write (string fileName)
-		{
-			Write (fileName, new WriterParameters ());
-		}
-
-		public void Write (string fileName, WriterParameters parameters)
-		{
-			main_module.Write (fileName, parameters);
-		}
-
-		public void Write ()
-		{
-			main_module.Write ();
-		}
-
-		public void Write (WriterParameters parameters)
-		{
-			main_module.Write (parameters);
-		}
-
-		public void Write (Stream stream)
-		{
-			Write (stream, new WriterParameters ());
-		}
-
-		public void Write (Stream stream, WriterParameters parameters)
-		{
-			main_module.Write (stream, parameters);
-		}
-
-		public override string ToString ()
-		{
-			return this.FullName;
-		}
-	}
+        public override string ToString()
+        {
+            return FullName;
+        }
+    }
 }

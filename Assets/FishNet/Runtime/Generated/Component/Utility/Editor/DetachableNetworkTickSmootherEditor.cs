@@ -5,8 +5,6 @@ using LayoutTools = GameKit.Dependencies.Utilities.EditorGuiLayoutTools;
 
 namespace FishNet.Component.Transforming.Editing
 {
-
-
     [CustomEditor(typeof(DetachableNetworkTickSmoother), true)]
     [CanEditMultipleObjects]
     public class DetachableNetworkTickSmootherEditor : Editor
@@ -39,19 +37,19 @@ namespace FishNet.Component.Transforming.Editing
             LayoutTools.AddObjectField("Script:", MonoScript.FromMonoBehaviour((DetachableNetworkTickSmoother)target), typeof(DetachableNetworkTickSmoother), false, EditorLayoutEnableType.Disabled);
 
             EditorGUILayout.HelpBox("This component will be obsoleted soon. Use NetworkTickSmoother or OfflineTickSmoother.", MessageType.Warning);
-            //Misc.
+            // Misc.
             EditorGUILayout.LabelField("Misc", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_attachOnStop);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
-            //Smoothing.
+            // Smoothing.
             EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_followObject);
             EditorGUILayout.PropertyField(_interpolation);
-            
+
             EditorGUILayout.PropertyField(_enableTeleport);
             if (_enableTeleport.boolValue)
             {
@@ -69,10 +67,9 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.PropertyField(_synchronizeRotation);
             EditorGUILayout.PropertyField(_synchronizeScale);
             EditorGUI.indentLevel--;
-       
+
             serializedObject.ApplyModifiedProperties();
         }
     }
-
 }
 #endif

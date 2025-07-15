@@ -17,7 +17,7 @@ namespace FishNet.Managing.Editing
         private SerializedProperty _disableServerRpcLinks;
         private SerializedProperty _disableReplicateRpcLinks;
         private SerializedProperty _disableReconcileRpcLinks;
-        
+
         private void OnEnable()
         {
             _writeSceneObjectDetails = serializedObject.FindProperty(nameof(_writeSceneObjectDetails).MemberToPascalCase());
@@ -28,33 +28,33 @@ namespace FishNet.Managing.Editing
             _disableReplicateRpcLinks = serializedObject.FindProperty(nameof(_disableReplicateRpcLinks).MemberToPascalCase());
             _disableReconcileRpcLinks = serializedObject.FindProperty(nameof(_disableReconcileRpcLinks).MemberToPascalCase());
         }
-        
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
             DebugManager DebugManager = (DebugManager)target;
-            
+
             GUI.enabled = false;
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(DebugManager), typeof(DebugManager), false);
             GUI.enabled = true;
-            
+
             LayoutTools.AddHelpBox("Debug features will only be run in Unity Editor, and development builds. Enabling debug features will increase bandwidth consumption and likely create garbage allocations.", MessageType.Warning);
-            
+
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Detail Writing",EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Detail Writing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             LayoutTools.AddPropertyField(_writeSceneObjectDetails, "Scene Objects");
             EditorGUI.indentLevel--;
-            
+
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Packet Validation",EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Packet Validation", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             LayoutTools.AddPropertyField(_validateRpcLengths, "Rpc Lengths");
             EditorGUI.indentLevel--;
-            
+
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Disable RpcLinks",EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Disable RpcLinks", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             LayoutTools.AddPropertyField(_disableObserversRpcLinks, "ObserversRpcs");
             LayoutTools.AddPropertyField(_disableTargetRpcLinks, "TargetRpcs");

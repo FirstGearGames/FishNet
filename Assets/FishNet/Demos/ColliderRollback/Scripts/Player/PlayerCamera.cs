@@ -2,7 +2,6 @@
 
 namespace FishNet.Example.ColliderRollbacks
 {
-
     /// <summary>
     /// DEMO. CODE IS NOT OPTIMIZED.
     /// Doesn't do much...
@@ -13,7 +12,5 @@ namespace FishNet.Example.ColliderRollbacks
         /// MuzzleFlash on the weapon.
         /// </summary>
         public Transform MuzzleFlash;
-
     }
-
 }

@@ -18,6 +18,4 @@
         /// </summary>
         Disabled = 2
     }
-
-
 }

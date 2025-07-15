@@ -4,18 +4,16 @@ using UnityEngine;
 
 namespace FishNet.Example.CustomSyncObject
 {
-
     public class StructSyncBehaviour : NetworkBehaviour
     {
         /// <summary>
         /// Using my custom SyncType for Structy.
         /// </summary>
-        
         private readonly StructySync _structy = new();
 
         private void Awake()
         {
-            //Listen for change events.
+            // Listen for change events.
             _structy.OnChange += _structy_OnChange;
         }
 
@@ -26,16 +24,13 @@ namespace FishNet.Example.CustomSyncObject
 
         private void Update()
         {
-            //Every so often increase the age property on structy using StructySync, my custom sync type.
-            if (base.IsServerStarted && Time.frameCount % 200 == 0)
+            // Every so often increase the age property on structy using StructySync, my custom sync type.
+            if (IsServerStarted && Time.frameCount % 200 == 0)
             {
-                //Increase the age and set that values have changed.
+                // Increase the age and set that values have changed.
                 _structy.Value.Age += 1;
                 _structy.ValuesChanged();
             }
         }
-
     }
-
-
 }

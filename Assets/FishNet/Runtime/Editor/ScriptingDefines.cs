@@ -36,7 +36,7 @@ namespace FishNet
              * when a define is added. */
             HashSet<string> definesHs = new();
             string[] currentArr = currentDefines.Split(';');
-            //Add current defines into hs.
+            // Add current defines into hs.
             foreach (string item in currentArr)
                 definesHs.Add(item);
 
@@ -49,37 +49,35 @@ namespace FishNet
             {
                 "FISHNET",
                 thisVersion,
-                
-            };
+                };
             bool modified = false;
-            //Now add FN defines.
+            // Now add FN defines.
             foreach (string item in fishNetDefines)
                 modified |= definesHs.Add(item);
 
-            //Remove old prediction defines.
+            // Remove old prediction defines.
             modified |= definesHs.Remove("PREDICTION_V2");
             /* Remove pro define if not on pro. This might look a little
              * funny because the code below varies depending on if pro or not. */
-            
-#pragma warning disable CS0162 // Unreachable code detected
+            #pragma warning disable CS0162 // Unreachable code detected
                 modified |= definesHs.Remove(proDefine);
 #pragma warning restore CS0162 // Unreachable code detected
 
             List<string> definesToRemove = new();
             int versionPrefixLength = versionPrefix.Length;
-            //Remove old versions.
+            // Remove old versions.
             foreach (string item in definesHs)
             {
-                //Do not remove this version.
+                // Do not remove this version.
                 if (item == thisVersion)
                     continue;
 
-                //If length is possible to be a version prefix and is so then remove it.
+                // If length is possible to be a version prefix and is so then remove it.
                 if (item.Length >= versionPrefixLength && item.Substring(0, versionPrefixLength) == versionPrefix)
                     definesToRemove.Add(item);
             }
 
-            modified |= (definesToRemove.Count > 0);
+            modified |= definesToRemove.Count > 0;
             foreach (string item in definesToRemove)
             {
                 definesHs.Remove(item);

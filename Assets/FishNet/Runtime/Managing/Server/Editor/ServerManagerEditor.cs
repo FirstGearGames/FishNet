@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Managing.Server.Editing
 {
-
-
     [CustomEditor(typeof(ServerManager), true)]
     [CanEditMultipleObjects]
     public class ServerManagerEditor : Editor
@@ -25,7 +23,7 @@ namespace FishNet.Managing.Server.Editing
         protected virtual void OnEnable()
         {
             _authenticator = serializedObject.FindProperty(nameof(_authenticator));
-            _remoteClientTimeout = serializedObject.FindProperty(nameof(_remoteClientTimeout));           
+            _remoteClientTimeout = serializedObject.FindProperty(nameof(_remoteClientTimeout));
             _remoteClientTimeoutDuration = serializedObject.FindProperty(nameof(_remoteClientTimeoutDuration));
             _syncTypeRate = serializedObject.FindProperty(nameof(_syncTypeRate));
             SpawnPacking = serializedObject.FindProperty(nameof(SpawnPacking));
@@ -35,7 +33,6 @@ namespace FishNet.Managing.Server.Editing
             _startOnHeadless = serializedObject.FindProperty(nameof(_startOnHeadless));
             _allowPredictedSpawning = serializedObject.FindProperty(nameof(_allowPredictedSpawning));
             _reservedObjectIds = serializedObject.FindProperty(nameof(_reservedObjectIds));
-
         }
 
         public override void OnInspectorGUI()
@@ -67,7 +64,7 @@ namespace FishNet.Managing.Server.Editing
             if ((RemoteTimeoutType)_remoteClientTimeout.intValue != RemoteTimeoutType.Disabled)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_remoteClientTimeoutDuration,new GUIContent("Timeout"));
+                EditorGUILayout.PropertyField(_remoteClientTimeoutDuration, new GUIContent("Timeout"));
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.PropertyField(_shareIds);
@@ -90,7 +87,6 @@ namespace FishNet.Managing.Server.Editing
 
             serializedObject.ApplyModifiedProperties();
         }
-
     }
 }
 #endif

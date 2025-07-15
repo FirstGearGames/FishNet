@@ -3,10 +3,8 @@ using MonoFN.Cecil;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-
     internal static class FieldReferenceExtensions
     {
-
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
@@ -33,8 +31,5 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 return fr;
             }
         }
-
-
     }
-
 }

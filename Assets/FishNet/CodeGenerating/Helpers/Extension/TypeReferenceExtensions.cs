@@ -6,10 +6,8 @@ using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-
     internal static class TypeReferenceExtensionsOld
     {
-
         /// <summary>
         /// Gets a Resolve favoring cached results first.
         /// </summary>
@@ -24,37 +22,34 @@ namespace FishNet.CodeGenerating.Helping.Extension
         internal static bool IsClassOrStruct(this TypeReference typeRef, CodegenSession session)
         {
             TypeDefinition typeDef = typeRef.CachedResolve(session);
-            return (!typeDef.IsPrimitive && !typeDef.IsEnum && (typeDef.IsClass || typeDef.IsValueType));
+            return !typeDef.IsPrimitive && !typeDef.IsEnum && (typeDef.IsClass || typeDef.IsValueType);
         }
 
         /// <summary>
         /// Returns all properties on typeRef and all base types which have a public get/set accessor.
         /// </summary>
-        /// <param name="typeRef"></param>
+        /// <param name = "typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllSerializableProperties(this TypeReference typeRef, CodegenSession session, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllSerializableProperties(this TypeReference typeRef, CodegenSession session, Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             return typeRef.CachedResolve(session).FindAllPublicProperties(session, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
-
         /// <summary>
         /// Gets all public fields in typeRef and base type.
         /// </summary>
-        /// <param name="typeRef"></param>
+        /// <param name = "typeRef"></param>
         /// <returns></returns>
-        public static IEnumerable<FieldDefinition> FindAllSerializableFields(this TypeReference typeRef, CodegenSession session,
-            System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<FieldDefinition> FindAllSerializableFields(this TypeReference typeRef, CodegenSession session, Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             return typeRef.Resolve().FindAllPublicFields(session, excludedBaseTypes, excludedAssemblyPrefixes);
         }
 
-
         /// <summary>
         /// Returns if a typeRef is type.
         /// </summary>
-        /// <param name="typeRef"></param>
-        /// <param name="type"></param>
+        /// <param name = "typeRef"></param>
+        /// <param name = "type"></param>
         /// <returns></returns>
         public static bool IsType(this TypeReference typeRef, Type type)
         {
@@ -64,12 +59,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 return typeRef.FullName == type.FullName;
         }
 
-
-
         /// <summary>
         /// Returns if typeRef is a multidimensional array.
         /// </summary>
-        /// <param name="typeRef"></param>
+        /// <param name = "typeRef"></param>
         /// <returns></returns>
         public static bool IsMultidimensionalArray(this TypeReference typeRef)
         {
@@ -79,11 +72,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return false;
         }
 
-
         /// <summary>
         /// Returns if typeRef can be resolved.
         /// </summary>
-        /// <param name="typeRef"></param>
+        /// <param name = "typeRef"></param>
         /// <returns></returns>
         public static bool CanBeResolved(this TypeReference typeRef, CodegenSession session)
         {
@@ -115,7 +107,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Creates a generic type out of another type, if needed.
         /// </summary>
-        /// <param name="type"></param>
+        /// <param name = "type"></param>
         /// <returns></returns>
         public static TypeReference ConvertToGenericIfNeeded(this TypeDefinition type)
         {
@@ -135,7 +127,5 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 return type;
             }
         }
-
     }
-
 }

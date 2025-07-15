@@ -10,38 +10,38 @@
 
 using System.Collections.Generic;
 
-namespace MonoFN.Cecil.PE {
+namespace MonoFN.Cecil.PE
+{
+    internal sealed class ByteBufferEqualityComparer : IEqualityComparer<ByteBuffer>
+    {
+        public bool Equals(ByteBuffer x, ByteBuffer y)
+        {
+            if (x.length != y.length)
+                return false;
 
-	sealed class ByteBufferEqualityComparer : IEqualityComparer<ByteBuffer> {
+            var x_buffer = x.buffer;
+            var y_buffer = y.buffer;
 
-		public bool Equals (ByteBuffer x, ByteBuffer y)
-		{
-			if (x.length != y.length)
-				return false;
+            for (int i = 0; i < x.length; i++)
+                if (x_buffer[i] != y_buffer[i])
+                    return false;
 
-			var x_buffer = x.buffer;
-			var y_buffer = y.buffer;
+            return true;
+        }
 
-			for (int i = 0; i < x.length; i++)
-				if (x_buffer [i] != y_buffer [i])
-					return false;
+        public int GetHashCode(ByteBuffer buffer)
+        {
+            // See http:// en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+            const int fnv_offset_bias = unchecked((int)2166136261);
+            const int fnv_prime = 16777619;
 
-			return true;
-		}
+            var hash_code = fnv_offset_bias;
+            var bytes = buffer.buffer;
 
-		public int GetHashCode (ByteBuffer buffer)
-		{
-			// See http://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
-			const int fnv_offset_bias = unchecked((int)2166136261);
-			const int fnv_prime = 16777619;
+            for (int i = 0; i < buffer.length; i++)
+                hash_code = unchecked((hash_code ^ bytes[i]) * fnv_prime);
 
-			var hash_code = fnv_offset_bias;
-			var bytes = buffer.buffer;
-
-			for (int i = 0; i < buffer.length; i++)
-				hash_code = unchecked((hash_code ^ bytes [i]) * fnv_prime);
-
-			return hash_code;
-		}
-	}
+            return hash_code;
+        }
+    }
 }

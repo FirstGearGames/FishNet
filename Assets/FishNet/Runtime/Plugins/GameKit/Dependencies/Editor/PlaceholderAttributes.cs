@@ -39,5 +39,4 @@ namespace Sirenix.OdinInspector
     }
 
 #endif
-
 }

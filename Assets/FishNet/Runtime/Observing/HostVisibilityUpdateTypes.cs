@@ -1,5 +1,4 @@
-﻿
-namespace FishNet.Observing
+﻿namespace FishNet.Observing
 {
     [System.Flags]
     public enum HostVisibilityUpdateTypes : byte
@@ -11,7 +10,6 @@ namespace FishNet.Observing
         /// <summary>
         /// Include this flag to update spawned.
         /// </summary>
-        Spawned = 2,
+        Spawned = 2
     }
-
 }

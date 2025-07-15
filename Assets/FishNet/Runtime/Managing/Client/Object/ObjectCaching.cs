@@ -77,7 +77,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Returns a NetworkObject found in spawned cache using objectId.
         /// </summary>
-        /// <param name="objectId"></param>
+        /// <param name = "objectId"></param>
         /// <returns></returns>
         public NetworkObject GetInCached(int objectId, CacheSearchType searchType)
         {
@@ -88,12 +88,12 @@ namespace FishNet.Managing.Client
                 CachedNetworkObject cnob = collection[i];
                 if (cnob.ObjectId == objectId)
                 {
-                    //Any condition always returns.
+                    // Any condition always returns.
                     if (searchType == CacheSearchType.Any)
                         return cnob.NetworkObject;
 
-                    bool spawning = (searchType == CacheSearchType.Spawning);
-                    bool spawnAction = (cnob.Action == CachedNetworkObject.ActionType.Spawn);
+                    bool spawning = searchType == CacheSearchType.Spawning;
+                    bool spawnAction = cnob.Action == CachedNetworkObject.ActionType.Spawn;
                     if (spawning == spawnAction)
                         return cnob.NetworkObject;
                     else
@@ -101,7 +101,7 @@ namespace FishNet.Managing.Client
                 }
             }
 
-            //Fall through.
+            // Fall through.
             return null;
         }
 
@@ -110,17 +110,17 @@ namespace FishNet.Managing.Client
         /// </summary>
         public void AddSpawn(NetworkManager manager, ushort collectionId, int objectId, int initializeOrder, int ownerId, SpawnType ost, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? localPosition, Quaternion? localRotation, Vector3? localScale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncValues)
         {
-            //Set if initialization order has changed.
-            _initializeOrderChanged |= (initializeOrder != 0);
+            // Set if initialization order has changed.
+            _initializeOrderChanged |= initializeOrder != 0;
 
             CachedNetworkObject cnob = null;
-            //If order has not changed then add normally.
+            // If order has not changed then add normally.
             if (!_initializeOrderChanged)
             {
                 cnob = ResettableObjectCaches<CachedNetworkObject>.Retrieve();
                 _cachedObjects.Add(cnob);
             }
-            //Otherwise see if values need to be sorted.
+            // Otherwise see if values need to be sorted.
             else
             {
                 /* Spawns will be ordered at the end of their nearest order.
@@ -198,7 +198,7 @@ namespace FishNet.Managing.Client
                     if (processedIndexes.Contains(i))
                         continue;
                     CachedNetworkObject cnob = collection[i];
-                    bool spawn = (cnob.Action == CachedNetworkObject.ActionType.Spawn);
+                    bool spawn = cnob.Action == CachedNetworkObject.ActionType.Spawn;
 
                     /* See if nested, and if so check if root is already spawned.
                      * If parent is not spawned then find it and process the parent first. */
@@ -231,7 +231,7 @@ namespace FishNet.Managing.Client
 
                                 bool found = false;
                                 string errMsg;
-                                for (int z = (i + 1); z < written; z++)
+                                for (int z = i + 1; z < written; z++)
                                 {
                                     CachedNetworkObject zCnob = collection[z];
                                     if (zCnob.ObjectId == targetObjectId)
@@ -241,7 +241,7 @@ namespace FishNet.Managing.Client
                                         {
                                             if (!isClientHost)
                                             {
-                                                errMsg = (nested) ? $"ObjectId {targetObjectId} was found for a nested spawn, but ActionType is not spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn, but ActionType is not spawn. ObjectId {cnob.ObjectId} will not be spawned.";
+                                                errMsg = nested ? $"ObjectId {targetObjectId} was found for a nested spawn, but ActionType is not spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn, but ActionType is not spawn. ObjectId {cnob.ObjectId} will not be spawned.";
                                                 _networkManager.LogError(errMsg);
                                             }
                                             break;
@@ -259,7 +259,7 @@ namespace FishNet.Managing.Client
                                 {
                                     if (!isClientHost)
                                     {
-                                        errMsg = (nested) ? $"ObjectId {targetObjectId} could not be found for a nested spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn. ObjectId {cnob.ObjectId} will not be spawned.";
+                                        errMsg = nested ? $"ObjectId {targetObjectId} could not be found for a nested spawn. ComponentIndex {cnob.ComponentId} will not be spawned." : $"ObjectId {targetObjectId} was found for a parented spawn. ObjectId {cnob.ObjectId} will not be spawned.";
                                         _networkManager.LogError(errMsg);
                                     }
                                 }
@@ -425,7 +425,7 @@ namespace FishNet.Managing.Client
 
                         /* Only continue with the initialization if it wasn't initialized
                          * early to prevent a despawn conflict. */
-                        bool canInitialize = (!_conflictingDespawns.Contains(cnob.ObjectId) || !_iteratedSpawns.Contains(cnob.NetworkObject));
+                        bool canInitialize = !_conflictingDespawns.Contains(cnob.ObjectId) || !_iteratedSpawns.Contains(cnob.NetworkObject);
                         if (canInitialize)
                             cnob.NetworkObject.Initialize(false, false);
                     }
@@ -449,7 +449,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Sets parent using information on a CachedNetworkObject then applies transform properties.
         /// </summary>
-        /// <param name="cnob"></param>
+        /// <param name = "cnob"></param>
         private void SetParentAndTransformProperties(CachedNetworkObject cnob)
         {
             if (!_networkManager.IsHostStarted && cnob.NetworkObject != null)
@@ -485,7 +485,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Deinitializes an object on clients and despawns the NetworkObject.
         /// </summary>
-        /// <param name="cnob"></param>
+        /// <param name = "cnob"></param>
         private void IterateDespawn(CachedNetworkObject cnob)
         {
             _clientObjects.Despawn(cnob.NetworkObject, cnob.DespawnType, false);
@@ -494,14 +494,14 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Returns a NetworkObject found in spawn cache, or Spawned.
         /// </summary>
-        /// <param name="objectId"></param>
+        /// <param name = "objectId"></param>
         internal NetworkObject GetSpawnedObject(int objectId)
         {
             NetworkObject result;
             //If not found in Spawning then check Spawned.
             if (!IteratedSpawningObjects.TryGetValue(objectId, out result))
             {
-                Dictionary<int, NetworkObject> spawned = (_networkManager.IsHostStarted) ? _networkManager.ServerManager.Objects.Spawned : _networkManager.ClientManager.Objects.Spawned;
+                Dictionary<int, NetworkObject> spawned = _networkManager.IsHostStarted ? _networkManager.ServerManager.Objects.Spawned : _networkManager.ClientManager.Objects.Spawned;
                 spawned.TryGetValue(objectId, out result);
             }
 
@@ -535,25 +535,22 @@ namespace FishNet.Managing.Client
         {
             Unset = 0,
             Spawn = 1,
-            Despawn = 2,
+            Despawn = 2
         }
         #endregion
 
         /// <summary>
         /// True if cached object is nested during initialization.
         /// </summary>
-        public bool IsInitializedNested => (ComponentId > 0);
-
+        public bool IsInitializedNested => ComponentId > 0;
         /// <summary>
         /// True if a scene object.
         /// </summary>
-        public bool IsSceneObject => (SceneId != NetworkObject.UNSET_SCENEID_VALUE);
-
+        public bool IsSceneObject => SceneId != NetworkObject.UNSET_SCENEID_VALUE;
         /// <summary>
         /// True if this object has a parent.
         /// </summary>
-        public bool HasParent => (ParentObjectId != null && ParentComponentId != null);
-
+        public bool HasParent => ParentObjectId != null && ParentComponentId != null;
         public ushort CollectionId;
         public int ObjectId;
         public int InitializeOrder;
@@ -570,12 +567,10 @@ namespace FishNet.Managing.Client
         public ulong SceneId;
         public string SceneName = string.Empty;
         public string ObjectName = string.Empty;
-
         /// <summary>
         /// True if spawning.
         /// </summary>
         public ActionType Action { get; private set; }
-
         /// <summary>
         /// Cached NetworkObject.
         /// </summary>
@@ -626,7 +621,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Initializes for a despawned NetworkObject.
         /// </summary>
-        /// <param name="nob"></param>
+        /// <param name = "nob"></param>
         public void InitializeDespawn(int objectId, DespawnType despawnType)
         {
             ResetState();

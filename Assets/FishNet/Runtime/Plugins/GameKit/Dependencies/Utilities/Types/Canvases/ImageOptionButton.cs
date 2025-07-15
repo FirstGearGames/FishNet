@@ -5,7 +5,6 @@ using UnityEngine.UI;
 
 namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
 {
-
     public class OptionMenuImageButton : OptionMenuButton
     {
         #region Serialized.
@@ -23,7 +22,5 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
             _image.sprite = buttonData.DisplayImage;
         }
     }
-
-
 }
 #endif

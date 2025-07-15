@@ -2,10 +2,8 @@
 using TMPro;
 using UnityEngine;
 
-
 namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
 {
-
     public class OptionMenuButton : MonoBehaviour
     {
         #region Public.
@@ -30,7 +28,5 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
             _text.text = buttonData.Text;
         }
     }
-
-
 }
 #endif

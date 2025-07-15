@@ -59,11 +59,11 @@ namespace FishNet.Object
         /// <summary>
         /// True if predicted spawning is allowed for this object.
         /// </summary>
-        internal bool AllowPredictedSpawning => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowSpawning();
+        internal bool AllowPredictedSpawning => PredictedSpawn == null ? false : PredictedSpawn.GetAllowSpawning();
         /// <summary>
         /// True if predicted spawning is allowed for this object.
         /// </summary>
-        internal bool AllowPredictedDespawning => (PredictedSpawn == null) ? false : PredictedSpawn.GetAllowDespawning();
+        internal bool AllowPredictedDespawning => PredictedSpawn == null ? false : PredictedSpawn.GetAllowDespawning();
         /// <summary>
         /// True if this object has been initialized on the client side.
         /// This is set true right before client start callbacks and after stop callbacks.
@@ -73,16 +73,16 @@ namespace FishNet.Object
         /// True if the client is started and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
         /// To check if this object has been initialized for the client use IsClientInitialized.
         /// </summary>
-        public bool IsClientStarted => (NetworkManager == null) ? false : NetworkManager.IsClientStarted;
+        public bool IsClientStarted => NetworkManager == null ? false : NetworkManager.IsClientStarted;
         /// <summary>
         /// True if this object has been initialized only on the server side.
         /// This is set true right before server start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsClientOnlyInitialized => (!IsServerInitialized && IsClientInitialized);
+        public bool IsClientOnlyInitialized => !IsServerInitialized && IsClientInitialized;
         /// <summary>
         /// True if only the client is started and authenticated.
         /// </summary>
-        public bool IsClientOnlyStarted => (IsClientStarted && !IsServerStarted);
+        public bool IsClientOnlyStarted => IsClientStarted && !IsServerStarted;
         /// <summary>
         /// True if this object has been initialized on the server side.
         /// This is set true right before server start callbacks and after stop callbacks.
@@ -92,38 +92,36 @@ namespace FishNet.Object
         /// True if the server is active. This will return true on clientHost even if the object is being deinitialized on the server.
         /// To check if this object has been initialized for the server use IsServerInitialized.
         /// </summary>
-        public bool IsServerStarted => (NetworkManager == null) ? false : NetworkManager.IsServerStarted;
+        public bool IsServerStarted => NetworkManager == null ? false : NetworkManager.IsServerStarted;
         /// <summary>
         /// True if this object has been initialized only on the server side.
         /// This is set true right before server start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsServerOnlyInitialized => (IsServerInitialized && !IsClientInitialized);
+        public bool IsServerOnlyInitialized => IsServerInitialized && !IsClientInitialized;
         /// <summary>
         /// True if only the server is started.
         /// </summary>
-        public bool IsServerOnlyStarted => (IsServerStarted && !IsClientStarted);
+        public bool IsServerOnlyStarted => IsServerStarted && !IsClientStarted;
         /// <summary>
         /// True if client and server are started.
         /// </summary>
-        public bool IsHostStarted => (IsClientStarted && IsServerStarted);
+        public bool IsHostStarted => IsClientStarted && IsServerStarted;
         /// <summary>
         /// True if this object has been initialized on the server and client side.
         /// </summary>
-        public bool IsHostInitialized => (IsClientInitialized && IsServerInitialized);
+        public bool IsHostInitialized => IsClientInitialized && IsServerInitialized;
         /// <summary>
         /// True if client nor server are started.
         /// </summary>
-        public bool IsOffline => (!IsClientStarted && !IsServerStarted);
+        public bool IsOffline => !IsClientStarted && !IsServerStarted;
         /// <summary>
         /// True if a reconcile is occuring on the PredictionManager. Note the difference between this and IsBehaviourReconciling.
         /// </summary>
         public bool IsManagerReconciling => PredictionManager.IsReconciling;
-
         /// <summary>
         /// True if the local client is currently using a PredictedOwner component on this object to take ownership.
         /// </summary>
-        public bool IsTakingOwnership => (PredictedOwner != null && PredictedOwner.TakingOwnership);
-
+        public bool IsTakingOwnership => PredictedOwner != null && PredictedOwner.TakingOwnership;
         /// <summary>
         /// True if the local client is the owner of this object.
         /// This will only return true if IsClientInitialized is also true. You may check ownership status regardless of client initialized state by using Owner.IsLocalClient.
@@ -172,12 +170,10 @@ namespace FishNet.Object
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "OnStartNetwork", " Use (base.Owner.IsLocalClient || (base.IsServerInitialized && !Owner.Isvalid) instead.")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Awake", "")]
         [PreventUsageInside("global::FishNet.Object.NetworkBehaviour", "Start", "")]
-        public bool IsController => (IsOwner || (IsServerInitialized && !Owner.IsValid));
-
+        public bool IsController => IsOwner || (IsServerInitialized && !Owner.IsValid);
         [Obsolete("Use IsController.")]
         public bool HasAuthority => IsController;
         /// <summary>
-        /// 
         /// </summary>
         private NetworkConnection _owner;
         /// <summary>
@@ -187,9 +183,9 @@ namespace FishNet.Object
         {
             get
             {
-                //Ensures a null Owner is never returned.
+                // Ensures a null Owner is never returned.
                 if (_owner == null)
-                    return FishNet.Managing.NetworkManager.EmptyConnection;
+                    return NetworkManager.EmptyConnection;
 
                 return _owner;
             }
@@ -198,15 +194,15 @@ namespace FishNet.Object
         /// <summary>
         /// ClientId for this NetworkObject owner.
         /// </summary>
-        public int OwnerId => (!Owner.IsValid) ? -1 : Owner.ClientId;
+        public int OwnerId => !Owner.IsValid ? -1 : Owner.ClientId;
         /// <summary>
         /// True if the object is initialized for the network.
         /// </summary>
-        public bool IsSpawned => (!IsDeinitializing && ObjectId != NetworkObject.UNSET_OBJECTID_VALUE);
+        public bool IsSpawned => !IsDeinitializing && ObjectId != UNSET_OBJECTID_VALUE;
         /// <summary>
         /// The local connection of the client calling this method.
         /// </summary>
-        public NetworkConnection LocalConnection => (NetworkManager == null) ? new() : NetworkManager.ClientManager.Connection;
+        public NetworkConnection LocalConnection => NetworkManager == null ? new() : NetworkManager.ClientManager.Connection;
         /// <summary>
         /// NetworkManager for this object.
         /// </summary>
@@ -248,8 +244,8 @@ namespace FishNet.Object
         /// <summary>
         /// Returns a NetworkBehaviour on this NetworkObject.
         /// </summary>
-        /// <param name="componentIndex">ComponentIndex of the NetworkBehaviour.</param>
-        /// <param name="error">True to error if not found.</param>
+        /// <param name = "componentIndex">ComponentIndex of the NetworkBehaviour.</param>
+        /// <param name = "error">True to error if not found.</param>
         /// <returns></returns>
         public NetworkBehaviour GetNetworkBehaviour(byte componentIndex, bool error)
         {
@@ -268,8 +264,8 @@ namespace FishNet.Object
         /// <summary>
         /// Despawns a GameObject. Only call from the server.
         /// </summary>
-        /// <param name="go">GameObject to despawn.</param>
-        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        /// <param name = "go">GameObject to despawn.</param>
+        /// <param name = "despawnType">What happens to the object after being despawned.</param>
         public void Despawn(GameObject go, DespawnType? despawnType = null)
         {
             if (NetworkManager != null)
@@ -279,8 +275,8 @@ namespace FishNet.Object
         /// <summary>
         /// Despawns  a NetworkObject. Only call from the server.
         /// </summary>
-        /// <param name="nob">NetworkObject to despawn.</param>
-        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        /// <param name = "nob">NetworkObject to despawn.</param>
+        /// <param name = "despawnType">What happens to the object after being despawned.</param>
         public void Despawn(NetworkObject nob, DespawnType? despawnType = null)
         {
             if (NetworkManager != null)
@@ -290,7 +286,7 @@ namespace FishNet.Object
         /// <summary>
         /// Despawns this NetworkObject. Only call from the server.
         /// </summary>
-        /// <param name="despawnType">What happens to the object after being despawned.</param>
+        /// <param name = "despawnType">What happens to the object after being despawned.</param>
         public void Despawn(DespawnType? despawnType = null)
         {
             NetworkObject nob = this;
@@ -322,7 +318,7 @@ namespace FishNet.Object
         /// <summary>
         /// Takes ownership of this object and child network objects, allowing immediate control.
         /// </summary>
-        /// <param name="caller">Connection to give ownership to.</param>
+        /// <param name = "caller">Connection to give ownership to.</param>
         public void SetLocalOwnership(NetworkConnection caller, bool recursive)
         {
             NetworkConnection prevOwner = Owner;
@@ -348,60 +344,60 @@ namespace FishNet.Object
         /// <summary>
         /// Invokes an action when a specified component becomes registered. Action will invoke immediately if already registered.
         /// </summary>
-        /// <typeparam name="T">Component type.</typeparam>
-        /// <param name="handler">Action to invoke.</param>
+        /// <typeparam name = "T">Component type.</typeparam>
+        /// <param name = "handler">Action to invoke.</param>
         public void RegisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.RegisterInvokeOnInstance<T>(handler);
 
         /// <summary>
         /// Removes an action to be invoked when a specified component becomes registered.
         /// </summary>
-        /// <typeparam name="T">Component type.</typeparam>
-        /// <param name="handler">Action to invoke.</param>
+        /// <typeparam name = "T">Component type.</typeparam>
+        /// <param name = "handler">Action to invoke.</param>
         public void UnregisterInvokeOnInstance<T>(Action<UnityEngine.Component> handler) where T : UnityEngine.Component => NetworkManager.UnregisterInvokeOnInstance<T>(handler);
 
         /// <summary>
         /// Returns if an instance exists for type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name = "T"></typeparam>
         /// <returns></returns>
         public bool HasInstance<T>() where T : UnityEngine.Component => NetworkManager.HasInstance<T>();
 
         /// <summary>
         /// Returns class of type if found within CodegenBase classes.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name = "T"></typeparam>
         /// <returns></returns>
         public T GetInstance<T>() where T : UnityEngine.Component => NetworkManager.GetInstance<T>();
 
         /// <summary>
         /// Registers a new component to this NetworkManager.
         /// </summary>
-        /// <typeparam name="T">Type to register.</typeparam>
-        /// <param name="component">Reference of the component being registered.</param>
-        /// <param name="replace">True to replace existing references.</param>
+        /// <typeparam name = "T">Type to register.</typeparam>
+        /// <param name = "component">Reference of the component being registered.</param>
+        /// <param name = "replace">True to replace existing references.</param>
         public void RegisterInstance<T>(T component, bool replace = true) where T : UnityEngine.Component => NetworkManager.RegisterInstance(component, replace);
 
         /// <summary>
         /// Tries to registers a new component to this NetworkManager.
         /// This will not register the instance if another already exists.
         /// </summary>
-        /// <typeparam name="T">Type to register.</typeparam>
-        /// <param name="component">Reference of the component being registered.</param>
+        /// <typeparam name = "T">Type to register.</typeparam>
+        /// <param name = "component">Reference of the component being registered.</param>
         /// <returns>True if was able to register, false if an instance is already registered.</returns>
         public bool TryRegisterInstance<T>(T component) where T : UnityEngine.Component => NetworkManager.TryRegisterInstance(component);
 
         /// <summary>
         /// Returns class of type from registered instances.
         /// </summary>
-        /// <param name="component">Outputted component.</param>
-        /// <typeparam name="T">Type to get.</typeparam>
+        /// <param name = "component">Outputted component.</param>
+        /// <typeparam name = "T">Type to get.</typeparam>
         /// <returns>True if was able to get instance.</returns>
         public bool TryGetInstance<T>(out T component) where T : UnityEngine.Component => NetworkManager.TryGetInstance(out component);
 
         /// <summary>
         /// Unregisters a component from this NetworkManager.
         /// </summary>
-        /// <typeparam name="T">Type to unregister.</typeparam>
+        /// <typeparam name = "T">Type to unregister.</typeparam>
         public void UnregisterInstance<T>() where T : UnityEngine.Component => NetworkManager.UnregisterInstance<T>();
         #endregion
     }

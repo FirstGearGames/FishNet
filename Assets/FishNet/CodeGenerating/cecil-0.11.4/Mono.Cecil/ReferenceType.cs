@@ -9,35 +9,34 @@
 //
 
 using System;
-
 using MD = MonoFN.Cecil.Metadata;
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public sealed class ByReferenceType : TypeSpecification
+    {
+        public override string Name
+        {
+            get { return base.Name + "&"; }
+        }
+        public override string FullName
+        {
+            get { return base.FullName + "&"; }
+        }
+        public override bool IsValueType
+        {
+            get { return false; }
+            set { throw new InvalidOperationException(); }
+        }
+        public override bool IsByReference
+        {
+            get { return true; }
+        }
 
-	public sealed class ByReferenceType : TypeSpecification {
-
-		public override string Name {
-			get { return base.Name + "&"; }
-		}
-
-		public override string FullName {
-			get { return base.FullName + "&"; }
-		}
-
-		public override bool IsValueType {
-			get { return false; }
-			set { throw new InvalidOperationException (); }
-		}
-
-		public override bool IsByReference {
-			get { return true; }
-		}
-
-		public ByReferenceType (TypeReference type)
-			: base (type)
-		{
-			Mixin.CheckType (type);
-			this.etype = MD.ElementType.ByRef;
-		}
-	}
+        public ByReferenceType(TypeReference type) : base(type)
+        {
+            Mixin.CheckType(type);
+            etype = MD.ElementType.ByRef;
+        }
+    }
 }

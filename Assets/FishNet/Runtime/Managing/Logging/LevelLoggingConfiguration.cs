@@ -73,7 +73,7 @@ namespace FishNet.Managing.Logging
         [APIExclude]
         public void LoggingConstructor(bool loggingEnabled, LoggingType development, LoggingType gui, LoggingType headless)
         {
-            base.IsEnabled = loggingEnabled;
+            IsEnabled = loggingEnabled;
             _developmentLogging = development;
             _guiLogging = gui;
             _headlessLogging = headless;
@@ -82,7 +82,7 @@ namespace FishNet.Managing.Logging
         /// <summary>
         /// Initializes script for use.
         /// </summary>
-        /// <param name="manager"></param>
+        /// <param name = "manager"></param>
         public override void InitializeOnce()
         {
             byte currentHighest = (byte)LoggingType.Off;
@@ -100,11 +100,11 @@ namespace FishNet.Managing.Logging
         /// <summary>
         /// True if can log for loggingType.
         /// </summary>
-        /// <param name="loggingType">Type of logging being filtered.</param>
+        /// <param name = "loggingType">Type of logging being filtered.</param>
         /// <returns></returns>
         public override bool CanLog(LoggingType loggingType)
         {
-            if (!base.IsEnabled)
+            if (!IsEnabled)
                 return false;
 
             if (!_initialized)
@@ -118,7 +118,7 @@ namespace FishNet.Managing.Logging
                 return false;
             }
 
-            return ((byte)loggingType <= (byte)_highestLoggingType);
+            return (byte)loggingType <= (byte)_highestLoggingType;
         }
 
         /// <summary>
@@ -156,8 +156,8 @@ namespace FishNet.Managing.Logging
         /// <returns></returns>
         public override LoggingConfiguration Clone()
         {
-            LevelLoggingConfiguration copy = ScriptableObject.CreateInstance<LevelLoggingConfiguration>();
-            copy.LoggingConstructor(base.IsEnabled, _developmentLogging, _guiLogging, _headlessLogging);
+            LevelLoggingConfiguration copy = CreateInstance<LevelLoggingConfiguration>();
+            copy.LoggingConstructor(IsEnabled, _developmentLogging, _guiLogging, _headlessLogging);
             copy._addTimestamps = _addTimestamps;
             copy._addLocalTick = _addLocalTick;
             copy._enableTimestampsInEditor = _enableTimestampsInEditor;
@@ -179,11 +179,11 @@ namespace FishNet.Managing.Logging
             if (_addLocalTick)
             {
                 TimeManager tm = InstanceFinder.TimeManager;
-                uint tick = (tm == null) ? TimeManager.UNSET_TICK : tm.LocalTick;
+                uint tick = tm == null ? TimeManager.UNSET_TICK : tm.LocalTick;
                 _stringBuilder.Append($"LocalTick [{tick}] ");
             }
 
-            //If anything was added onto string builder then add value, and set value to string builder.
+            // If anything was added onto string builder then add value, and set value to string builder.
             if (_stringBuilder.Length > 0)
             {
                 _stringBuilder.Append(value);

@@ -36,6 +36,5 @@ namespace FishNet.CodeGenerating.Helping
                 MessageData = $" - {message}"
             });
         }
-
     }
 }

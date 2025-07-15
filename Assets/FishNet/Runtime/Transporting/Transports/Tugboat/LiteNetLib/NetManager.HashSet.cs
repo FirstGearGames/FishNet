@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace LiteNetLib
 {
-    //minimal hashset class from dotnet with some optimizations
+    // minimal hashset class from dotnet with some optimizations
     public partial class NetManager
     {
         private const int MaxPrimeArrayLength = 0x7FFFFFC3;
@@ -28,9 +28,9 @@ namespace LiteNetLib
             }
 
             // Outside of our predefined table. Compute the hard way.
-            for (int i = (min | 1); i < int.MaxValue; i += 2)
+            for (int i = min | 1; i < int.MaxValue; i += 2)
             {
-                if (IsPrime(i) && ((i - 1) % HashPrime != 0))
+                if (IsPrime(i) && (i - 1) % HashPrime != 0)
                     return i;
             }
             return min;
@@ -100,7 +100,7 @@ namespace LiteNetLib
         /// <summary>
         /// Gets peer by peer id
         /// </summary>
-        /// <param name="id">id of peer</param>
+        /// <param name = "id">id of peer</param>
         /// <returns>Peer if peer with id exist, otherwise null</returns>
         public NetPeer GetPeerById(int id)
         {
@@ -110,8 +110,8 @@ namespace LiteNetLib
         /// <summary>
         /// Gets peer by peer id
         /// </summary>
-        /// <param name="id">id of peer</param>
-        /// <param name="peer">resulting peer</param>
+        /// <param name = "id">id of peer</param>
+        /// <param name = "peer">resulting peer</param>
         /// <returns>True if peer with id exist, otherwise false</returns>
         public bool TryGetPeerById(int id, out NetPeer peer)
         {
@@ -206,7 +206,7 @@ namespace LiteNetLib
             if (_buckets != null)
             {
 #if NET8_0_OR_GREATER
-                //can be NetPeer or IPEndPoint
+                // can be NetPeer or IPEndPoint
                 int hashCode = (UseNativeSockets ? endPoint.GetHashCode() : endPoint.Serialize().GetHashCode()) & Lower31BitMask;
 #else
                 int hashCode = endPoint.GetHashCode() & Lower31BitMask;
@@ -227,7 +227,7 @@ namespace LiteNetLib
             return false;
         }
 
-        //only used for NET8
+        // only used for NET8
         private bool TryGetPeer(SocketAddress saddr, out NetPeer actualValue)
         {
             if (_buckets != null)
@@ -276,11 +276,9 @@ namespace LiteNetLib
             {
                 if (_lastIndex == _slots.Length)
                 {
-                    //increase capacity
+                    // increase capacity
                     int newSize = 2 * _count;
-                    newSize = (uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > _count
-                        ? MaxPrimeArrayLength
-                        : HashSetGetPrime(newSize);
+                    newSize = (uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > _count ? MaxPrimeArrayLength : HashSetGetPrime(newSize);
 
                     // Able to increase capacity; copy elements to larger array and rehash
                     Slot[] newSlots = new Slot[newSize];
@@ -308,5 +306,4 @@ namespace LiteNetLib
             return true;
         }
     }
-
 }

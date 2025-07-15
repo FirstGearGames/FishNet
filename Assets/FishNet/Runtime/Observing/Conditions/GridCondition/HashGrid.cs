@@ -16,10 +16,7 @@ namespace FishNet.Component.Observing
         /// This grid entry as well those neighboring it.
         /// </summary>
         public HashSet<GridEntry> NearbyEntries;
-
-        public GridEntry()
-        {
-        }
+        public GridEntry() { }
 
         public GridEntry(HashSet<GridEntry> nearby)
         {
@@ -52,42 +49,39 @@ namespace FishNet.Component.Observing
     public class HashGrid : MonoBehaviour
     {
         #region Types.
-
         public enum GridAxes : byte
         {
             XY = 0,
             YZ = 1,
-            XZ = 2,
+            XZ = 2
         }
-
         #endregion
 
         #region Internal.
-
         /// <summary>
         /// Value for when grid position is not set.
         /// </summary>
-        internal static Vector2Int UnsetGridPosition = (Vector2Int.one * int.MaxValue);
+        internal static Vector2Int UnsetGridPosition = Vector2Int.one * int.MaxValue;
         /// <summary>
         /// An empty grid entry.
         /// </summary>
         internal static GridEntry EmptyGridEntry = new(new());
-
         #endregion
 
         #region Serialized.
-
         /// <summary>
         /// Axes of world space to base the grid on.
         /// </summary>
-        [Tooltip("Axes of world space to base the grid on.")] [SerializeField]
+        [Tooltip("Axes of world space to base the grid on.")]
+        [SerializeField]
         private GridAxes _gridAxes = GridAxes.XY;
         /// <summary>
         /// Accuracy of the grid. Objects will be considered nearby if they are within this number of units. Lower values may be more expensive.
         /// </summary>
-        [Tooltip("Accuracy of the grid. Objects will be considered nearby if they are within this number of units. Lower values may be more expensive.")] [Range(1, ushort.MaxValue)] [SerializeField]
+        [Tooltip("Accuracy of the grid. Objects will be considered nearby if they are within this number of units. Lower values may be more expensive.")]
+        [Range(1, ushort.MaxValue)]
+        [SerializeField]
         private ushort _accuracy = 10;
-
         #endregion
 
         /// <summary>
@@ -121,7 +115,7 @@ namespace FishNet.Component.Observing
                 return;
             }
 
-            //Make sure there is only one per networkmanager.
+            // Make sure there is only one per networkmanager.
             if (!_networkManager.HasInstance<HashGrid>())
             {
                 _halfAccuracy = Mathf.CeilToInt((float)_accuracy / 2f);
@@ -171,21 +165,21 @@ namespace FishNet.Component.Observing
         /// </summary>
         private GridEntry CreateGridEntry(Vector2Int position)
         {
-            //Make this into a stack that populates a number of entries when empty. also populate with some in awake.
+            // Make this into a stack that populates a number of entries when empty. also populate with some in awake.
             GridEntry newEntry;
             HashSet<GridEntry> nearby;
             OutputNewGridCollections(out newEntry, out nearby);
             newEntry.SetValues(position, nearby);
-            //Add to grid.
+            // Add to grid.
             _gridEntries[position] = newEntry;
 
-            //Get neighbors.
-            int endX = (position.x + 1);
-            int endY = (position.y + 1);
+            // Get neighbors.
+            int endX = position.x + 1;
+            int endY = position.y + 1;
             int iterations = 0;
-            for (int x = (position.x - 1); x <= endX; x++)
+            for (int x = position.x - 1; x <= endX; x++)
             {
-                for (int y = (position.y - 1); y <= endY; y++)
+                for (int y = position.y - 1; y <= endY; y++)
                 {
                     iterations++;
                     if (_gridEntries.TryGetValue(new(x, y), out GridEntry foundEntry))
@@ -205,12 +199,12 @@ namespace FishNet.Component.Observing
         internal void GetNearbyHashGridPositions(NetworkObject nob, ref HashSet<Vector2Int> collection)
         {
             Vector2Int position = GetHashGridPosition(nob);
-            //Get neighbors.
-            int endX = (position.x + 1);
-            int endY = (position.y + 1);
-            for (int x = (position.x - 1); x < endX; x++)
+            // Get neighbors.
+            int endX = position.x + 1;
+            int endY = position.y + 1;
+            for (int x = position.x - 1; x < endX; x++)
             {
-                for (int y = (position.y - 1); y < endY; y++)
+                for (int y = position.y - 1; y < endY; y++)
                     collection.Add(new(x, y));
             }
         }
@@ -244,17 +238,12 @@ namespace FishNet.Component.Observing
                 return default;
             }
 
-            return new(
-                (int)fX / _halfAccuracy
-                , (int)fY / _halfAccuracy
-            );
+            return new((int)fX / _halfAccuracy, (int)fY / _halfAccuracy);
         }
-
 
         /// <summary>
         /// Gets a GridEntry for a NetworkObject, creating the entry if needed.
         /// </summary>
-        
         internal GridEntry GetGridEntry(NetworkObject nob)
         {
             Vector2Int pos = GetHashGridPosition(nob);

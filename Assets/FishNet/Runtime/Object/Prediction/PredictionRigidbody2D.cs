@@ -87,7 +87,6 @@ namespace FishNet.Object.Prediction
             pr.SetPendingForces(lst);
             return pr;
         }
-
     }
 
     [UseGlobalCustomSerializer]
@@ -95,15 +94,16 @@ namespace FishNet.Object.Prediction
     public class PredictionRigidbody2D : IResettable
     {
         #region Types.
-        //How the force was applied.
+        // How the force was applied.
         [System.Flags]
         public enum ForceApplicationType : byte
         {
             AddForceAtPosition = 1,
             AddForce = 4,
             AddRelativeForce = 8,
-            AddTorque = 16,
+            AddTorque = 16
         }
+
         public struct AllForceData
         {
             public Vector3 Vector3Force;
@@ -116,7 +116,6 @@ namespace FishNet.Object.Prediction
                 Vector3Force = force;
                 Mode = mode;
             }
-
 
             public AllForceData(float force, ForceMode2D mode) : this()
             {
@@ -132,7 +131,6 @@ namespace FishNet.Object.Prediction
             }
         }
 
-
         [UseGlobalCustomSerializer]
         public struct EntryData
         {
@@ -144,6 +142,7 @@ namespace FishNet.Object.Prediction
                 Type = type;
                 Data = data;
             }
+
             public EntryData(EntryData fd)
             {
                 Type = fd.Type;
@@ -168,7 +167,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns if there are any pending forces.
         /// </summary>
-        public bool HasPendingForces => (_pendingForces != null && _pendingForces.Count > 0);
+        public bool HasPendingForces => _pendingForces != null && _pendingForces.Count > 0;
         #endregion
 
         #region Private
@@ -177,6 +176,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         [ExcludeSerialization]
         private List<EntryData> _pendingForces;
+
         /// <summary>
         /// Returns current pending forces.
         /// Modifying this collection could cause undesirable results.
@@ -194,7 +194,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Rigidbody which force is applied.
         /// </summary>
-        /// <param name="rb"></param>
+        /// <param name = "rb"></param>
         public void Initialize(Rigidbody2D rb)
         {
             Rigidbody2D = rb;
@@ -209,27 +209,25 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void AddForce(Vector3 force, ForceMode2D mode = ForceMode2D.Force)
         {
-            EntryData fd = new(ForceApplicationType.AddForce,
-                new(force, mode));
+            EntryData fd = new(ForceApplicationType.AddForce, new(force, mode));
             _pendingForces.Add(fd);
         }
+
         public void AddRelativeForce(Vector3 force, ForceMode2D mode = ForceMode2D.Force)
         {
-            EntryData fd = new(ForceApplicationType.AddRelativeForce,
-                new(force, mode));
+            EntryData fd = new(ForceApplicationType.AddRelativeForce, new(force, mode));
             _pendingForces.Add(fd);
-
         }
+
         public void AddTorque(float force, ForceMode2D mode = ForceMode2D.Force)
         {
-            EntryData fd = new(ForceApplicationType.AddTorque,
-                new(force, mode));
+            EntryData fd = new(ForceApplicationType.AddTorque, new(force, mode));
             _pendingForces.Add(fd);
         }
+
         public void AddForceAtPosition(Vector3 force, Vector3 position, ForceMode2D mode = ForceMode2D.Force)
         {
-            EntryData fd = new(ForceApplicationType.AddForceAtPosition,
-                new(force, position, mode));
+            EntryData fd = new(ForceApplicationType.AddForceAtPosition, new(force, position, mode));
             _pendingForces.Add(fd);
         }
 
@@ -283,11 +281,12 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Manually clears pending forces.
         /// </summary>
-        /// <param name="velocity">True to clear velocities, false to clear angular velocities.</param>
+        /// <param name = "velocity">True to clear velocities, false to clear angular velocities.</param>
         public void ClearPendingForces(bool velocity)
         {
             RemoveForces(velocity);
         }
+
         /// <summary>
         /// Clears pending velocity and angular velocity forces.
         /// </summary>
@@ -315,13 +314,13 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Removes forces from pendingForces.
         /// </summary>
-        /// <param name="velocity">True to remove if velocity, false if to remove angular velocity.</param>
+        /// <param name = "velocity">True to remove if velocity, false if to remove angular velocity.</param>
         private void RemoveForces(bool velocity)
         {
             if (_pendingForces.Count > 0)
             {
                 bool shouldExist = velocity;
-                ForceApplicationType velocityApplicationTypes = (ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce);
+                ForceApplicationType velocityApplicationTypes = ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce;
 
                 List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
                 foreach (EntryData item in _pendingForces)
@@ -329,7 +328,7 @@ namespace FishNet.Object.Prediction
                     if (VelocityApplicationTypesContains(item.Type) == !velocity)
                         newDatas.Add(item);
                 }
-                //Add back to _pendingForces if changed.
+                // Add back to _pendingForces if changed.
                 if (newDatas.Count != _pendingForces.Count)
                 {
                     _pendingForces.Clear();
@@ -343,8 +342,6 @@ namespace FishNet.Object.Prediction
                     return (velocityApplicationTypes & apt) == apt;
                 }
             }
-
-
         }
 
         internal void SetPendingForces(List<EntryData> lst) => _pendingForces = lst;
@@ -363,6 +360,4 @@ namespace FishNet.Object.Prediction
 
         public void InitializeState() { }
     }
-
 }
-

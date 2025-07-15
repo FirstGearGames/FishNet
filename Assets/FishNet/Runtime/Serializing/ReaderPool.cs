@@ -9,15 +9,16 @@ namespace FishNet.Serializing
     /// <summary>
     /// Reader which is reused to save on garbage collection and performance.
     /// </summary>
-    public sealed class PooledReader : Reader//, IResettable
+    public sealed class PooledReader : Reader // , IResettable
     {
-        public PooledReader() { } 
-        internal PooledReader(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(bytes, networkManager, null, source) { }
-        internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset) : base(segment, networkManager, null, source) { }
+        public PooledReader() { }
+        internal PooledReader(byte[] bytes, NetworkManager networkManager, DataSource source = DataSource.Unset) : base(bytes, networkManager, null, source) { }
+        internal PooledReader(ArraySegment<byte> segment, NetworkManager networkManager, DataSource source = DataSource.Unset) : base(segment, networkManager, null, source) { }
         public void Store() => ReaderPool.Store(this);
-        
+
         [Obsolete("Use Clear instead.")]
-        public void ResetState() => base.Clear();
+        public void ResetState() => Clear();
+
         [Obsolete("This does not function.")]
         public void InitializeState() { }
     }
@@ -38,7 +39,6 @@ namespace FishNet.Serializing
         /// Get the next reader in the pool
         /// <para>If pool is empty, creates a new Reader</para>
         /// </summary>
-        
         public static PooledReader Retrieve(byte[] bytes, NetworkManager networkManager, Reader.DataSource source = Reader.DataSource.Unset)
         {
             return Retrieve(new ArraySegment<byte>(bytes), networkManager, source);
@@ -57,7 +57,6 @@ namespace FishNet.Serializing
 
             return result;
         }
-
 
         /// <summary>
         /// Puts reader back into pool

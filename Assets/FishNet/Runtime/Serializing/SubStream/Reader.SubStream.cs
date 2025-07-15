@@ -1,6 +1,5 @@
 namespace FishNet.Serializing
 {
-
     public partial class Reader
     {
         /// <summary>
@@ -22,5 +21,4 @@ namespace FishNet.Serializing
             return SubStream.CreateFromReader(this, streamLength);
         }
     }
-
 }

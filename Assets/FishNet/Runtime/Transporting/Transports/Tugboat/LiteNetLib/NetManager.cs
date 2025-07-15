@@ -68,8 +68,8 @@ namespace LiteNetLib
             MessageDelivered,
             PeerAddressChanged
         }
-        public EType Type;
 
+        public EType Type;
         public NetPeer Peer;
         public IPEndPoint RemoteEndPoint;
         public object UserData;
@@ -95,23 +95,19 @@ namespace LiteNetLib
         public struct NetPeerEnumerator : IEnumerator<NetPeer>
         {
             private readonly NetPeer _initialPeer;
-            private NetPeer _p;
 
             public NetPeerEnumerator(NetPeer p)
             {
                 _initialPeer = p;
-                _p = null;
+                Current = null;
             }
 
-            public void Dispose()
-            {
-
-            }
+            public void Dispose() { }
 
             public bool MoveNext()
             {
-                _p = _p == null ? _initialPeer : _p.NextPeer;
-                return _p != null;
+                Current = Current == null ? _initialPeer : Current.NextPeer;
+                return Current != null;
             }
 
             public void Reset()
@@ -119,8 +115,8 @@ namespace LiteNetLib
                 throw new NotSupportedException();
             }
 
-            public NetPeer Current => _p;
-            object IEnumerator.Current => _p;
+            public NetPeer Current { get; private set; }
+            object IEnumerator.Current => Current;
         }
 
 #if DEBUG
@@ -130,24 +126,21 @@ namespace LiteNetLib
             public IPEndPoint EndPoint;
             public DateTime TimeWhenGet;
         }
+
         private readonly List<IncomingData> _pingSimulationList = new();
         private readonly Random _randomGenerator = new();
         private const int MinLatencyThreshold = 5;
 #endif
-
         private Thread _logicThread;
         private bool _manualMode;
         private readonly AutoResetEvent _updateTriggerEvent = new(true);
-
         private NetEvent _pendingEventHead;
         private NetEvent _pendingEventTail;
-
         private NetEvent _netEventPoolHead;
         private readonly INetEventListener _netEventListener;
         private readonly IDeliveryEventListener _deliveryEventListener;
         private readonly INtpEventListener _ntpEventListener;
         private readonly IPeerAddressChangedListener _peerAddressChangedListener;
-
         private readonly Dictionary<IPEndPoint, ConnectionRequest> _requestsDict = new();
         private readonly ConcurrentDictionary<IPEndPoint, NtpRequest> _ntpRequests = new();
         private long _connectedPeersCount;
@@ -158,168 +151,137 @@ namespace LiteNetLib
         private byte _channelsCount = 1;
         private readonly object _eventLock = new();
 
-        //config section
+        // config section
         /// <summary>
         /// Enable messages receiving without connection. (with SendUnconnectedMessage method)
         /// </summary>
         public bool UnconnectedMessagesEnabled = false;
-
         /// <summary>
         /// Enable nat punch messages
         /// </summary>
         public bool NatPunchEnabled = false;
-
         /// <summary>
         /// Library logic update and send period in milliseconds
         /// Lowest values in Windows doesn't change much because of Thread.Sleep precision
-        /// To more frequent sends (or sends tied to your game logic) use <see cref="TriggerUpdate"/>
+        /// To more frequent sends (or sends tied to your game logic) use <see cref = "TriggerUpdate"/>
         /// </summary>
         public int UpdateTime = 15;
-
         /// <summary>
         /// Interval for latency detection and checking connection (in milliseconds)
         /// </summary>
         public int PingInterval = 1000;
-
         /// <summary>
         /// If NetManager doesn't receive any packet from remote peer during this time (in milliseconds) then connection will be closed
         /// (including library internal keepalive packets)
         /// </summary>
         public int DisconnectTimeout = 5000;
-
         /// <summary>
         /// Simulate packet loss by dropping random amount of packets. (Works only in DEBUG mode)
         /// </summary>
         public bool SimulatePacketLoss = false;
-
         /// <summary>
         /// Simulate latency by holding packets for random time. (Works only in DEBUG mode)
         /// </summary>
         public bool SimulateLatency = false;
-
         /// <summary>
         /// Chance of packet loss when simulation enabled. value in percents (1 - 100).
         /// </summary>
         public int SimulationPacketLossChance = 10;
-
         /// <summary>
         /// Minimum simulated latency (in milliseconds)
         /// </summary>
         public int SimulationMinLatency = 30;
-
         /// <summary>
         /// Maximum simulated latency (in milliseconds)
         /// </summary>
         public int SimulationMaxLatency = 100;
-
         /// <summary>
         /// Events automatically will be called without PollEvents method from another thread
         /// </summary>
         public bool UnsyncedEvents = false;
-
         /// <summary>
         /// If true - receive event will be called from "receive" thread immediately otherwise on PollEvents call
         /// </summary>
         public bool UnsyncedReceiveEvent = false;
-
         /// <summary>
         /// If true - delivery event will be called from "receive" thread immediately otherwise on PollEvents call
         /// </summary>
         public bool UnsyncedDeliveryEvent = false;
-
         /// <summary>
         /// Allows receive broadcast packets
         /// </summary>
         public bool BroadcastReceiveEnabled = false;
-
         /// <summary>
         /// Delay between initial connection attempts (in milliseconds)
         /// </summary>
         public int ReconnectDelay = 500;
-
         /// <summary>
         /// Maximum connection attempts before client stops and call disconnect event.
         /// </summary>
         public int MaxConnectAttempts = 10;
-
         /// <summary>
         /// Enables socket option "ReuseAddress" for specific purposes
         /// </summary>
         public bool ReuseAddress = false;
-
         /// <summary>
         /// UDP Only Socket Option
         /// Normally IP sockets send packets of data through routers and gateways until they reach the final destination.
         /// If the DontRoute flag is set to True, then data will be delivered on the local subnet only.
         /// </summary>
         public bool DontRoute = false;
-
         /// <summary>
         /// Statistics of all connections
         /// </summary>
         public readonly NetStatistics Statistics = new();
-
         /// <summary>
         /// Toggles the collection of network statistics for the instance and all known peers
         /// </summary>
         public bool EnableStatistics = false;
-
         /// <summary>
         /// NatPunchModule for NAT hole punching operations
         /// </summary>
         public readonly NatPunchModule NatPunchModule;
-
         /// <summary>
         /// Returns true if socket listening and update thread is running
         /// </summary>
         public bool IsRunning { get; private set; }
-
         /// <summary>
         /// Local EndPoint (host and port)
         /// </summary>
         public int LocalPort { get; private set; }
-
         /// <summary>
         /// Automatically recycle NetPacketReader after OnReceive event
         /// </summary>
         public bool AutoRecycle;
-
         /// <summary>
         /// IPv6 support
         /// </summary>
         public bool IPv6Enabled = true;
-
         /// <summary>
         /// Override MTU for all new peers registered in this NetManager, will ignores MTU Discovery!
         /// </summary>
         public int MtuOverride = 0;
-
         /// <summary>
         /// Sets initial MTU to lowest possible value according to RFC1191 (576 bytes)
         /// </summary>
         public bool UseSafeMtu = false;
-
         /// <summary>
         /// First peer. Useful for Client mode
         /// </summary>
         public NetPeer FirstPeer => _headPeer;
-
         /// <summary>
         /// Experimental feature mostly for servers. Only for Windows/Linux
         /// use direct socket calls for send/receive to drastically increase speed and reduce GC pressure
         /// </summary>
         public bool UseNativeSockets = false;
-
         /// <summary>
         /// Disconnect peers if HostUnreachable or NetworkUnreachable spawned (old behaviour 0.9.x was true)
         /// </summary>
         public bool DisconnectOnUnreachable = false;
-
         /// <summary>
         /// Allows peer change it's ip (lte to wifi, wifi to lte, etc). Use only on server
         /// </summary>
         public bool AllowPeerAddressChange = false;
-
         /// <summary>
         /// QoS channel count per message type (value must be between 1 and 64 channels)
         /// </summary>
@@ -333,7 +295,6 @@ namespace LiteNetLib
                 _channelsCount = value;
             }
         }
-
         /// <summary>
         /// Returns connected peers list (with internal cached list)
         /// </summary>
@@ -345,23 +306,22 @@ namespace LiteNetLib
                 return _connectedPeerListCache;
             }
         }
-
         /// <summary>
         /// Returns connected peers count
         /// </summary>
         public int ConnectedPeersCount => (int)Interlocked.Read(ref _connectedPeersCount);
-
         public int ExtraPacketSizeForLayer => _extraPacketLayer?.ExtraPacketSizeForLayer ?? 0;
 
         public NetManager(bool useSocketFix = true)
         {
             _useSocketFix = useSocketFix;
         }
+
         /// <summary>
         /// NetManager constructor
         /// </summary>
-        /// <param name="listener">Network events listener (also can implement IDeliveryEventListener)</param>
-        /// <param name="extraPacketLayer">Extra processing of packages, like CRC checksum or encryption. All connected NetManagers must have same layer.</param>
+        /// <param name = "listener">Network events listener (also can implement IDeliveryEventListener)</param>
+        /// <param name = "extraPacketLayer">Extra processing of packages, like CRC checksum or encryption. All connected NetManagers must have same layer.</param>
 #if UNITY_SOCKET_FIX
         public NetManager(INetEventListener listener, PacketLayerBase extraPacketLayer = null, bool useSocketFix = true)
         {
@@ -389,49 +349,22 @@ namespace LiteNetLib
                 CreateEvent(NetEvent.EType.MessageDelivered, fromPeer, userData: userData);
         }
 
-        internal void DisconnectPeerForce(NetPeer peer,
-            DisconnectReason reason,
-            SocketError socketErrorCode,
-            NetPacket eventData)
+        internal void DisconnectPeerForce(NetPeer peer, DisconnectReason reason, SocketError socketErrorCode, NetPacket eventData)
         {
             DisconnectPeer(peer, reason, socketErrorCode, true, null, 0, 0, eventData);
         }
 
-        private void DisconnectPeer(
-            NetPeer peer,
-            DisconnectReason reason,
-            SocketError socketErrorCode,
-            bool force,
-            byte[] data,
-            int start,
-            int count,
-            NetPacket eventData)
+        private void DisconnectPeer(NetPeer peer, DisconnectReason reason, SocketError socketErrorCode, bool force, byte[] data, int start, int count, NetPacket eventData)
         {
             var shutdownResult = peer.Shutdown(data, start, count, force);
             if (shutdownResult == ShutdownResult.None)
                 return;
             if (shutdownResult == ShutdownResult.WasConnected)
                 Interlocked.Decrement(ref _connectedPeersCount);
-            CreateEvent(
-                NetEvent.EType.Disconnect,
-                peer,
-                errorCode: socketErrorCode,
-                disconnectReason: reason,
-                readerSource: eventData);
+            CreateEvent(NetEvent.EType.Disconnect, peer, errorCode: socketErrorCode, disconnectReason: reason, readerSource: eventData);
         }
 
-        private void CreateEvent(
-            NetEvent.EType type,
-            NetPeer peer = null,
-            IPEndPoint remoteEndPoint = null,
-            SocketError errorCode = 0,
-            int latency = 0,
-            DisconnectReason disconnectReason = DisconnectReason.ConnectionFailed,
-            ConnectionRequest connectionRequest = null,
-            DeliveryMethod deliveryMethod = DeliveryMethod.Unreliable,
-            byte channelNumber = 0,
-            NetPacket readerSource = null,
-            object userData = null)
+        private void CreateEvent(NetEvent.EType type, NetPeer peer = null, IPEndPoint remoteEndPoint = null, SocketError errorCode = 0, int latency = 0, DisconnectReason disconnectReason = DisconnectReason.ConnectionFailed, ConnectionRequest connectionRequest = null, DeliveryMethod deliveryMethod = DeliveryMethod.Unreliable, byte channelNumber = 0, NetPacket readerSource = null, object userData = null)
         {
             NetEvent evt;
             bool unsyncEvent = UnsyncedEvents;
@@ -538,7 +471,7 @@ namespace LiteNetLib
                         _peerAddressChangedListener.OnPeerAddressChanged(evt.Peer, previousAddress);
                     break;
             }
-            //Recycle if not message
+            // Recycle if not message
             if (emptyData)
                 RecycleEvent(evt);
             else if (AutoRecycle)
@@ -558,7 +491,7 @@ namespace LiteNetLib
             }
         }
 
-        //Update function
+        // Update function
         private void UpdateLogic()
         {
             var peersToRemove = new List<NetPeer>();
@@ -576,8 +509,7 @@ namespace LiteNetLib
 
                     for (var netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
                     {
-                        if (netPeer.ConnectionState == ConnectionState.Disconnected &&
-                            netPeer.TimeSinceLastPacket > DisconnectTimeout)
+                        if (netPeer.ConnectionState == ConnectionState.Disconnected && netPeer.TimeSinceLastPacket > DisconnectTimeout)
                         {
                             peersToRemove.Add(netPeer);
                         }
@@ -664,7 +596,7 @@ namespace LiteNetLib
         /// <summary>
         /// Update and send logic. Use this only when NetManager started in manual mode
         /// </summary>
-        /// <param name="elapsedMilliseconds">elapsed milliseconds since last update call</param>
+        /// <param name = "elapsedMilliseconds">elapsed milliseconds since last update call</param>
         public void ManualUpdate(int elapsedMilliseconds)
         {
             if (!_manualMode)
@@ -703,13 +635,17 @@ namespace LiteNetLib
                     SendRawAndRecycle(shutdownPacket, request.RemoteEndPoint);
                 }
                 lock (_requestsDict)
+                {
                     _requestsDict.Remove(request.RemoteEndPoint);
+                }
             }
-            else lock (_requestsDict)
+            else
+            {
+                lock (_requestsDict)
                 {
                     if (TryGetPeer(request.RemoteEndPoint, out netPeer))
                     {
-                        //already have peer
+                        // already have peer
                     }
                     else if (request.Result == ConnectionRequestResult.Reject)
                     {
@@ -718,7 +654,7 @@ namespace LiteNetLib
                         AddPeer(netPeer);
                         NetDebug.Write(NetLogLevel.Trace, "[NM] Peer connect reject.");
                     }
-                    else //Accept
+                    else // Accept
                     {
                         netPeer = new(this, request, GetNextPeerId());
                         AddPeer(netPeer);
@@ -727,6 +663,7 @@ namespace LiteNetLib
                     }
                     _requestsDict.Remove(request.RemoteEndPoint);
                 }
+            }
 
             return netPeer;
         }
@@ -734,17 +671,17 @@ namespace LiteNetLib
         private int GetNextPeerId()
         {
             /* Build a small queue so that when fetching
-            * an id its unlikely to be one that was just returned. This adds
-            * a buffer to applications which may be using the Id to identity
-            * clients in their code, but may need time to dispose of objects
-            * associated with the Id. */
+             * an id its unlikely to be one that was just returned. This adds
+             * a buffer to applications which may be using the Id to identity
+             * clients in their code, but may need time to dispose of objects
+             * associated with the Id. */
             const int addCount = 5000;
-            const int halfCount = (addCount / 2);
+            const int halfCount = addCount / 2;
             if (_peerIds.Count < halfCount)
             {
-                //At most how many can be added.
+                // At most how many can be added.
                 const int maxIdValue = int.MaxValue;
-                long addable = Math.Min(addCount, (maxIdValue - _nextPeerId));
+                long addable = Math.Min(addCount, maxIdValue - _nextPeerId);
 
                 if (addable == 0)
                 {
@@ -756,13 +693,10 @@ namespace LiteNetLib
                     _peerIds.Enqueue(_nextPeerId++);
             }
 
-            return (_peerIds.TryDequeue(out int result)) ? result : _nextPeerId++;
+            return _peerIds.TryDequeue(out int result) ? result : _nextPeerId++;
         }
 
-        private void ProcessConnectRequest(
-            IPEndPoint remoteEndPoint,
-            NetPeer netPeer,
-            NetConnectRequestPacket connRequest)
+        private void ProcessConnectRequest(IPEndPoint remoteEndPoint, NetPeer netPeer, NetConnectRequestPacket connRequest)
         {
             //if we have peer
             if (netPeer != null)
@@ -976,16 +910,12 @@ namespace LiteNetLib
                         {
                             NetDebug.Write($"[NM] Looks like address change: {packet.Size}");
                             var remoteData = NetConnectAcceptPacket.FromData(packet);
-                            if (remoteData != null &&
-                                remoteData.PeerNetworkChanged &&
-                                remoteData.PeerId < _peersArray.Length)
+                            if (remoteData != null && remoteData.PeerNetworkChanged && remoteData.PeerId < _peersArray.Length)
                             {
                                 _peersLock.EnterUpgradeableReadLock();
                                 var peer = _peersArray[remoteData.PeerId];
                                 _peersLock.ExitUpgradeableReadLock();
-                                if (peer != null &&
-                                    peer.ConnectTime == remoteData.ConnectionTime &&
-                                    peer.ConnectionNum == remoteData.ConnectionNumber)
+                                if (peer != null && peer.ConnectTime == remoteData.ConnectionTime && peer.ConnectionNum == remoteData.ConnectionNumber)
                                 {
                                     if (peer.ConnectionState == ConnectionState.Connected)
                                     {
@@ -1022,12 +952,7 @@ namespace LiteNetLib
                             PoolRecycle(packet);
                             return;
                         }
-                        DisconnectPeerForce(
-                            netPeer,
-                            disconnectResult == DisconnectResult.Disconnect
-                            ? DisconnectReason.RemoteConnectionClose
-                            : DisconnectReason.ConnectionRejected,
-                            0, packet);
+                        DisconnectPeerForce(netPeer, disconnectResult == DisconnectResult.Disconnect ? DisconnectReason.RemoteConnectionClose : DisconnectReason.ConnectionRejected, 0, packet);
                     }
                     else
                     {
@@ -1103,8 +1028,8 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="writer">DataWriter with data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "writer">DataWriter with data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(NetDataWriter writer, DeliveryMethod options)
         {
             SendToAll(writer.Data, 0, writer.Length, options);
@@ -1113,8 +1038,8 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(byte[] data, DeliveryMethod options)
         {
             SendToAll(data, 0, data.Length, options);
@@ -1123,10 +1048,10 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="start">Start of data</param>
-        /// <param name="length">Length of data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "start">Start of data</param>
+        /// <param name = "length">Length of data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(byte[] data, int start, int length, DeliveryMethod options)
         {
             SendToAll(data, start, length, 0, options);
@@ -1135,9 +1060,9 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="writer">DataWriter with data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "writer">DataWriter with data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(NetDataWriter writer, byte channelNumber, DeliveryMethod options)
         {
             SendToAll(writer.Data, 0, writer.Length, channelNumber, options);
@@ -1146,9 +1071,9 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(byte[] data, byte channelNumber, DeliveryMethod options)
         {
             SendToAll(data, 0, data.Length, channelNumber, options);
@@ -1157,11 +1082,11 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="start">Start of data</param>
-        /// <param name="length">Length of data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "start">Start of data</param>
+        /// <param name = "length">Length of data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(byte[] data, int start, int length, byte channelNumber, DeliveryMethod options)
         {
             try
@@ -1179,9 +1104,9 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="writer">DataWriter with data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "writer">DataWriter with data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(NetDataWriter writer, DeliveryMethod options, NetPeer excludePeer)
         {
             SendToAll(writer.Data, 0, writer.Length, 0, options, excludePeer);
@@ -1190,9 +1115,9 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(byte[] data, DeliveryMethod options, NetPeer excludePeer)
         {
             SendToAll(data, 0, data.Length, 0, options, excludePeer);
@@ -1201,11 +1126,11 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="start">Start of data</param>
-        /// <param name="length">Length of data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "start">Start of data</param>
+        /// <param name = "length">Length of data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(byte[] data, int start, int length, DeliveryMethod options, NetPeer excludePeer)
         {
             SendToAll(data, start, length, 0, options, excludePeer);
@@ -1214,10 +1139,10 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="writer">DataWriter with data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "writer">DataWriter with data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(NetDataWriter writer, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
         {
             SendToAll(writer.Data, 0, writer.Length, channelNumber, options, excludePeer);
@@ -1226,10 +1151,10 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(byte[] data, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
         {
             SendToAll(data, 0, data.Length, channelNumber, options, excludePeer);
@@ -1238,12 +1163,12 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="start">Start of data</param>
-        /// <param name="length">Length of data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "start">Start of data</param>
+        /// <param name = "length">Length of data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(byte[] data, int start, int length, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
         {
             try
@@ -1265,8 +1190,8 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
         public void SendToAll(ReadOnlySpan<byte> data, DeliveryMethod options)
         {
             SendToAll(data, 0, options, null);
@@ -1275,9 +1200,9 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers (channel - 0)
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(ReadOnlySpan<byte> data, DeliveryMethod options, NetPeer excludePeer)
         {
             SendToAll(data, 0, options, excludePeer);
@@ -1286,10 +1211,10 @@ namespace LiteNetLib
         /// <summary>
         /// Send data to all connected peers
         /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
-        /// <param name="options">Send options (reliable, unreliable, etc.)</param>
-        /// <param name="excludePeer">Excluded peer</param>
+        /// <param name = "data">Data</param>
+        /// <param name = "channelNumber">Number of channel (from 0 to channelsCount - 1)</param>
+        /// <param name = "options">Send options (reliable, unreliable, etc.)</param>
+        /// <param name = "excludePeer">Excluded peer</param>
         public void SendToAll(ReadOnlySpan<byte> data, byte channelNumber, DeliveryMethod options, NetPeer excludePeer)
         {
             try
@@ -1306,19 +1231,19 @@ namespace LiteNetLib
                 _peersLock.ExitReadLock();
             }
         }
-        
+
         /// <summary>
         /// Send message without connection
         /// </summary>
-        /// <param name="message">Raw data</param>
-        /// <param name="remoteEndPoint">Packet destination</param>
+        /// <param name = "message">Raw data</param>
+        /// <param name = "remoteEndPoint">Packet destination</param>
         /// <returns>Operation result</returns>
         public bool SendUnconnectedMessage(ReadOnlySpan<byte> message, IPEndPoint remoteEndPoint)
         {
             int headerSize = NetPacket.GetHeaderSize(PacketProperty.UnconnectedMessage);
             var packet = PoolGetPacket(message.Length + headerSize);
             packet.Property = PacketProperty.UnconnectedMessage;
-            message.CopyTo(new Span<byte>(packet.RawData, headerSize, message.Length));
+            message.CopyTo(new(packet.RawData, headerSize, message.Length));
             return SendRawAndRecycle(packet, remoteEndPoint) > 0;
         }
 #endif
@@ -1334,9 +1259,9 @@ namespace LiteNetLib
         /// <summary>
         /// Start logic thread and listening on selected port
         /// </summary>
-        /// <param name="addressIPv4">bind to specific ipv4 address</param>
-        /// <param name="addressIPv6">bind to specific ipv6 address</param>
-        /// <param name="port">port to listen</param>
+        /// <param name = "addressIPv4">bind to specific ipv4 address</param>
+        /// <param name = "addressIPv6">bind to specific ipv6 address</param>
+        /// <param name = "port">port to listen</param>
         public bool Start(IPAddress addressIPv4, IPAddress addressIPv6, int port)
         {
             return Start(addressIPv4, addressIPv6, port, false);
@@ -1345,9 +1270,9 @@ namespace LiteNetLib
         /// <summary>
         /// Start logic thread and listening on selected port
         /// </summary>
-        /// <param name="addressIPv4">bind to specific ipv4 address</param>
-        /// <param name="addressIPv6">bind to specific ipv6 address</param>
-        /// <param name="port">port to listen</param>
+        /// <param name = "addressIPv4">bind to specific ipv4 address</param>
+        /// <param name = "addressIPv6">bind to specific ipv6 address</param>
+        /// <param name = "port">port to listen</param>
         public bool Start(string addressIPv4, string addressIPv6, int port)
         {
             IPAddress ipv4 = NetUtils.ResolveAddress(addressIPv4);
@@ -1358,7 +1283,7 @@ namespace LiteNetLib
         /// <summary>
         /// Start logic thread and listening on selected port
         /// </summary>
-        /// <param name="port">port to listen</param>
+        /// <param name = "port">port to listen</param>
         public bool Start(int port)
         {
             return Start(IPAddress.Any, IPAddress.IPv6Any, port);
@@ -1370,9 +1295,9 @@ namespace LiteNetLib
         /// and ManualUpdate(...) for update and send packets
         /// This mode useful mostly for single-threaded servers
         /// </summary>
-        /// <param name="addressIPv4">bind to specific ipv4 address</param>
-        /// <param name="addressIPv6">bind to specific ipv6 address</param>
-        /// <param name="port">port to listen</param>
+        /// <param name = "addressIPv4">bind to specific ipv4 address</param>
+        /// <param name = "addressIPv6">bind to specific ipv6 address</param>
+        /// <param name = "port">port to listen</param>
         public bool StartInManualMode(IPAddress addressIPv4, IPAddress addressIPv6, int port)
         {
             return Start(addressIPv4, addressIPv6, port, true);
@@ -1384,9 +1309,9 @@ namespace LiteNetLib
         /// and ManualUpdate(...) for update and send packets
         /// This mode useful mostly for single-threaded servers
         /// </summary>
-        /// <param name="addressIPv4">bind to specific ipv4 address</param>
-        /// <param name="addressIPv6">bind to specific ipv6 address</param>
-        /// <param name="port">port to listen</param>
+        /// <param name = "addressIPv4">bind to specific ipv4 address</param>
+        /// <param name = "addressIPv6">bind to specific ipv6 address</param>
+        /// <param name = "port">port to listen</param>
         public bool StartInManualMode(string addressIPv4, string addressIPv6, int port)
         {
             IPAddress ipv4 = NetUtils.ResolveAddress(addressIPv4);
@@ -1400,7 +1325,7 @@ namespace LiteNetLib
         /// and ManualUpdate(...) for update and send packets
         /// This mode useful mostly for single-threaded servers
         /// </summary>
-        /// <param name="port">port to listen</param>
+        /// <param name = "port">port to listen</param>
         public bool StartInManualMode(int port)
         {
             return StartInManualMode(IPAddress.Any, IPAddress.IPv6Any, port);
@@ -1409,8 +1334,8 @@ namespace LiteNetLib
         /// <summary>
         /// Send message without connection
         /// </summary>
-        /// <param name="message">Raw data</param>
-        /// <param name="remoteEndPoint">Packet destination</param>
+        /// <param name = "message">Raw data</param>
+        /// <param name = "remoteEndPoint">Packet destination</param>
         /// <returns>Operation result</returns>
         public bool SendUnconnectedMessage(byte[] message, IPEndPoint remoteEndPoint)
         {
@@ -1422,9 +1347,9 @@ namespace LiteNetLib
         /// synchronously makes a DNS request. If you're calling this method every frame it will be
         /// much faster to just cache the IPEndPoint.
         /// </summary>
-        /// <param name="writer">Data serializer</param>
-        /// <param name="address">Packet destination IP or hostname</param>
-        /// <param name="port">Packet destination port</param>
+        /// <param name = "writer">Data serializer</param>
+        /// <param name = "address">Packet destination IP or hostname</param>
+        /// <param name = "port">Packet destination port</param>
         /// <returns>Operation result</returns>
         public bool SendUnconnectedMessage(NetDataWriter writer, string address, int port)
         {
@@ -1436,8 +1361,8 @@ namespace LiteNetLib
         /// <summary>
         /// Send message without connection
         /// </summary>
-        /// <param name="writer">Data serializer</param>
-        /// <param name="remoteEndPoint">Packet destination</param>
+        /// <param name = "writer">Data serializer</param>
+        /// <param name = "remoteEndPoint">Packet destination</param>
         /// <returns>Operation result</returns>
         public bool SendUnconnectedMessage(NetDataWriter writer, IPEndPoint remoteEndPoint)
         {
@@ -1447,10 +1372,10 @@ namespace LiteNetLib
         /// <summary>
         /// Send message without connection
         /// </summary>
-        /// <param name="message">Raw data</param>
-        /// <param name="start">data start</param>
-        /// <param name="length">data length</param>
-        /// <param name="remoteEndPoint">Packet destination</param>
+        /// <param name = "message">Raw data</param>
+        /// <param name = "start">data start</param>
+        /// <param name = "length">data length</param>
+        /// <param name = "remoteEndPoint">Packet destination</param>
         /// <returns>Operation result</returns>
         public bool SendUnconnectedMessage(byte[] message, int start, int length, IPEndPoint remoteEndPoint)
         {
@@ -1472,7 +1397,7 @@ namespace LiteNetLib
         /// In Manual mode it will call also socket Receive (which can be slow)
         /// 0 - receive all events
         /// </summary>
-        /// <param name="maxProcessedEvents">Max events that will be processed (called INetEventListener Connect/Receive/Etc), 0 - receive all events</param>
+        /// <param name = "maxProcessedEvents">Max events that will be processed (called INetEventListener Connect/Receive/Etc), 0 - receive all events</param>
         public void PollEvents(int maxProcessedEvents = 0)
         {
             if (_manualMode)
@@ -1509,11 +1434,11 @@ namespace LiteNetLib
         /// <summary>
         /// Connect to remote host
         /// </summary>
-        /// <param name="address">Server IP or hostname</param>
-        /// <param name="port">Server Port</param>
-        /// <param name="key">Connection key</param>
+        /// <param name = "address">Server IP or hostname</param>
+        /// <param name = "port">Server Port</param>
+        /// <param name = "key">Connection key</param>
         /// <returns>New NetPeer if new connection, Old NetPeer if already connected, null peer if there is ConnectionRequest awaiting</returns>
-        /// <exception cref="InvalidOperationException">Manager is not running. Call <see cref="Start()"/></exception>
+        /// <exception cref = "InvalidOperationException">Manager is not running. Call <see cref = "Start()"/></exception>
         public NetPeer Connect(string address, int port, string key)
         {
             return Connect(address, port, NetDataWriter.FromString(key));
@@ -1522,11 +1447,11 @@ namespace LiteNetLib
         /// <summary>
         /// Connect to remote host
         /// </summary>
-        /// <param name="address">Server IP or hostname</param>
-        /// <param name="port">Server Port</param>
-        /// <param name="connectionData">Additional data for remote peer</param>
+        /// <param name = "address">Server IP or hostname</param>
+        /// <param name = "port">Server Port</param>
+        /// <param name = "connectionData">Additional data for remote peer</param>
         /// <returns>New NetPeer if new connection, Old NetPeer if already connected, null peer if there is ConnectionRequest awaiting</returns>
-        /// <exception cref="InvalidOperationException">Manager is not running. Call <see cref="Start()"/></exception>
+        /// <exception cref = "InvalidOperationException">Manager is not running. Call <see cref = "Start()"/></exception>
         public NetPeer Connect(string address, int port, NetDataWriter connectionData)
         {
             IPEndPoint ep;
@@ -1545,10 +1470,10 @@ namespace LiteNetLib
         /// <summary>
         /// Connect to remote host
         /// </summary>
-        /// <param name="target">Server end point (ip and port)</param>
-        /// <param name="key">Connection key</param>
+        /// <param name = "target">Server end point (ip and port)</param>
+        /// <param name = "key">Connection key</param>
         /// <returns>New NetPeer if new connection, Old NetPeer if already connected, null peer if there is ConnectionRequest awaiting</returns>
-        /// <exception cref="InvalidOperationException">Manager is not running. Call <see cref="Start()"/></exception>
+        /// <exception cref = "InvalidOperationException">Manager is not running. Call <see cref = "Start()"/></exception>
         public NetPeer Connect(IPEndPoint target, string key)
         {
             return Connect(target, NetDataWriter.FromString(key));
@@ -1557,10 +1482,10 @@ namespace LiteNetLib
         /// <summary>
         /// Connect to remote host
         /// </summary>
-        /// <param name="target">Server end point (ip and port)</param>
-        /// <param name="connectionData">Additional data for remote peer</param>
+        /// <param name = "target">Server end point (ip and port)</param>
+        /// <param name = "connectionData">Additional data for remote peer</param>
         /// <returns>New NetPeer if new connection, Old NetPeer if already connected, null peer if there is ConnectionRequest awaiting</returns>
-        /// <exception cref="InvalidOperationException">Manager is not running. Call <see cref="Start()"/></exception>
+        /// <exception cref = "InvalidOperationException">Manager is not running. Call <see cref = "Start()"/></exception>
         public NetPeer Connect(IPEndPoint target, NetDataWriter connectionData)
         {
             if (!IsRunning)
@@ -1605,7 +1530,7 @@ namespace LiteNetLib
         /// <summary>
         /// Force closes connection and stop all threads.
         /// </summary>
-        /// <param name="sendDisconnectMessages">Send disconnect messages</param>
+        /// <param name = "sendDisconnectMessages">Send disconnect messages</param>
         public void Stop(bool sendDisconnectMessages)
         {
             if (!IsRunning)
@@ -1639,7 +1564,9 @@ namespace LiteNetLib
             _nextPeerId = 0;
 #if DEBUG
             lock (_pingSimulationList)
+            {
                 _pingSimulationList.Clear();
+            }
 #endif
             _connectedPeersCount = 0;
             _pendingEventHead = null;
@@ -1649,7 +1576,7 @@ namespace LiteNetLib
         /// <summary>
         /// Return peers count with connection state
         /// </summary>
-        /// <param name="peerState">peer connection state (you can use as bit flags)</param>
+        /// <param name = "peerState">peer connection state (you can use as bit flags)</param>
         /// <returns>peers count</returns>
         public int GetPeersCount(ConnectionState peerState)
         {
@@ -1667,8 +1594,8 @@ namespace LiteNetLib
         /// <summary>
         /// Get copy of peers (without allocations)
         /// </summary>
-        /// <param name="peers">List that will contain result</param>
-        /// <param name="peerState">State of peers</param>
+        /// <param name = "peers">List that will contain result</param>
+        /// <param name = "peerState">State of peers</param>
         public void GetPeersNonAlloc(List<NetPeer> peers, ConnectionState peerState)
         {
             peers.Clear();
@@ -1692,24 +1619,16 @@ namespace LiteNetLib
         /// <summary>
         /// Disconnect all peers with shutdown message
         /// </summary>
-        /// <param name="data">Data to send (must be less or equal MTU)</param>
-        /// <param name="start">Data start</param>
-        /// <param name="count">Data count</param>
+        /// <param name = "data">Data to send (must be less or equal MTU)</param>
+        /// <param name = "start">Data start</param>
+        /// <param name = "count">Data count</param>
         public void DisconnectAll(byte[] data, int start, int count)
         {
             //Send disconnect packets
             _peersLock.EnterReadLock();
             for (var netPeer = _headPeer; netPeer != null; netPeer = netPeer.NextPeer)
             {
-                DisconnectPeer(
-                    netPeer,
-                    DisconnectReason.DisconnectPeerCalled,
-                    0,
-                    false,
-                    data,
-                    start,
-                    count,
-                    null);
+                DisconnectPeer(netPeer, DisconnectReason.DisconnectPeerCalled, 0, false, data, start, count, null);
             }
             _peersLock.ExitReadLock();
         }
@@ -1717,7 +1636,7 @@ namespace LiteNetLib
         /// <summary>
         /// Immediately disconnect peer from server without additional data
         /// </summary>
-        /// <param name="peer">peer to disconnect</param>
+        /// <param name = "peer">peer to disconnect</param>
         public void DisconnectPeerForce(NetPeer peer)
         {
             DisconnectPeerForce(peer, DisconnectReason.DisconnectPeerCalled, 0, null);
@@ -1726,7 +1645,7 @@ namespace LiteNetLib
         /// <summary>
         /// Disconnect peer from server
         /// </summary>
-        /// <param name="peer">peer to disconnect</param>
+        /// <param name = "peer">peer to disconnect</param>
         public void DisconnectPeer(NetPeer peer)
         {
             DisconnectPeer(peer, null, 0, 0);
@@ -1735,8 +1654,8 @@ namespace LiteNetLib
         /// <summary>
         /// Disconnect peer from server and send additional data (Size must be less or equal MTU - 8)
         /// </summary>
-        /// <param name="peer">peer to disconnect</param>
-        /// <param name="data">additional data</param>
+        /// <param name = "peer">peer to disconnect</param>
+        /// <param name = "data">additional data</param>
         public void DisconnectPeer(NetPeer peer, byte[] data)
         {
             DisconnectPeer(peer, data, 0, data.Length);
@@ -1745,8 +1664,8 @@ namespace LiteNetLib
         /// <summary>
         /// Disconnect peer from server and send additional data (Size must be less or equal MTU - 8)
         /// </summary>
-        /// <param name="peer">peer to disconnect</param>
-        /// <param name="writer">additional data</param>
+        /// <param name = "peer">peer to disconnect</param>
+        /// <param name = "writer">additional data</param>
         public void DisconnectPeer(NetPeer peer, NetDataWriter writer)
         {
             DisconnectPeer(peer, writer.Data, 0, writer.Length);
@@ -1755,27 +1674,19 @@ namespace LiteNetLib
         /// <summary>
         /// Disconnect peer from server and send additional data (Size must be less or equal MTU - 8)
         /// </summary>
-        /// <param name="peer">peer to disconnect</param>
-        /// <param name="data">additional data</param>
-        /// <param name="start">data start</param>
-        /// <param name="count">data length</param>
+        /// <param name = "peer">peer to disconnect</param>
+        /// <param name = "data">additional data</param>
+        /// <param name = "start">data start</param>
+        /// <param name = "count">data length</param>
         public void DisconnectPeer(NetPeer peer, byte[] data, int start, int count)
         {
-            DisconnectPeer(
-                peer,
-                DisconnectReason.DisconnectPeerCalled,
-                0,
-                false,
-                data,
-                start,
-                count,
-                null);
+            DisconnectPeer(peer, DisconnectReason.DisconnectPeerCalled, 0, false, data, start, count, null);
         }
 
         /// <summary>
         /// Create the requests for NTP server
         /// </summary>
-        /// <param name="endPoint">NTP Server address.</param>
+        /// <param name = "endPoint">NTP Server address.</param>
         public void CreateNtpRequest(IPEndPoint endPoint)
         {
             _ntpRequests.TryAdd(endPoint, new(endPoint));
@@ -1784,8 +1695,8 @@ namespace LiteNetLib
         /// <summary>
         /// Create the requests for NTP server
         /// </summary>
-        /// <param name="ntpServerAddress">NTP Server address.</param>
-        /// <param name="port">port</param>
+        /// <param name = "ntpServerAddress">NTP Server address.</param>
+        /// <param name = "port">port</param>
         public void CreateNtpRequest(string ntpServerAddress, int port)
         {
             IPEndPoint endPoint = NetUtils.MakeEndPoint(ntpServerAddress, port);
@@ -1795,7 +1706,7 @@ namespace LiteNetLib
         /// <summary>
         /// Create the requests for NTP server (default port)
         /// </summary>
-        /// <param name="ntpServerAddress">NTP Server address.</param>
+        /// <param name = "ntpServerAddress">NTP Server address.</param>
         public void CreateNtpRequest(string ntpServerAddress)
         {
             IPEndPoint endPoint = NetUtils.MakeEndPoint(ntpServerAddress, NtpRequest.DefaultPort);

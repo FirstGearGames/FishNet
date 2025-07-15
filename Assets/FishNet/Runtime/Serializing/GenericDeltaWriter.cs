@@ -5,9 +5,9 @@ using System;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
+
 namespace FishNet.Serializing
 {
-
     /// <summary>
     /// Used to write generic types.
     /// </summary>
@@ -30,14 +30,13 @@ namespace FishNet.Serializing
             bool isGenerated = value.Method.Name.StartsWith(UtilityConstants.GeneratedWriterPrefix);
             /* If generated then see if a regular custom writer exists. If so
              * then do not set a serializer to a generated one. */
-            //TODO Make it so DefaultDeltaWriter methods are picked up by codegen.
+            // TODO Make it so DefaultDeltaWriter methods are picked up by codegen.
             if (isGenerated && GenericWriter<T>.HasCustomSerializer)
                 return;
 
-            //Set has custom serializer if value being used is not a generated method.
+            // Set has custom serializer if value being used is not a generated method.
             HasCustomSerializer = !isGenerated;
             Write = value;
         }
     }
-
 }

@@ -1,10 +1,8 @@
 using GameKit.Dependencies.Utilities.Types.CanvasContainers;
 using System.Collections.Generic;
 
-
 namespace GameKit.Dependencies.Utilities.Types.OptionMenuButtons
 {
-
     public class FloatingOptions : CanvasGroupFader
     {
         #region Protected.
@@ -17,8 +15,8 @@ namespace GameKit.Dependencies.Utilities.Types.OptionMenuButtons
         /// <summary>
         /// Adds buttons.
         /// </summary>
-        /// <param name="clearExisting">True to clear existing buttons first.</param>
-        /// <param name="buttonDatas">Buttons to add.</param>
+        /// <param name = "clearExisting">True to clear existing buttons first.</param>
+        /// <param name = "buttonDatas">Buttons to add.</param>
         protected virtual void AddButtons(bool clearExisting, IEnumerable<ButtonData> buttonDatas)
         {
             if (clearExisting)
@@ -36,9 +34,5 @@ namespace GameKit.Dependencies.Utilities.Types.OptionMenuButtons
                 ResettableObjectCaches<ButtonData>.Store(item);
             Buttons.Clear();
         }
-
-
     }
-
-
 }

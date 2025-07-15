@@ -19,25 +19,22 @@ namespace FishNet.Component.Ownership
     public class PredictedOwner : NetworkBehaviour
     {
         #region Public.
-
         /// <summary>
         /// True if the local client used TakeOwnership and is awaiting an ownership change.
         /// </summary>
         public bool TakingOwnership { get; private set; }
-
         /// <summary>
         /// Owner on client prior to taking ownership. This can be used to reverse a failed ownership attempt.
         /// </summary>
         public NetworkConnection PreviousOwner { get; private set; } = NetworkManager.EmptyConnection;
-
         #endregion
 
         #region Serialized.
-
         /// <summary>
         /// True if to enable this component.
         /// </summary>
-        [Tooltip("True if to enable this component.")] [SerializeField]
+        [Tooltip("True if to enable this component.")]
+        [SerializeField]
         private bool _allowTakeOwnership = true;
         private readonly SyncVar<bool> _allowTakeOwnershipSyncVar = new();
 
@@ -45,10 +42,9 @@ namespace FishNet.Component.Ownership
         /// Sets the next value for AllowTakeOwnership and synchronizes it.
         /// Only the server may use this method.
         /// </summary>
-        /// <param name="value">Next value to use.</param>
+        /// <param name = "value">Next value to use.</param>
         [Server]
         public void SetAllowTakeOwnership(bool value) => _allowTakeOwnershipSyncVar.Value = value;
-
         #endregion
 
         protected virtual void Awake()
@@ -63,14 +59,14 @@ namespace FishNet.Component.Ownership
         /// </summary>
         private void _allowTakeOwnershipSyncVar_OnChange(bool prev, bool next, bool asServer)
         {
-            if (asServer || !base.IsHostStarted)
+            if (asServer || !IsHostStarted)
                 _allowTakeOwnership = next;
         }
 
         /// <summary>
         /// Called on the client after gaining or losing ownership.
         /// </summary>
-        /// <param name="prevOwner">Previous owner of this object.</param>
+        /// <param name = "prevOwner">Previous owner of this object.</param>
         public override void OnOwnershipClient(NetworkConnection prevOwner)
         {
             /* Unset taken ownership either way.
@@ -78,32 +74,31 @@ namespace FishNet.Component.Ownership
              * if no longer owner then another client
              * took it. */
             TakingOwnership = false;
-            PreviousOwner = base.Owner;
+            PreviousOwner = Owner;
         }
 
         [Client]
-        
         [Obsolete("Use TakeOwnership(bool).")]
         public virtual void TakeOwnership() => TakeOwnership(includeNested: true);
 
         /// <summary>
         /// Gives ownership of this to the local client and allows immediate control.
         /// </summary>
-        /// <param name="includeNested">True to also take ownership of nested objects.</param>
+        /// <param name = "includeNested">True to also take ownership of nested objects.</param>
         public virtual void TakeOwnership(bool includeNested)
         {
             if (!_allowTakeOwnershipSyncVar.Value)
                 return;
-            //Already owner.
-            if (base.IsOwner)
+            // Already owner.
+            if (IsOwner)
                 return;
 
-            NetworkConnection c = base.ClientManager.Connection;
+            NetworkConnection c = ClientManager.Connection;
             TakingOwnership = true;
             //If not server go through the server.
-            if (!base.IsServerStarted)
+            if (!IsServerStarted)
             {
-                base.NetworkObject.SetLocalOwnership(c, includeNested);
+                NetworkObject.SetLocalOwnership(c, includeNested);
                 ServerTakeOwnership(includeNested);
             }
             //Otherwise take directly without rpcs.
@@ -113,7 +108,6 @@ namespace FishNet.Component.Ownership
             }
         }
 
-
         /// <summary>
         /// Takes ownership of this object.
         /// </summary>
@@ -122,16 +116,15 @@ namespace FishNet.Component.Ownership
         {
             OnTakeOwnership(caller, includeNested);
         }
-        
+
         [Server]
-        
         [Obsolete("Use OnTakeOwnership(bool).")]
         protected virtual void OnTakeOwnership(NetworkConnection caller) => OnTakeOwnership(caller, recursive: false);
 
         /// <summary>
         /// Called on the server when a client tries to take ownership of this object.
         /// </summary>
-        /// <param name="caller">Connection trying to take ownership.</param>
+        /// <param name = "caller">Connection trying to take ownership.</param>
         [Server]
         protected virtual void OnTakeOwnership(NetworkConnection caller, bool recursive)
         {
@@ -142,14 +135,14 @@ namespace FishNet.Component.Ownership
             if (!_allowTakeOwnershipSyncVar.Value)
                 return;
             //Already owner.
-            if (caller == base.Owner)
+            if (caller == Owner)
                 return;
 
-            base.GiveOwnership(caller);
+            GiveOwnership(caller);
             if (recursive)
             {
-                List<NetworkObject> allNested = base.NetworkObject.GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
-                
+                List<NetworkObject> allNested = NetworkObject.GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
+
                 foreach (NetworkObject nob in allNested)
                 {
                     PredictedOwner po = nob.PredictedOwner;

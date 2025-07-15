@@ -8,5 +8,4 @@
         Rigidbody = 0,
         Rigidbody2D = 1
     }
-
 }

@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Managing.Transporting
 {
-
     internal class SplitReader
     {
         #region Private.
@@ -29,7 +28,7 @@ namespace FishNet.Managing.Transporting
 
         internal SplitReader()
         {
-            //Increase capacity to reduce the chance of resizing.
+            // Increase capacity to reduce the chance of resizing.
             _writer.EnsureBufferCapacity(20000);
         }
 
@@ -46,14 +45,14 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         internal void Write(uint tick, PooledReader reader, int expectedMessages)
         {
-            //New tick which means new split.
+            // New tick which means new split.
             if (tick != _tick)
                 Reset(tick, expectedMessages);
 
             /* This is just a guess as to how large the end
              * message could be. If the writer is not the minimum
              * of this length then resize it. */
-            int estimatedBufferSize = (expectedMessages * 1500);
+            int estimatedBufferSize = expectedMessages * 1500;
             if (_writer.Capacity < estimatedBufferSize)
                 _writer.EnsureBufferCapacity(estimatedBufferSize);
             /* Empty remainder of reader into the writer.
@@ -75,7 +74,7 @@ namespace FishNet.Managing.Transporting
         {
             if (_receivedMessages < _expectedMessages)
             {
-                return default(ArraySegment<byte>);
+                return default;
             }
             else
             {
@@ -92,8 +91,5 @@ namespace FishNet.Managing.Transporting
             _expectedMessages = expectedMessages;
             _writer.Clear();
         }
-
     }
-
-
 }

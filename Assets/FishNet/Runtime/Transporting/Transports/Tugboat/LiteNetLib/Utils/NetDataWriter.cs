@@ -12,34 +12,23 @@ namespace LiteNetLib.Utils
         protected int _position;
         private const int InitialSize = 64;
         private readonly bool _autoResize;
-
         public int Capacity
         {
-            
             get => _data.Length;
         }
         public byte[] Data
         {
-            
             get => _data;
         }
         public int Length
         {
-            
             get => _position;
         }
-
         public static readonly ThreadLocal<UTF8Encoding> uTF8Encoding = new(() => new(false, true));
         public const int StringBufferMaxLength = 65535;
         private readonly byte[] _stringBuffer = new byte[StringBufferMaxLength];
-
-        public NetDataWriter() : this(true, InitialSize)
-        {
-        }
-
-        public NetDataWriter(bool autoResize) : this(autoResize, InitialSize)
-        {
-        }
+        public NetDataWriter() : this(true, InitialSize) { }
+        public NetDataWriter(bool autoResize) : this(autoResize, InitialSize) { }
 
         public NetDataWriter(bool autoResize, int initialSize)
         {
@@ -50,8 +39,8 @@ namespace LiteNetLib.Utils
         /// <summary>
         /// Creates NetDataWriter from existing ByteArray
         /// </summary>
-        /// <param name="bytes">Source byte array</param>
-        /// <param name="copy">Copy array to new location or use existing</param>
+        /// <param name = "bytes">Source byte array</param>
+        /// <param name = "copy">Copy array to new location or use existing</param>
         public static NetDataWriter FromBytes(byte[] bytes, bool copy)
         {
             if (copy)
@@ -60,15 +49,15 @@ namespace LiteNetLib.Utils
                 netDataWriter.Put(bytes);
                 return netDataWriter;
             }
-            return new(true, 0) {_data = bytes, _position = bytes.Length};
+            return new(true, 0) { _data = bytes, _position = bytes.Length };
         }
 
         /// <summary>
         /// Creates NetDataWriter from existing ByteArray (always copied data)
         /// </summary>
-        /// <param name="bytes">Source byte array</param>
-        /// <param name="offset">Offset of array</param>
-        /// <param name="length">Length of array</param>
+        /// <param name = "bytes">Source byte array</param>
+        /// <param name = "offset">Offset of array</param>
+        /// <param name = "length">Length of array</param>
         public static NetDataWriter FromBytes(byte[] bytes, int offset, int length)
         {
             var netDataWriter = new NetDataWriter(true, bytes.Length);
@@ -83,7 +72,6 @@ namespace LiteNetLib.Utils
             return netDataWriter;
         }
 
-        
         public void ResizeIfNeed(int newSize)
         {
             if (_data.Length < newSize)
@@ -92,7 +80,6 @@ namespace LiteNetLib.Utils
             }
         }
 
-        
         public void EnsureFit(int additionalSize)
         {
             if (_data.Length < _position + additionalSize)
@@ -122,7 +109,7 @@ namespace LiteNetLib.Utils
         /// <summary>
         /// Sets position of NetDataWriter to rewrite previous values
         /// </summary>
-        /// <param name="position">new byte position</param>
+        /// <param name = "position">new byte position</param>
         /// <returns>previous position of data writer</returns>
         public int SetPosition(int position)
         {
@@ -267,7 +254,7 @@ namespace LiteNetLib.Utils
 
         public void PutArray(Array arr, int sz)
         {
-            ushort length = arr == null ? (ushort) 0 : (ushort)arr.Length;
+            ushort length = arr == null ? (ushort)0 : (ushort)arr.Length;
             sz *= length;
             if (_autoResize)
                 ResizeIfNeed(_position + sz + 2);
@@ -337,7 +324,7 @@ namespace LiteNetLib.Utils
             for (int i = 0; i < strArrayLength; i++)
                 Put(value[i], strMaxLength);
         }
-        
+
         public void PutArray<T>(T[] value) where T : INetSerializable, new()
         {
             ushort strArrayLength = (ushort)(value?.Length ?? 0);

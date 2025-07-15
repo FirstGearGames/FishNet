@@ -37,13 +37,13 @@ namespace FishNet.Object
         /// <summary>
         /// Called when writing a spawn. This may be used to deliver information for predicted spawning, or simply have values set before initialization without depending on SyncTypes.
         /// </summary>
-        /// <param name="connection">Connection receiving the payload. When sending to the server connection.IsValid will return false.</param>
+        /// <param name = "connection">Connection receiving the payload. When sending to the server connection.IsValid will return false.</param>
         public virtual void WritePayload(NetworkConnection connection, Writer writer) { }
 
         /// <summary>
         /// Called before network start callbacks, but after the object is initialized with network values. This may be used to read information from predicted spawning, or simply have values set before initialization without depending on SyncTypes.
         /// </summary>
-        /// <param name="connection">Connection sending the payload. When coming from the server connection.IsValid will return false.</param>
+        /// <param name = "connection">Connection sending the payload. When coming from the server connection.IsValid will return false.</param>
         public virtual void ReadPayload(NetworkConnection connection, Reader reader) { }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace FishNet.Object
 
         /// <summary>
         /// Called when the network has initialized this object. May be called for server or client but will only be called once.
-        /// When as host or server this method will run before OnStartServer. 
+        /// When as host or server this method will run before OnStartServer.
         /// When as client only the method will run before OnStartClient.
         /// </summary>
         public virtual void OnStartNetwork() { }
@@ -129,7 +129,7 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the server after initializing this object.
         /// SyncTypes modified before or during this method will be sent to clients in the spawn message.
-        /// </summary> 
+        /// </summary>
         public virtual void OnStartServer() { }
 
         internal void OnStopServer_Internal()
@@ -153,14 +153,14 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the server after ownership has changed.
         /// </summary>
-        /// <param name="prevOwner">Previous owner of this object.</param>
+        /// <param name = "prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipServer(NetworkConnection prevOwner) { }
 
         /// <summary>
         /// Called on the server after a spawn message for this object has been sent to clients.
         /// Useful for sending remote calls or data to clients.
         /// </summary>
-        /// <param name="connection">Connection the object is being spawned for.</param>
+        /// <param name = "connection">Connection the object is being spawned for.</param>
         public virtual void OnSpawnServer(NetworkConnection connection) { }
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace FishNet.Object
 
         internal void OnOwnershipClient_Internal(NetworkConnection prevOwner)
         {
-            //If losing or gaining ownership then clear replicate cache.
+            // If losing or gaining ownership then clear replicate cache.
             if (IsOwner || prevOwner == LocalConnection)
             {
                 ResetState_Prediction(false);
@@ -205,7 +205,7 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the client after gaining or losing ownership.
         /// </summary>
-        /// <param name="prevOwner">Previous owner of this object.</param>
+        /// <param name = "prevOwner">Previous owner of this object.</param>
         public virtual void OnOwnershipClient(NetworkConnection prevOwner) { }
     }
 }

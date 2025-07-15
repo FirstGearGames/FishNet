@@ -1,11 +1,11 @@
 {
   "name": "com.firstgeargames.fishnet",
-  "version": "4.6.9",
+  "version": "4.6.10",
   "displayName": "FishNet: Networking Evolved",
   "description": "A feature-rich Unity networking solution aimed towards reliability, ease of use, efficiency, and flexibility.",
   "unity": "2021.3",
-  "documentationUrl": "https://fish-networking.gitbook.io/docs/",
-  "licensesUrl": "https://github.com/FirstGearGames/FishNet/blob/main/LICENSE.md",
+  "documentationUrl": "https:// fish-networking.gitbook.io/docs/",
+  "licensesUrl": "https:// github.com/FirstGearGames/FishNet/blob/main/LICENSE.md",
   "license": "See LICENSE.txt file",
   "keywords": [
     "FishNetworking",
@@ -22,7 +22,7 @@
   ],
   "author": {
     "name": "FirstGearGames",
-    "url": "http://www.firstgeargames.com"
+    "url": "http:// www.firstgeargames.com"
   },
   "dependencies": {
     "com.unity.nuget.newtonsoft-json": "3.2.1",

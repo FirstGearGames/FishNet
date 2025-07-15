@@ -5,25 +5,25 @@ namespace FishNet.Demo.HashGrid
 {
     public class MoveRandomly : NetworkBehaviour
     {
-        //Colors green for client.
+        // Colors green for client.
         [SerializeField]
         private Renderer _renderer;
 
-        //How quickly to move over 1s.
+        // How quickly to move over 1s.
         private float _moveRate = 0.5f;
-        //Maximum range for new position.
+        // Maximum range for new position.
         public const float Range = 25f;
-        //Position to move towards.
+        // Position to move towards.
         private Vector3 _goal;
-        //Position at spawn.
+        // Position at spawn.
         private Vector3 _start;
 
         private void Update()
         {
-            if (!base.IsController)
+            if (!IsController)
                 return;
 
-            transform.position = Vector3.MoveTowards(transform.position, _goal, (_moveRate * Time.deltaTime));
+            transform.position = Vector3.MoveTowards(transform.position, _goal, _moveRate * Time.deltaTime);
             if (transform.position == _goal)
                 RandomizeGoal();
         }
@@ -36,13 +36,13 @@ namespace FishNet.Demo.HashGrid
 
         public override void OnStartServer()
         {
-            if (!base.Owner.IsValid)
-                transform.position = (_start + RandomInsideRange());
+            if (!Owner.IsValid)
+                transform.position = _start + RandomInsideRange();
         }
 
         public override void OnStartClient()
         {
-            if (base.Owner.IsLocalClient)
+            if (Owner.IsLocalClient)
             {
                 _renderer.material.color = Color.green;
                 _moveRate *= 3f;
@@ -60,7 +60,7 @@ namespace FishNet.Demo.HashGrid
 
         public override void OnStopClient()
         {
-            if (base.IsOwner)
+            if (IsOwner)
             {
                 Camera c = Camera.main;
                 if (c != null)
@@ -78,7 +78,7 @@ namespace FishNet.Demo.HashGrid
 
         private Vector3 RandomInsideRange()
         {
-            Vector3 goal = (Random.insideUnitSphere * Range);
+            Vector3 goal = Random.insideUnitSphere * Range;
             goal.z = transform.position.z;
             return goal;
         }

@@ -11,51 +11,51 @@
 using System;
 using System.Collections.Generic;
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public class DefaultAssemblyResolver : BaseAssemblyResolver
+    {
+        private readonly IDictionary<string, AssemblyDefinition> cache;
 
-	public class DefaultAssemblyResolver : BaseAssemblyResolver {
+        public DefaultAssemblyResolver()
+        {
+            cache = new Dictionary<string, AssemblyDefinition>(StringComparer.Ordinal);
+        }
 
-		readonly IDictionary<string, AssemblyDefinition> cache;
+        public override AssemblyDefinition Resolve(AssemblyNameReference name)
+        {
+            Mixin.CheckName(name);
 
-		public DefaultAssemblyResolver ()
-		{
-			cache = new Dictionary<string, AssemblyDefinition> (StringComparer.Ordinal);
-		}
+            AssemblyDefinition assembly;
+            if (cache.TryGetValue(name.FullName, out assembly))
+                return assembly;
 
-		public override AssemblyDefinition Resolve (AssemblyNameReference name)
-		{
-			Mixin.CheckName (name);
+            assembly = base.Resolve(name);
+            cache[name.FullName] = assembly;
 
-			AssemblyDefinition assembly;
-			if (cache.TryGetValue (name.FullName, out assembly))
-				return assembly;
+            return assembly;
+        }
 
-			assembly = base.Resolve (name);
-			cache [name.FullName] = assembly;
+        protected void RegisterAssembly(AssemblyDefinition assembly)
+        {
+            if (assembly == null)
+                throw new ArgumentNullException("assembly");
 
-			return assembly;
-		}
+            var name = assembly.Name.FullName;
+            if (cache.ContainsKey(name))
+                return;
 
-		protected void RegisterAssembly (AssemblyDefinition assembly)
-		{
-			if (assembly == null)
-				throw new ArgumentNullException ("assembly");
+            cache[name] = assembly;
+        }
 
-			var name = assembly.Name.FullName;
-			if (cache.ContainsKey (name))
-				return;
+        protected override void Dispose(bool disposing)
+        {
+            foreach (var assembly in cache.Values)
+                assembly.Dispose();
 
-			cache [name] = assembly;
-		}
+            cache.Clear();
 
-		protected override void Dispose (bool disposing)
-		{
-			foreach (var assembly in cache.Values)
-				assembly.Dispose ();
-
-			cache.Clear ();
-
-			base.Dispose (disposing);
-		}
-	}
+            base.Dispose(disposing);
+        }
+    }
 }

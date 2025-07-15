@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.ObjectPooling
 {
-
-
     public class ListStack<GameObject>
     {
         public ListStack()
@@ -40,17 +38,17 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns if this ListStack has been accessed recently.
         /// </summary>
-        /// <param name="threshold"></param>
+        /// <param name = "threshold"></param>
         /// <returns></returns>
         public bool AccessedRecently(float threshold)
         {
-            return ((Time.time - _lastAccessedTime) < threshold);
+            return Time.time - _lastAccessedTime < threshold;
         }
 
         /// <summary>
         /// Returns a list of GameObjects which were culled from the stack.
         /// </summary>
-        /// <param name="threshold"></param>
+        /// <param name = "threshold"></param>
         /// <returns></returns>
         public List<GameObject> Cull(float threshold)
         {
@@ -75,7 +73,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Push an item to the stack.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name = "item"></param>
         public void Push(GameObject item)
         {
             _lastAccessedTime = Time.time;
@@ -92,7 +90,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             _lastAccessedTime = Time.time;
             if (Entries.Count > 0)
             {
-                //Return the last entry as it's cheaper than returning the first.
+                // Return the last entry as it's cheaper than returning the first.
                 int nextIndex = Entries.Count - 1;
                 //Set entry then remove from lists.
                 GameObject entry = Entries[nextIndex];
@@ -102,14 +100,14 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             }
             else
             {
-                return default(GameObject);
+                return default;
             }
         }
 
         /// <summary>
         /// Remove an entry at a specified index.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name = "index"></param>
         public void Remove(int index)
         {
             _lastAccessedTime = Time.time;
@@ -120,14 +118,14 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Attempts to remove an item from the entries.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name = "item"></param>
         /// <returns>True if an item was removed.</returns>
         public bool Remove(GameObject item)
         {
             _lastAccessedTime = Time.time;
             int index = Entries.IndexOf(item);
             if (index == -1)
-            { 
+            {
                 return false;
             }
             else
@@ -148,6 +146,4 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             EntriesAddedTimes.Clear();
         }
     }
-
-
 }

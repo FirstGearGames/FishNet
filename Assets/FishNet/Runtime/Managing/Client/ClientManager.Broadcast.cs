@@ -1,4 +1,7 @@
-﻿using FishNet.Broadcast;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Broadcast;
 using FishNet.Broadcast.Helping;
 using FishNet.Managing.Utility;
 using FishNet.Serializing;
@@ -8,6 +11,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing.Transporting;
 using UnityEngine;
 
 namespace FishNet.Managing.Client
@@ -24,8 +28,8 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Registers a method to call when a Broadcast arrives.
         /// </summary>
-        /// <typeparam name="T">Type of broadcast being registered.</typeparam>
-        /// <param name="handler">Method to call.</param>
+        /// <typeparam name = "T">Type of broadcast being registered.</typeparam>
+        /// <param name = "handler">Method to call.</param>
         public void RegisterBroadcast<T>(Action<T, Channel> handler) where T : struct, IBroadcast
         {
             if (handler == null)
@@ -35,22 +39,27 @@ namespace FishNet.Managing.Client
             }
 
             ushort key = BroadcastExtensions.GetKey<T>();
-            //Create new IBroadcastHandler if needed.
+
+#if DEVELOPMENT && !UNITY_SERVER
+            NetworkManager.SetBroadcastName<T>(key);
+#endif
+
+            // Create new IBroadcastHandler if needed.
             BroadcastHandlerBase bhs;
             if (!_broadcastHandlers.TryGetValueIL2CPP(key, out bhs))
             {
                 bhs = new ServerBroadcastHandler<T>();
                 _broadcastHandlers.Add(key, bhs);
             }
-            //Register handler to IBroadcastHandler.
+            // Register handler to IBroadcastHandler.
             bhs.RegisterHandler(handler);
         }
 
         /// <summary>
         /// Unregisters a method call from a Broadcast type.
         /// </summary>
-        /// <typeparam name="T">Type of broadcast being unregistered.</typeparam>
-        /// <param name="handler">Method to unregister.</param>
+        /// <typeparam name = "T">Type of broadcast being unregistered.</typeparam>
+        /// <param name = "handler">Method to unregister.</param>
         public void UnregisterBroadcast<T>(Action<T, Channel> handler) where T : struct, IBroadcast
         {
             ushort key = BroadcastExtensions.GetKey<T>();
@@ -61,28 +70,41 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Parses a received broadcast.
         /// </summary>
-        
         private void ParseBroadcast(PooledReader reader, Channel channel)
         {
+            int readerPositionAfterDebug = reader.Position;
+
             ushort key = reader.ReadUInt16();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Broadcast, reader, channel);
+
             // try to invoke the handler for that message
             if (_broadcastHandlers.TryGetValueIL2CPP(key, out BroadcastHandlerBase bhs))
+            {
                 bhs.InvokeHandlers(reader, channel);
+            }
             else
+            {
                 reader.Skip(dataLength);
-        }
+            }
 
+#if DEVELOPMENT && !UNITY_SERVER
+            if (_networkTrafficStatistics != null)
+            {
+                string broadcastName = NetworkManager.GetBroadcastName(key);
+                _networkTrafficStatistics.AddInboundPacketIdData(PacketId.Broadcast, broadcastName, reader.Position - readerPositionAfterDebug + TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
+            }
+#endif
+        }
 
         /// <summary>
         /// Sends a Broadcast to the server.
         /// </summary>
-        /// <typeparam name="T">Type of broadcast to send.</typeparam>
-        /// <param name="message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
-        /// <param name="channel">Channel to send on.</param>
+        /// <typeparam name = "T">Type of broadcast to send.</typeparam>
+        /// <param name = "message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name = "channel">Channel to send on.</param>
         public void Broadcast<T>(T message, Channel channel = Channel.Reliable) where T : struct, IBroadcast
         {
-            //Check local connection state.
+            // Check local connection state.
             if (!Started)
             {
                 NetworkManager.LogWarning($"Cannot send broadcast to server because client is not active.");
@@ -93,11 +115,19 @@ namespace FishNet.Managing.Client
             BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
+#if DEVELOPMENT && !UNITY_SERVER
+            if (_networkTrafficStatistics != null)
+            {
+                ushort key = BroadcastExtensions.GetKey<T>();
+                string broadcastName = NetworkManager.GetBroadcastName(key);
+
+                /* Do not include packetId length -- its written in the 'WriteBroadcast' method. */
+                _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.Broadcast, broadcastName, writer.Length, gameObject: null, asServer: false);
+            }
+#endif
+
             NetworkManager.TransportManager.SendToServer((byte)channel, segment);
             writer.Store();
         }
-
     }
-
-
 }

@@ -57,14 +57,14 @@ namespace FishNet.Observing
         /// If the state has changed observers will be rebuilt
         /// for this object.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         public void SetIsEnabled(bool value)
         {
             if (value == GetIsEnabled())
                 return;
 
             _isEnabled = value;
-            //No object to rebuild for.
+            // No object to rebuild for.
             if (NetworkObject == null)
                 return;
 
@@ -77,7 +77,7 @@ namespace FishNet.Observing
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        /// <param name="networkObject">NetworkObject this condition is initializing for.</param>
+        /// <param name = "networkObject">NetworkObject this condition is initializing for.</param>
         public virtual void Initialize(NetworkObject networkObject)
         {
             NetworkObject = networkObject;
@@ -86,7 +86,7 @@ namespace FishNet.Observing
         /// <summary>
         /// Deinitializes this script.
         /// </summary>
-        /// <param name="destroyed">True if the object is being destroyed, false if being despawned. An object may deinitialize for despawn, then destroy after.</param>
+        /// <param name = "destroyed">True if the object is being destroyed, false if being despawned. An object may deinitialize for despawn, then destroy after.</param>
         public virtual void Deinitialize(bool destroyed)
         {
             NetworkObject = null;
@@ -95,9 +95,9 @@ namespace FishNet.Observing
         /// <summary>
         /// Returns if the object which this condition resides should be visible to connection.
         /// </summary>
-        /// <param name="connection">Connection which the condition is being checked for.</param>
-        /// <param name="currentlyAdded">True if the connection currently has visibility of this object.</param>
-        /// <param name="notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
+        /// <param name = "connection">Connection which the condition is being checked for.</param>
+        /// <param name = "currentlyAdded">True if the connection currently has visibility of this object.</param>
+        /// <param name = "notProcessed">True if the condition was not processed. This can be used to skip processing for performance. While output as true this condition result assumes the previous ConditionMet value.</param>
         public abstract bool ConditionMet(NetworkConnection connection, bool currentlyAdded, out bool notProcessed);
 
         /// <summary>

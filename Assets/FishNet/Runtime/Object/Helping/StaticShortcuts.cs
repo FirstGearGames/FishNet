@@ -1,13 +1,11 @@
-﻿
-namespace FishNet.Object.Helping
+﻿namespace FishNet.Object.Helping
 {
-
     public static class CodegenHelper
     {
         /// <summary>
         /// Returns if a NetworkObject is deinitializing.
         /// </summary>
-        /// <param name="nb"></param>
+        /// <param name = "nb"></param>
         /// <returns></returns>
         public static bool NetworkObject_Deinitializing(NetworkBehaviour nb)
         {
@@ -20,7 +18,7 @@ namespace FishNet.Object.Helping
         /// <summary>
         /// Returns if running as server.
         /// </summary>
-        /// <param name="nb"></param>
+        /// <param name = "nb"></param>
         /// <returns></returns>
         public static bool IsServer(NetworkBehaviour nb)
         {
@@ -33,7 +31,7 @@ namespace FishNet.Object.Helping
         /// <summary>
         /// Returns if running as client.
         /// </summary>
-        /// <param name="nb"></param>
+        /// <param name = "nb"></param>
         /// <returns></returns>
         public static bool IsClient(NetworkBehaviour nb)
         {
@@ -42,8 +40,5 @@ namespace FishNet.Object.Helping
 
             return nb.IsClientStarted;
         }
-
     }
-
-
 }

@@ -3,8 +3,6 @@
 using UnityEditor;
 #endif
 
-
-
 namespace GameKit.Dependencies.Utilities
 {
 #if UNITY_EDITOR
@@ -12,7 +10,6 @@ namespace GameKit.Dependencies.Utilities
 #endif
     public static class ApplicationState
     {
-
 #if !UNITY_EDITOR
         /// <summary>
         /// True if application is quitting.
@@ -35,7 +32,6 @@ namespace GameKit.Dependencies.Utilities
 #endif
         }
 
-
         /// <summary>
         /// Returns if the application is quitting for editor or builds.
         /// </summary>
@@ -43,8 +39,7 @@ namespace GameKit.Dependencies.Utilities
         public static bool IsQuitting()
         {
 #if UNITY_EDITOR
-            if ((!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying) ||
-                !EditorApplication.isPlaying)
+            if ((!EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPlaying) || !EditorApplication.isPlaying)
                 return true;
             else
                 return false;
@@ -72,13 +67,10 @@ namespace GameKit.Dependencies.Utilities
         public static void Quit()
         {
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
+            EditorApplication.isPlaying = false;
 #else
             Application.Quit();
 #endif
         }
-
     }
-
-
 }

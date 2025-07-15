@@ -2,8 +2,6 @@
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     [System.Serializable]
     public struct Vector2Range
     {
@@ -12,11 +10,13 @@ namespace GameKit.Dependencies.Utilities.Types
             X = new(minimum.x, maximum.x);
             Y = new(minimum.y, maximum.y);
         }
+
         public Vector2Range(FloatRange minimum, FloatRange maximum)
         {
             X = minimum;
             Y = maximum;
         }
+
         /// <summary>
         /// Minimum range.
         /// </summary>
@@ -32,12 +32,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <returns></returns>
         public Vector2 RandomInclusive()
         {
-            return new(
-                Floats.RandomInclusiveRange(X.Minimum, X.Maximum),
-                Floats.RandomInclusiveRange(Y.Minimum, Y.Maximum)
-                );
+            return new(Floats.RandomInclusiveRange(X.Minimum, X.Maximum), Floats.RandomInclusiveRange(Y.Minimum, Y.Maximum));
         }
     }
-
-
 }

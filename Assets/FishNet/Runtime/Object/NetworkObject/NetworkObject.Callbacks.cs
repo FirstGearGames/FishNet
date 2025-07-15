@@ -28,8 +28,8 @@ namespace FishNet.Object
              * always be an empty connection, since the object is just
              * now initializing. */
 
-            //Invoke OnStartNetwork.
-            bool invokeOnNetwork = (asServer || IsServerOnlyStarted || IsClientOnlyInitialized);
+            // Invoke OnStartNetwork.
+            bool invokeOnNetwork = asServer || IsServerOnlyStarted || IsClientOnlyInitialized;
             if (invokeOnNetwork)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
@@ -43,7 +43,7 @@ namespace FishNet.Object
                     NetworkBehaviours[i].OnStartServer_Internal();
                 _onStartServerCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
-                    NetworkBehaviours[i].OnOwnershipServer_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
+                    NetworkBehaviours[i].OnOwnershipServer_Internal(Managing.NetworkManager.EmptyConnection);
             }
             //As client.
             else
@@ -52,7 +52,7 @@ namespace FishNet.Object
                     NetworkBehaviours[i].OnStartClient_Internal();
                 _onStartClientCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
-                    NetworkBehaviours[i].OnOwnershipClient_Internal(FishNet.Managing.NetworkManager.EmptyConnection);
+                    NetworkBehaviours[i].OnOwnershipClient_Internal(Managing.NetworkManager.EmptyConnection);
             }
 
             if (invokeSyncTypeCallbacks)
@@ -83,7 +83,7 @@ namespace FishNet.Object
         /// Invokes events to be called after OnServerStart.
         /// This is made one method to save instruction calls.
         /// </summary>
-        /// <param name=""></param>
+        /// <param name = ""></param>
         internal void OnSpawnServer(NetworkConnection conn)
         {
             for (int i = 0; i < NetworkBehaviours.Count; i++)
@@ -96,7 +96,7 @@ namespace FishNet.Object
         /// <summary>
         /// Called on the server before it sends a despawn message to a client.
         /// </summary>
-        /// <param name="conn">Connection spawn was sent to.</param>
+        /// <param name = "conn">Connection spawn was sent to.</param>
         internal void InvokeOnServerDespawn(NetworkConnection conn)
         {
             for (int i = 0; i < NetworkBehaviours.Count; i++)
@@ -113,7 +113,7 @@ namespace FishNet.Object
 
             if (invokeSyncTypeCallbacks)
                 InvokeOnStopSyncTypeCallbacks(asServer);
-            
+
             if (asServer && _onStartServerCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
@@ -138,7 +138,7 @@ namespace FishNet.Object
 
                 _onStartClientCalled = false;
             }
- 
+
             void InvokeOnNetwork()
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
@@ -170,7 +170,7 @@ namespace FishNet.Object
                  * as owner client-side, which invokes the OnOwnership method.
                  * Then when the server approves the owner change it would invoke
                  * again, which is not needed. */
-                bool blockInvoke = ((IsOwner && !IsServerStarted) && (prevOwner == Owner));
+                bool blockInvoke = IsOwner && !IsServerStarted && prevOwner == Owner;
                 if (!blockInvoke)
                 {
                     for (int i = 0; i < NetworkBehaviours.Count; i++)

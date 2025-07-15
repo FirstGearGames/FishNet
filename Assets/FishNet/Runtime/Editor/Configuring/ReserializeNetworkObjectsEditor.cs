@@ -29,7 +29,7 @@ namespace FishNet.Editing
             AllScenes = 0,
             OpenScenes = 1,
             SelectedScenes = 2,
-            BuildScenes = 3,
+            BuildScenes = 3
         }
 
         private struct OpenScene
@@ -50,18 +50,14 @@ namespace FishNet.Editing
         private GUIStyle _upgradeRequiredStyle;
         private GUIStyle _instructionsStyle;
         private GUIStyle _buttonStyle;
-
         private bool _loaded;
-
         private bool _iteratePrefabs;
         private bool _iterateScenes;
         private ReserializeSceneType _sceneReserializeType = ReserializeSceneType.OpenScenes;
         private bool _enabledOnlyBuildScenes = true;
-
         private const string UPGRADE_PART_COLOR = "cd61ff";
         private const string UPGRADE_COMPLETE_COLOR = "32e66e";
         private const string PREFS_PREFIX = "FishNetReserialize";
-
         private static ReserializeNetworkObjectsEditor _window;
 
         [MenuItem("Tools/Fish-Networking/Utility/Reserialize NetworkObjects", false, 400)]
@@ -81,7 +77,7 @@ namespace FishNet.Editing
             if (_window != null)
                 return;
 
-            _window = (ReserializeNetworkObjectsEditor)EditorWindow.GetWindow(typeof(ReserializeNetworkObjectsEditor));
+            _window = (ReserializeNetworkObjectsEditor)GetWindow(typeof(ReserializeNetworkObjectsEditor));
             _window.position = new(0f, 0f, 550f, 300f);
             Rect mainPos;
             mainPos = EditorGUIUtility.GetMainWindowPosition();
@@ -129,17 +125,17 @@ namespace FishNet.Editing
 
         private void OnGUI()
         {
-            //If not yet loaded then set last used values.
+            // If not yet loaded then set last used values.
             if (!_loaded)
             {
                 LoadLastValues();
                 _loaded = true;
             }
 
-            float thisWidth = this.position.width;
+            float thisWidth = position.width;
             StyleWindow();
-            //Starting values.
-            Vector2 requiredSize = new Vector2(this.position.width, 160f);
+            // Starting values.
+            Vector2 requiredSize = new(position.width, 160f);
 
             GUILayout.Box(_fishnetLogo, GUILayout.Width(requiredSize.x), GUILayout.Height(requiredSize.y));
 
@@ -156,8 +152,8 @@ namespace FishNet.Editing
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            //Some dumb reason Unity moves the checkbox further when using nested settings.
-            float rebuildScenesSpacing = (_iterateScenes) ? 27f : 30f;
+            // Some dumb reason Unity moves the checkbox further when using nested settings.
+            float rebuildScenesSpacing = _iterateScenes ? 27f : 30f;
             GUILayout.Space(rebuildScenesSpacing);
             EditorGUILayout.BeginVertical();
 
@@ -223,8 +219,8 @@ namespace FishNet.Editing
             GUI.enabled = true;
             EditorGUILayout.EndHorizontal();
 
-            this.minSize = requiredSize;
-            this.maxSize = this.minSize;
+            minSize = requiredSize;
+            maxSize = minSize;
 
             void CreateInformationLabel(string text, FontStyle? style = null)
             {
@@ -299,15 +295,15 @@ namespace FishNet.Editing
 
             List<OpenScene> openScenes = GetOpenScenes();
 
-            //If running for open scenes only.
+            // If running for open scenes only.
             if (_sceneReserializeType == ReserializeSceneType.OpenScenes)
             {
                 ReserializeScenes(openScenes, ref checkedScenes, ref checkedObjects, ref changedObjects, ref duplicateNetworkObjectsRemoved);
             }
-            //Running on multiple scenes.
+            // Running on multiple scenes.
             else
             {
-                //When working on multiple scenes make sure open scenes are not dirty to prevent data loss.
+                // When working on multiple scenes make sure open scenes are not dirty to prevent data loss.
                 foreach (OpenScene os in openScenes)
                 {
                     if (os.Scene.isDirty)
@@ -356,7 +352,7 @@ namespace FishNet.Editing
 
                 ReserializeScenes(targetedScenes, ref checkedScenes, ref checkedObjects, ref changedObjects, ref duplicateNetworkObjectsRemoved);
 
-                //Reopen original scenes.
+                // Reopen original scenes.
                 for (int i = 0; i < openScenes.Count; i++)
                 {
                     string path = openScenes[i].Path;
@@ -367,7 +363,7 @@ namespace FishNet.Editing
                     SceneAsset sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(path);
                     if (sceneAsset != null)
                     {
-                        OpenSceneMode mode = (i == 0) ? OpenSceneMode.Single : OpenSceneMode.Additive;
+                        OpenSceneMode mode = i == 0 ? OpenSceneMode.Single : OpenSceneMode.Additive;
                         EditorSceneManager.OpenScene(path, mode);
                     }
                 }
@@ -376,7 +372,7 @@ namespace FishNet.Editing
             if (changedObjects > 0)
                 AssetDatabase.SaveAssets();
 
-            string saveText = ((_sceneReserializeType == ReserializeSceneType.OpenScenes) && (changedObjects > 0)) ? " Please save your open scenes." : string.Empty;
+            string saveText = _sceneReserializeType == ReserializeSceneType.OpenScenes && changedObjects > 0 ? " Please save your open scenes." : string.Empty;
             Debug.Log($"Checked {checkedObjects} NetworkObjects over {checkedScenes} scenes. {changedObjects} sceneIds were generated. {duplicateNetworkObjectsRemoved} duplicate NetworkObject components were removed. {saveText}");
 
             LogColoredText($"Scene NetworkObjects refreshed.", UPGRADE_PART_COLOR);

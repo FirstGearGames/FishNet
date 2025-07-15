@@ -31,8 +31,5 @@ namespace FishNet.Transporting
         {
             _timeManager.TickLateUpdate();
         }
-
     }
-
-
 }

@@ -20,7 +20,7 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         public bool Enabled
         {
-            get => (Component == null) ? false : GetState();
+            get => Component == null ? false : GetState();
             set => SetState(value);
         }
         /// <summary>
@@ -42,7 +42,7 @@ namespace FishNet.Example.ComponentStateSync
         /// <summary>
         /// Initializes this StateSync with a component.
         /// </summary>
-        /// <param name="monoComponent"></param>
+        /// <param name = "monoComponent"></param>
         public void Initialize(T component)
         {
             Component = component;
@@ -51,21 +51,21 @@ namespace FishNet.Example.ComponentStateSync
         /// <summary>
         /// Sets the enabled state for Component.
         /// </summary>
-        /// <param name="enabled"></param>
+        /// <param name = "enabled"></param>
         private void SetState(bool enabled)
         {
-            if (base.NetworkManager == null)
+            if (NetworkManager == null)
                 return;
 
             if (Component == null)
-                base.NetworkManager.LogError($"State cannot be changed as Initialize has not been called with a valid component.");
+                NetworkManager.LogError($"State cannot be changed as Initialize has not been called with a valid component.");
 
-            //If hasn't changed then ignore.
+            // If hasn't changed then ignore.
             bool prev = GetState();
             if (enabled == prev)
                 return;
 
-            //Set to new value and add operation.
+            // Set to new value and add operation.
             Component.enabled = enabled;
             AddOperation(Component, prev, enabled);
         }
@@ -84,18 +84,18 @@ namespace FishNet.Example.ComponentStateSync
         /// </summary>
         private void AddOperation(T component, bool prev, bool next)
         {
-            if (!base.IsInitialized)
+            if (!IsInitialized)
                 return;
 
-            if (base.NetworkManager != null && !base.NetworkBehaviour.IsServerStarted)
+            if (NetworkManager != null && !NetworkBehaviour.IsServerStarted)
             {
                 NetworkManager.LogWarning($"Cannot complete operation as server when server is not active.");
                 return;
             }
 
-            base.Dirty();
+            Dirty();
 
-            //Data can currently only be set from server, so this is always asServer.
+            // Data can currently only be set from server, so this is always asServer.
             bool asServer = true;
             OnChange?.Invoke(component, prev, next, asServer);
         }
@@ -103,7 +103,7 @@ namespace FishNet.Example.ComponentStateSync
         /// <summary>
         /// Writes all changed values.
         /// </summary>
-        ///<param name="resetSyncTick">True to set the next time data may sync.</param>
+        /// <param name = "resetSyncTick">True to set the next time data may sync.</param>
         protected internal override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
             base.WriteDelta(writer, resetSyncTick);
@@ -129,8 +129,8 @@ namespace FishNet.Example.ComponentStateSync
         [APIExclude]
         protected internal override void Read(PooledReader reader, bool asServer)
         {
-            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool _, out bool canModifyValues);
-            
+            SetReadArguments(reader, asServer, out bool newChangeId, out bool _, out bool canModifyValues);
+
             bool prevValue = GetState();
             bool nextValue = reader.ReadBoolean();
 

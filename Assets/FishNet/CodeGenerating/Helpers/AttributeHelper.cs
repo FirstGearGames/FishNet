@@ -4,7 +4,6 @@ using FishNet.Object.Helping;
 using FishNet.Object.Prediction;
 using MonoFN.Cecil;
 
-
 namespace FishNet.CodeGenerating.Helping
 {
     internal class AttributeHelper : CodegenBase
@@ -17,7 +16,7 @@ namespace FishNet.CodeGenerating.Helping
         private string ServerRpcAttribute_FullName;
         private string ObserversRpcAttribute_FullName;
         private string TargetRpcAttribute_FullName;
-        #endregion   
+        #endregion
 
         public override bool ImportReferences()
         {
@@ -34,7 +33,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Returns type of Rpc attributeFullName is for.
         /// </summary>
-        /// <param name="attributeFullName"></param>
+        /// <param name = "attributeFullName"></param>
         /// <returns></returns>
         public RpcType GetRpcAttributeType(CustomAttribute ca)
         {
@@ -48,11 +47,10 @@ namespace FishNet.CodeGenerating.Helping
                 return RpcType.None;
         }
 
-
         /// <summary>
         /// Returns type of Rpc attributeFullName is for.
         /// </summary>
-        /// <param name="attributeFullName"></param>
+        /// <param name = "attributeFullName"></param>
         /// <returns></returns>
         internal QolAttributeType GetQolAttributeType(string attributeFullName)
         {
@@ -64,5 +62,4 @@ namespace FishNet.CodeGenerating.Helping
                 return QolAttributeType.None;
         }
     }
-
 }

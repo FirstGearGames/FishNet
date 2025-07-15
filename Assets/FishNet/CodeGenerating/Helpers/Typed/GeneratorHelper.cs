@@ -1,4 +1,5 @@
-﻿using FishNet.CodeGenerating.Extension;
+﻿using System;
+using FishNet.CodeGenerating.Extension;
 using FishNet.CodeGenerating.Helping.Extension;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
@@ -8,44 +9,43 @@ using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Helping
 {
-
-
     internal class GeneratorHelper : CodegenBase
     {
         /// <summary>
         /// Gets what objectTypeRef will be serialized as.
         /// </summary>
-        public SerializerType GetSerializerType(TypeReference objectTr, bool writer, out TypeDefinition objectTd)
+        /// <param name="typeTrace">A trace of what led up to the type needing to be serialized.</param>
+        public SerializerType GetSerializerType(TypeReference objectTr, bool writer, out TypeDefinition objectTd, string typeTrace)
         {
-            string errorPrefix = (writer) ? "CreateWrite: " : "CreateRead: ";
+            string errorPrefix = writer ? "CreateWrite: " : "CreateRead: ";
             objectTd = null;
 
             /* Check if already has a serializer. */
             if (writer)
             {
-                if (base.GetClass<WriterProcessor>().GetWriteMethodReference(objectTr) != null)
+                if (GetClass<WriterProcessor>().GetWriteMethodReference(objectTr) != null)
                 {
-                    base.LogError($"Writer already exist for {objectTr.FullName}.");
+                    LogError(GetLogTextWithTrace($"Writer already exist for {objectTr.FullName}."));
                     return SerializerType.Invalid;
                 }
             }
             else
             {
-                if (base.GetClass<ReaderProcessor>().GetReadMethodReference(objectTr) != null)
+                if (GetClass<ReaderProcessor>().GetReadMethodReference(objectTr) != null)
                 {
-                    base.LogError($"Reader already exist for {objectTr.FullName}.");
+                    LogError(GetLogTextWithTrace($"Reader already exist for {objectTr.FullName}."));
                     return SerializerType.Invalid;
                 }
             }
 
-            objectTd = objectTr.CachedResolve(base.Session);
-            //Invalid typeDef.
+            objectTd = objectTr.CachedResolve(Session);
+            // Invalid typeDef.
             if (objectTd == null)
             {
-                base.LogError($"{errorPrefix}{objectTd.FullName} could not be resolved.");
+                LogError(GetLogTextWithTrace($"{errorPrefix}{objectTd.FullName} could not be resolved."));
                 return SerializerType.Invalid;
             }
-            //Intentionally excluded.
+            // Intentionally excluded.
             if (objectTd.CustomAttributes.Count > 0)
             {
                 foreach (CustomAttribute item in objectTd.CustomAttributes)
@@ -55,69 +55,72 @@ namespace FishNet.CodeGenerating.Helping
                 }
             }
 
-            //By reference.            
+            // By reference.            
             if (objectTr.IsByReference)
             {
-                base.LogError($"{errorPrefix}Cannot pass {objectTr.Name} by reference.");
+                LogError(GetLogTextWithTrace($"{errorPrefix}Cannot pass {objectTr.Name} by reference."));
                 return SerializerType.Invalid;
             }
+
             /* Arrays have to be processed first because it's possible for them to meet other conditions
              * below and be processed wrong. */
-            else if (objectTr.IsArray)
+            if (objectTr.IsArray)
             {
                 if (objectTr.IsMultidimensionalArray())
                 {
-                    base.LogError($"{errorPrefix}{objectTr.Name} is an unsupported type. Multidimensional arrays are not supported.");
+                    LogError(GetLogTextWithTrace($"{errorPrefix}{objectTr.Name} is an unsupported type. Multidimensional arrays are not supported."));
                     return SerializerType.Invalid;
                 }
-                else
-                {
-                    return SerializerType.Array;
-                }
+
+                return SerializerType.Array;
             }
-            //Enum.
-            else if (objectTd.IsEnum)
-            {
+
+            // Enum.
+            if (objectTd.IsEnum)
                 return SerializerType.Enum;
-            }
-            else if (objectTd.Is(typeof(Dictionary<,>)))
-            {
+
+            if (objectTd.Is(typeof(Dictionary<,>)))
                 return SerializerType.Dictionary;
-            }
-            else if (objectTd.Is(typeof(List<>)))
-            {
+
+            if (objectTd.Is(typeof(List<>)))
                 return SerializerType.List;
-            }
-            else if (objectTd.InheritsFrom<NetworkBehaviour>(base.Session))
-            {
+
+            if (objectTd.Is(typeof(HashSet<>)))
+                return SerializerType.HashSet;
+
+            if (objectTd.InheritsFrom<NetworkBehaviour>(Session))
                 return SerializerType.NetworkBehaviour;
-            }
-            else if (objectTr.IsNullable(base.Session))
+
+            if (objectTr.IsNullable(Session))
             {
                 GenericInstanceType git = objectTr as GenericInstanceType;
                 if (git == null || git.GenericArguments.Count != 1)
                     return SerializerType.Invalid;
-                else
-                    return SerializerType.Nullable;
-            }
-            //Invalid type. This must be called after trying to generate everything but class.
-            else if (!CanGenerateSerializer(objectTd))
-            {
-                return SerializerType.Invalid;
-            }
-            //If here then the only type left is struct or class.
-            else if (objectTr.IsClassOrStruct(base.Session))
-            {
-                return SerializerType.ClassOrStruct;
-            }
-            //Unknown type.
-            else
-            {
-                base.LogError($"{errorPrefix}{objectTr.Name} is an unsupported type. Mostly because we don't know what the heck it is. Please let us know so we can fix this.");
-                return SerializerType.Invalid;
-            }
-        }
 
+                return SerializerType.Nullable;
+            }
+
+            // Invalid type. This must be called after trying to generate everything but class.
+            if (!CanGenerateSerializer(objectTd))
+                return SerializerType.Invalid;
+
+            // If here then the only type left is struct or class.
+            if (objectTr.IsClassOrStruct(Session))
+                return SerializerType.ClassOrStruct;
+  
+            if (objectTr.FullName == typeof(System.IntPtr).FullName) 
+            {
+                LogError(GetLogTextWithTrace($"{errorPrefix}{objectTr.FullName} is an unsupported type."));
+                return SerializerType.Invalid;
+            }
+
+            // Unknown type.
+            LogError(GetLogTextWithTrace($"{errorPrefix}{objectTr.FullName} is an unsupported type. Mostly because we don't know what the heck it is. Please let us know so we can fix this."));
+            
+            return SerializerType.Invalid;
+            
+            string GetLogTextWithTrace(string txt) => $"{txt} Trace: {typeTrace}.";
+        }
 
         /// <summary>
         /// Returns if objectTd can have a serializer generated for it.
@@ -127,60 +130,56 @@ namespace FishNet.CodeGenerating.Helping
             string errorText = $"{objectTd.Name} is not a supported type. Use a supported type or provide a custom serializer";
 
             System.Type unityObjectType = typeof(UnityEngine.Object);
-            //Unable to determine type, cannot generate for.
+            // Unable to determine type, cannot generate for.
             if (objectTd == null)
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            //Component.
-            if (objectTd.InheritsFrom<UnityEngine.Component>(base.Session))
+            // Component.
+            if (objectTd.InheritsFrom<UnityEngine.Component>(Session))
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            //Unity Object.
+            // Unity Object.
             if (objectTd.Is(unityObjectType))
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            //ScriptableObject.
+            // ScriptableObject.
             if (objectTd.Is(typeof(UnityEngine.ScriptableObject)))
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            //Has generic parameters.
+            // Has generic parameters.
             if (objectTd.HasGenericParameters)
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            //Is an interface.
+            // Is an interface.
             if (objectTd.IsInterface)
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            //Is abstract.
+            // Is abstract.
             if (objectTd.IsAbstract)
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
-            if (objectTd.InheritsFrom(base.Session, unityObjectType) && objectTd.IsExcluded(GeneralHelper.UNITYENGINE_ASSEMBLY_PREFIX))
+            if (objectTd.InheritsFrom(Session, unityObjectType) && objectTd.IsExcluded(GeneralHelper.UNITYENGINE_ASSEMBLY_PREFIX))
             {
-                base.LogError(errorText);
+                LogError(errorText);
                 return false;
             }
 
-            //If here type is valid.
+            // If here type is valid.
             return true;
         }
-
-
     }
-
-
 }

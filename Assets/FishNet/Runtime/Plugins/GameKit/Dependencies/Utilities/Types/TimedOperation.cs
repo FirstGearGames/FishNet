@@ -3,17 +3,15 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
     /// <summary>
     /// Limits how often an operation can be performed through TryUseOperation.
     /// </summary>
     public class TimedOperation
     {
         /// <summary>
-        /// 
         /// </summary>
-        /// <param name="interval">Interval frequency to allow operations.</param>
-        /// <param name="scaledTime">True to compare against scaled time.</param>
+        /// <param name = "interval">Interval frequency to allow operations.</param>
+        /// <param name = "scaledTime">True to compare against scaled time.</param>
         public TimedOperation(float interval, bool scaledTime = false)
         {
             _interval = interval;
@@ -45,15 +43,15 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <returns></returns>
         public bool TryUseOperation()
         {
-            float time = (_scaledTime) ? Time.time : Time.unscaledTime;
+            float time = _scaledTime ? Time.time : Time.unscaledTime;
 
-            //If enough time has passed.
+            // If enough time has passed.
             if (time - _lastGlobalTime >= _interval)
             {
                 _lastGlobalTime = time + _interval;
                 return true;
             }
-            //Not enough time passed.
+            // Not enough time passed.
             else
             {
                 return false;
@@ -63,37 +61,34 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Returns if can perform operation at the configured interval for the specified key.
         /// </summary>
-        /// <param name="key"></param>
+        /// <param name = "key"></param>
         /// <returns></returns>
         public bool TryUseOperation(string key)
         {
-            float time = (_scaledTime) ? Time.time : Time.unscaledTime;
+            float time = _scaledTime ? Time.time : Time.unscaledTime;
 
             float result;
-            //Key already exist.
+            // Key already exist.
             if (_operationTimes.TryGetValue(key, out result))
             {
-                //If enough time has passed.
+                // If enough time has passed.
                 if (time - result >= _interval)
                 {
                     _operationTimes[key] = time + _interval;
                     return true;
                 }
-                //Not enough time passed.
+                // Not enough time passed.
                 else
                 {
                     return false;
                 }
             }
-            //Key not yet added.
+            // Key not yet added.
             else
             {
                 _operationTimes[key] = time + _interval;
                 return true;
             }
         }
-
     }
-
-
 }

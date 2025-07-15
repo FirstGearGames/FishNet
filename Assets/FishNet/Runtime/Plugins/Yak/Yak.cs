@@ -8,7 +8,7 @@ namespace FishNet.Transporting.Yak
     [AddComponentMenu("FishNet/Transport/Yak")]
     public class Yak : Transport
     {
-        #region Private. 
+        #region Private.
         /// <summary>
         /// Client when acting as host.
         /// </summary>
@@ -28,19 +28,17 @@ namespace FishNet.Transporting.Yak
 
         public override void Initialize(NetworkManager networkManager, int transportIndex)
         {
-            
-        }
+            }
 
         private void OnDestroy()
         {
-            
-        }
+            }
 
         #region ConnectionStates.
         /// <summary>
         /// Gets the IP address of a remote connection Id.
         /// </summary>
-        /// <param name="connectionId"></param>
+        /// <param name = "connectionId"></param>
         /// <returns></returns>
         public override string GetConnectionAddress(int connectionId)
         {
@@ -63,60 +61,59 @@ namespace FishNet.Transporting.Yak
         /// <summary>
         /// Gets the current local ConnectionState.
         /// </summary>
-        /// <param name="server">True if getting ConnectionState for the server.</param>
+        /// <param name = "server">True if getting ConnectionState for the server.</param>
         public override LocalConnectionState GetConnectionState(bool server)
         {
-            
             return LocalConnectionState.Stopped;
         }
+
         /// <summary>
         /// Gets the current ConnectionState of a remote client on the server.
         /// </summary>
-        /// <param name="connectionId">ConnectionId to get ConnectionState for.</param>
+        /// <param name = "connectionId">ConnectionId to get ConnectionState for.</param>
         public override RemoteConnectionState GetConnectionState(int connectionId)
         {
-            return (_server == null) ? RemoteConnectionState.Stopped : _server.GetConnectionState(connectionId);
+            return _server == null ? RemoteConnectionState.Stopped : _server.GetConnectionState(connectionId);
         }
+
         /// <summary>
         /// Handles a ConnectionStateArgs for the local client.
         /// </summary>
-        /// <param name="connectionStateArgs"></param>
+        /// <param name = "connectionStateArgs"></param>
         public override void HandleClientConnectionState(ClientConnectionStateArgs connectionStateArgs)
         {
-            
-        }
+            }
+
         /// <summary>
         /// Handles a ConnectionStateArgs for the local server.
         /// </summary>
-        /// <param name="connectionStateArgs"></param>
+        /// <param name = "connectionStateArgs"></param>
         public override void HandleServerConnectionState(ServerConnectionStateArgs connectionStateArgs)
         {
-            
-        }
+            }
+
         /// <summary>
         /// Handles a ConnectionStateArgs for a remote client.
         /// </summary>
-        /// <param name="connectionStateArgs"></param>
+        /// <param name = "connectionStateArgs"></param>
         public override void HandleRemoteConnectionState(RemoteConnectionStateArgs connectionStateArgs)
         {
-            
-        }
+            }
         #endregion
 
         #region Iterating.
         /// <summary>
         /// Processes data received by the socket.
         /// </summary>
-        /// <param name="server">True to process data received on the server.</param>
+        /// <param name = "server">True to process data received on the server.</param>
         public override void IterateIncoming(bool server)
         {
-            
-        }
+            }
 
         /// <summary>
         /// Processes data to be sent by the socket.
         /// </summary>
-        /// <param name="server">True to process data received on the server.</param>
+        /// <param name = "server">True to process data received on the server.</param>
         public override void IterateOutgoing(bool server) { }
         #endregion
 
@@ -125,22 +122,25 @@ namespace FishNet.Transporting.Yak
         /// Called when client receives data.
         /// </summary>
         public override event Action<ClientReceivedDataArgs> OnClientReceivedData;
+
         /// <summary>
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
-        /// <param name="receivedDataArgs"></param>
+        /// <param name = "receivedDataArgs"></param>
         public override void HandleClientReceivedDataArgs(ClientReceivedDataArgs receivedDataArgs)
         {
             OnClientReceivedData?.Invoke(receivedDataArgs);
         }
+
         /// <summary>
         /// Called when server receives data.
         /// </summary>
         public override event Action<ServerReceivedDataArgs> OnServerReceivedData;
+
         /// <summary>
         /// Handles a ClientReceivedDataArgs.
         /// </summary>
-        /// <param name="receivedDataArgs"></param>
+        /// <param name = "receivedDataArgs"></param>
         public override void HandleServerReceivedDataArgs(ServerReceivedDataArgs receivedDataArgs)
         {
             OnServerReceivedData?.Invoke(receivedDataArgs);
@@ -151,22 +151,22 @@ namespace FishNet.Transporting.Yak
         /// <summary>
         /// Sends to the server or all clients.
         /// </summary>
-        /// <param name="channelId">Channel to use.</param>
-        /// /// <param name="segment">Data to send.</param>
+        /// <param name = "channelId">Channel to use.</param>
+        /// ///
+        /// <param name = "segment">Data to send.</param>
         public override void SendToServer(byte channelId, ArraySegment<byte> segment)
         {
-            
-        }
+            }
+
         /// <summary>
         /// Sends data to a client.
         /// </summary>
-        /// <param name="channelId"></param>
-        /// <param name="segment"></param>
-        /// <param name="connectionId"></param>
+        /// <param name = "channelId"></param>
+        /// <param name = "segment"></param>
+        /// <param name = "connectionId"></param>
         public override void SendToClient(byte channelId, ArraySegment<byte> segment, int connectionId)
         {
-            
-        }
+            }
         #endregion
 
         #region Configuration.
@@ -175,6 +175,7 @@ namespace FishNet.Transporting.Yak
         /// While true several security checks are disabled.
         /// </summary>
         public override bool IsLocalTransport(int connectionId) => true;
+
         /// <summary>
         /// Returns the maximum number of clients allowed to connect to the server. If the transport does not support this method the value -1 is returned.
         /// </summary>
@@ -183,25 +184,29 @@ namespace FishNet.Transporting.Yak
         {
             return NetworkConnection.MAXIMUM_CLIENTID_WITHOUT_SIMULATED_VALUE;
         }
+
         /// <summary>
         /// Sets maximum number of clients allowed to connect to the server. If applied at runtime and clients exceed this value existing clients will stay connected but new clients may not connect.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         public override void SetMaximumClients(int value) { }
+
         /// <summary>
         /// Sets which address the client will connect to.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name = "address"></param>
         public override void SetClientAddress(string address) { }
+
         /// <summary>
         /// Sets which address the server will bind to.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name = "address"></param>
         public override void SetServerBindAddress(string address, IPAddressType addressType) { }
+
         /// <summary>
         /// Sets which port to use.
         /// </summary>
-        /// <param name="port"></param>
+        /// <param name = "port"></param>
         public override void SetPort(ushort port) { }
         #endregion
 
@@ -209,7 +214,7 @@ namespace FishNet.Transporting.Yak
         /// <summary>
         /// Starts the local server or client using configured settings.
         /// </summary>
-        /// <param name="server">True to start server.</param>
+        /// <param name = "server">True to start server.</param>
         public override bool StartConnection(bool server)
         {
             if (server)
@@ -221,7 +226,7 @@ namespace FishNet.Transporting.Yak
         /// <summary>
         /// Stops the local server or client.
         /// </summary>
-        /// <param name="server">True to stop server.</param>
+        /// <param name = "server">True to stop server.</param>
         public override bool StopConnection(bool server)
         {
             if (server)
@@ -233,8 +238,8 @@ namespace FishNet.Transporting.Yak
         /// <summary>
         /// Stops a remote client from the server, disconnecting the client.
         /// </summary>
-        /// <param name="connectionId">ConnectionId of the client to disconnect.</param>
-        /// <param name="immediately">True to abrutly stp the client socket without waiting socket thread.</param>
+        /// <param name = "connectionId">ConnectionId of the client to disconnect.</param>
+        /// <param name = "immediately">True to abruptly stop the client socket without waiting socket thread.</param>
         public override bool StopConnection(int connectionId, bool immediately)
         {
             return StopClient(connectionId, immediately);
@@ -245,8 +250,7 @@ namespace FishNet.Transporting.Yak
         /// </summary>
         public override void Shutdown()
         {
-            
-        }
+            }
 
         #region Privates.
         /// <summary>
@@ -255,9 +259,7 @@ namespace FishNet.Transporting.Yak
         /// <returns>True if there were no blocks. A true response does not promise a socket will or has connected.</returns>
         private bool StartServer()
         {
-            
-
-            return (_server == null) ? false : _server.StartConnection();
+            return _server == null ? false : _server.StartConnection();
         }
 
         /// <summary>
@@ -265,17 +267,16 @@ namespace FishNet.Transporting.Yak
         /// </summary>
         private bool StopServer()
         {
-            return (_server == null) ? false : _server.StopConnection();
+            return _server == null ? false : _server.StopConnection();
         }
 
         /// <summary>
         /// Starts the client.
         /// </summary>
-        /// <param name="address"></param>
+        /// <param name = "address"></param>
         /// <returns>True if there were no blocks. A true response does not promise a socket will or has connected.</returns>
         private bool StartClient()
         {
-            
             return true;
         }
 
@@ -284,28 +285,27 @@ namespace FishNet.Transporting.Yak
         /// </summary>
         private bool StopClient()
         {
-            
             return false;
         }
 
         /// <summary>
         /// Stops a remote client on the server.
         /// </summary>
-        /// <param name="connectionId"></param>
-        /// <param name="immediately">True to abrutly stp the client socket without waiting socket thread.</param>
+        /// <param name = "connectionId"></param>
+        /// <param name = "immediately">True to abrutly stp the client socket without waiting socket thread.</param>
         private bool StopClient(int connectionId, bool immediately)
         {
-            return (_server == null) ? false : _server.StopConnection(connectionId);
+            return _server == null ? false : _server.StopConnection(connectionId);
         }
         #endregion
         #endregion
 
-        #region Channels.        
+        #region Channels.
         /// <summary>
         /// Gets the MTU for a channel. This should take header size into consideration.
         /// For example, if MTU is 1200 and a packet header for this channel is 10 in size, this method should return 1190.
         /// </summary>
-        /// <param name="channel"></param>
+        /// <param name = "channel"></param>
         /// <returns></returns>
         public override int GetMTU(byte channel)
         {
@@ -313,5 +313,4 @@ namespace FishNet.Transporting.Yak
         }
         #endregion
     }
-
 }

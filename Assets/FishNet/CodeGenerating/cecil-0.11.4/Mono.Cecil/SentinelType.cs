@@ -9,27 +9,26 @@
 //
 
 using System;
-
 using MD = MonoFN.Cecil.Metadata;
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public sealed class SentinelType : TypeSpecification
+    {
+        public override bool IsValueType
+        {
+            get { return false; }
+            set { throw new InvalidOperationException(); }
+        }
+        public override bool IsSentinel
+        {
+            get { return true; }
+        }
 
-	public sealed class SentinelType : TypeSpecification {
-
-		public override bool IsValueType {
-			get { return false; }
-			set { throw new InvalidOperationException (); }
-		}
-
-		public override bool IsSentinel {
-			get { return true; }
-		}
-
-		public SentinelType (TypeReference type)
-			: base (type)
-		{
-			Mixin.CheckType (type);
-			this.etype = MD.ElementType.Sentinel;
-		}
-	}
+        public SentinelType(TypeReference type) : base(type)
+        {
+            Mixin.CheckType(type);
+            etype = MD.ElementType.Sentinel;
+        }
+    }
 }

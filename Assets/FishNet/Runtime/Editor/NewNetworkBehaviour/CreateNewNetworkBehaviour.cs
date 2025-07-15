@@ -60,6 +60,5 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
             return sb.ToString();
         }
     }
-    
 }
 #endif

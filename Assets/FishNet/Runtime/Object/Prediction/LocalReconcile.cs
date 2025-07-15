@@ -42,6 +42,4 @@ namespace FishNet.Object.Prediction
                 WriterPool.Store(Writer);
         }
     }
-
-
 }

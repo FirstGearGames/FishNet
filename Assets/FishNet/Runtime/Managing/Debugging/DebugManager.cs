@@ -44,8 +44,5 @@ namespace FishNet.Managing.Debugging
         /// </summary>
         [Tooltip("True to disable RpcLinks for Reconcile RPCs.")]
         public bool DisableReconcileRpcLinks;
-
     }
-
-
 }

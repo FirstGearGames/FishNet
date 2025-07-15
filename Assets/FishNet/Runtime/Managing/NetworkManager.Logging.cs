@@ -35,11 +35,10 @@ namespace FishNet.Managing
             _logging.InitializeOnce();
         }
 
-
         /// <summary>
         /// True if can log for loggingType.
         /// </summary>
-        /// <param name="loggingType">Type of logging being filtered.</param>
+        /// <param name = "loggingType">Type of logging being filtered.</param>
         /// <returns></returns>
         internal bool InternalCanLog(LoggingType loggingType)
         {
@@ -86,11 +85,9 @@ namespace FishNet.Managing
 
     public static class NetworkManagerExtensions
     {
-
         /// <summary>
         /// True if can log for loggingType.
         /// </summary>
-        
         internal static bool CanLog(this NetworkManager networkManager, LoggingType loggingType)
         {
             if (GetNetworkManager(ref networkManager))
@@ -102,7 +99,6 @@ namespace FishNet.Managing
         /// <summary>
         /// Performs a log using the loggingType, should logging settings permit it.
         /// </summary>
-        
         public static void Log(this NetworkManager networkManager, LoggingType loggingType, string value)
         {
             if (loggingType == LoggingType.Common)
@@ -116,7 +112,6 @@ namespace FishNet.Managing
         /// <summary>
         /// Performs a common log, should logging settings permit it.
         /// </summary>
-        
         public static void Log(this NetworkManager networkManager, string message)
         {
             if (GetNetworkManager(ref networkManager))
@@ -124,10 +119,10 @@ namespace FishNet.Managing
             else
                 Debug.Log(message);
         }
+
         /// <summary>
         /// Performs a warning log, should logging settings permit it.
         /// </summary>
-        
         public static void LogWarning(this NetworkManager networkManager, string message)
         {
             if (GetNetworkManager(ref networkManager))
@@ -139,7 +134,6 @@ namespace FishNet.Managing
         /// <summary>
         /// Performs an error log, should logging settings permit it.
         /// </summary>
-        
         public static void LogError(this NetworkManager networkManager, string message)
         {
             if (GetNetworkManager(ref networkManager))
@@ -158,33 +152,29 @@ namespace FishNet.Managing
                 return true;
 
             preferredNm = InstanceFinder.NetworkManager;
-            return (preferredNm != null);
+            return preferredNm != null;
         }
 
         #region Backwards compatibility.
         /// <summary>
         /// Performs a common log, should logging settings permit it.
         /// </summary>
-        
-        public static void Log(string msg) => NetworkManagerExtensions.Log(null, msg);
+        public static void Log(string msg) => Log(null, msg);
+
         /// <summary>
         /// Performs a warning log, should logging settings permit it.
         /// </summary>
-        
-        public static void LogWarning(string msg) => NetworkManagerExtensions.LogWarning(null, msg);
+        public static void LogWarning(string msg) => LogWarning(null, msg);
+
         /// <summary>
         /// Performs an error log, should logging settings permit it.
         /// </summary>
-        
-        public static void LogError(string msg) => NetworkManagerExtensions.LogError(null, msg);
+        public static void LogError(string msg) => LogError(null, msg);
+
         /// <summary>
         /// True if can log for loggingType.
         /// </summary>
-        
-        public static bool CanLog(LoggingType lt) => NetworkManagerExtensions.CanLog(null, lt);
-
-
+        public static bool CanLog(LoggingType lt) => CanLog(null, lt);
         #endregion
     }
-
 }

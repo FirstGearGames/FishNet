@@ -9,13 +9,11 @@ namespace LiteNetLib
         private long _bytesSent;
         private long _bytesReceived;
         private long _packetLoss;
-
         public long PacketsSent => Interlocked.Read(ref _packetsSent);
         public long PacketsReceived => Interlocked.Read(ref _packetsReceived);
         public long BytesSent => Interlocked.Read(ref _bytesSent);
         public long BytesReceived => Interlocked.Read(ref _bytesReceived);
         public long PacketLoss => Interlocked.Read(ref _packetLoss);
-
         public long PacketLossPercent
         {
             get
@@ -67,15 +65,7 @@ namespace LiteNetLib
 
         public override string ToString()
         {
-            return
-                string.Format(
-                    "BytesReceived: {0}\nPacketsReceived: {1}\nBytesSent: {2}\nPacketsSent: {3}\nPacketLoss: {4}\nPacketLossPercent: {5}\n",
-                    BytesReceived,
-                    PacketsReceived,
-                    BytesSent,
-                    PacketsSent,
-                    PacketLoss,
-                    PacketLossPercent);
+            return string.Format("BytesReceived: {0}\nPacketsReceived: {1}\nBytesSent: {2}\nPacketsSent: {3}\nPacketLoss: {4}\nPacketLossPercent: {5}\n", BytesReceived, PacketsReceived, BytesSent, PacketsSent, PacketLoss, PacketLossPercent);
         }
     }
 }

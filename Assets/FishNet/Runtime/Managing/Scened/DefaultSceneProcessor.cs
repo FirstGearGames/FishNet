@@ -7,7 +7,6 @@ using System;
 
 namespace FishNet.Managing.Scened
 {
-
     public class DefaultSceneProcessor : SceneProcessorBase
     {
         #region Private.
@@ -56,7 +55,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Called when scene unloading has begun within an unload operation.
         /// </summary>
-        /// <param name="queueData"></param>
+        /// <param name = "queueData"></param>
         public override void UnloadStart(UnloadQueueData queueData)
         {
             base.UnloadStart(queueData);
@@ -66,14 +65,14 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Begin loading a scene using an async method.
         /// </summary>
-        /// <param name="sceneName">Scene name to load.</param>
+        /// <param name = "sceneName">Scene name to load.</param>
         public override void BeginLoadAsync(string sceneName, UnityEngine.SceneManagement.LoadSceneParameters parameters)
         {
             AsyncOperation ao = UnitySceneManager.LoadSceneAsync(sceneName, parameters);
             LoadingAsyncOperations.Add(ao);
-            
-            _lastLoadedScene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1); 
-            
+
+            _lastLoadedScene = UnitySceneManager.GetSceneAt(UnitySceneManager.sceneCount - 1);
+
             CurrentAsyncOperation = ao;
             CurrentAsyncOperation.allowSceneActivation = false;
         }
@@ -81,7 +80,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Begin unloading a scene using an async method.
         /// </summary>
-        /// <param name="sceneName">Scene name to unload.</param>
+        /// <param name = "sceneName">Scene name to unload.</param>
         public override void BeginUnloadAsync(UnityScene scene)
         {
             CurrentAsyncOperation = UnitySceneManager.UnloadSceneAsync(scene);
@@ -93,7 +92,7 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         public override bool IsPercentComplete()
         {
-            return (GetPercentComplete() >= 0.9f);
+            return GetPercentComplete() >= 0.9f;
         }
 
         /// <summary>
@@ -102,7 +101,7 @@ namespace FishNet.Managing.Scened
         /// <returns></returns>
         public override float GetPercentComplete()
         {
-            return (CurrentAsyncOperation == null) ? 1f : CurrentAsyncOperation.progress;
+            return CurrentAsyncOperation == null ? 1f : CurrentAsyncOperation.progress;
         }
 
         /// <summary>
@@ -111,11 +110,10 @@ namespace FishNet.Managing.Scened
         /// <remarks>This is called after IsPercentComplete returns true.</remarks>
         public override UnityScene GetLastLoadedScene() => _lastLoadedScene;
 
-
         /// <summary>
         /// Adds a loaded scene.
         /// </summary>
-        /// <param name="scene">Scene loaded.</param>
+        /// <param name = "scene">Scene loaded.</param>
         public override void AddLoadedScene(UnityScene scene)
         {
             base.AddLoadedScene(scene);
@@ -141,9 +139,9 @@ namespace FishNet.Managing.Scened
                 {
                     LoadingAsyncOperations[i].allowSceneActivation = true;
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
-                    base.SceneManager.NetworkManager.LogError($"An error occured while activating scenes. {e.Message}");
+                    SceneManager.NetworkManager.LogError($"An error occured while activating scenes. {e.Message}");
                 }
             }
         }
@@ -160,7 +158,6 @@ namespace FishNet.Managing.Scened
                 notDone = false;
                 foreach (AsyncOperation ao in LoadingAsyncOperations)
                 {
-
                     if (!ao.isDone)
                     {
                         notDone = true;
@@ -169,9 +166,6 @@ namespace FishNet.Managing.Scened
                 }
                 yield return null;
             } while (notDone);
-            
         }
     }
-
-
 }

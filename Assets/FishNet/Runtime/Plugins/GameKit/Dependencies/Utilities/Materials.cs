@@ -2,13 +2,12 @@
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Materials
     {
         /// <summary>
         /// Returns the color or tint color property for a material.
         /// </summary>
-        /// <param name="material"></param>
+        /// <param name = "material"></param>
         /// <returns></returns>
         public static Color GetColor(this Material material)
         {
@@ -23,7 +22,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Sets the color or tint color property for a material.
         /// </summary>
-        /// <param name="material"></param>
+        /// <param name = "material"></param>
         public static void SetColor(this Material material, Color color)
         {
             if (material.HasProperty("_Color"))
@@ -32,5 +31,4 @@ namespace GameKit.Dependencies.Utilities
                 material.SetColor("_TintColor", color);
         }
     }
-
 }

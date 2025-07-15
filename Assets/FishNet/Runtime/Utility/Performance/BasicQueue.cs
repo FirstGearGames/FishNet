@@ -1,7 +1,7 @@
-﻿//using System; //Remove on V5
+﻿// using System; // Remove on V5
 
-//namespace FishNet.Utility.Performance
-//{
+// namespace FishNet.Utility.Performance
+// {
 
 //    /// <summary>
 //    /// Unity 2022 has a bug where codegen will not compile when referencing a Queue type,
@@ -153,11 +153,11 @@
 
 //            /* Make sure copy array is the same size as current
 //             * and copy contents into it. */
-//            //Ensure large enough to fit contents.
+//            // Ensure large enough to fit contents.
 //            T[] resizeBuffer = _resizeBuffer;
 //            if (resizeBuffer.Length < doubleLength)
 //                Array.Resize(ref resizeBuffer, doubleLength);
-//            //Copy from the read of queue first.
+//            // Copy from the read of queue first.
 //            int copyLength = (length - read);
 //            Array.Copy(Collection, read, resizeBuffer, 0, copyLength);
 //            /* If read index was higher than 0
@@ -165,9 +165,9 @@
 //            if (read > 0)
 //                Array.Copy(Collection, 0, resizeBuffer, copyLength, read);
 
-//            //Set _array to resize.
+//            // Set _array to resize.
 //            Collection = resizeBuffer;
-//            //Reset positions.
+//            // Reset positions.
 //            _read = 0;
 //            WriteIndex = length;
 //        }
@@ -191,8 +191,6 @@
 //            }
 //        }
 
-
-
 //        /// <summary>
 //        /// Returns the real index of the collection using a simulated index.
 //        /// </summary>
@@ -206,7 +204,7 @@
 //            else
 //            {
 //                int written = _written;
-//                //May be out of bounds if allowUnusedBuffer is false.
+//                // May be out of bounds if allowUnusedBuffer is false.
 //                if (simulatedIndex >= written)
 //                {
 //                    if (!allowUnusedBuffer)
@@ -228,4 +226,5 @@
 
 //    }
 
-//}
+// }
+

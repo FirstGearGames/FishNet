@@ -45,7 +45,7 @@ namespace FishNet.CodeGenerating.Processing
 
         private class CreatedPredictionFields
         {
-            /// <summary>   
+            /// <summary>
             /// TypeReference of replicate data.
             /// </summary>
             public TypeReference ReplicateDataTypeRef;
@@ -53,7 +53,6 @@ namespace FishNet.CodeGenerating.Processing
             /// Typereference of reconcile data.
             /// </summary>
             public TypeReference ReconcileDataTypeRef;
-
             /// <summary>
             /// Delegate for calling replicate user logic.
             /// </summary>
@@ -62,7 +61,6 @@ namespace FishNet.CodeGenerating.Processing
             /// Delegate for calling replicate user logic.
             /// </summary>
             public FieldDefinition ReconcileUserLogicDelegate;
-
             /// <summary>
             /// Replicate data which has not run yet and is in queue to do so.
             /// </summary>
@@ -75,7 +73,6 @@ namespace FishNet.CodeGenerating.Processing
             /// Reconcile data cached locally from the local client.
             /// </summary>
             public FieldDefinition LocalReconciles;
-
             /// <summary>
             /// Last replicate read. This is used for reading delta replicates.
             /// </summary>
@@ -117,22 +114,22 @@ namespace FishNet.CodeGenerating.Processing
         public override bool ImportReferences()
         {
             System.Type locType;
-            //SR.MethodInfo locMi;
+            // SR.MethodInfo locMi;
 
-            base.ImportReference(typeof(BasicQueue<>));
-            ReplicateULDelegate_TypeRef = base.ImportReference(typeof(ReplicateUserLogicDelegate<>));
-            ReconcileULDelegate_TypeRef = base.ImportReference(typeof(ReconcileUserLogicDelegate<>));
+            ImportReference(typeof(BasicQueue<>));
+            ReplicateULDelegate_TypeRef = ImportReference(typeof(ReplicateUserLogicDelegate<>));
+            ReconcileULDelegate_TypeRef = ImportReference(typeof(ReconcileUserLogicDelegate<>));
 
-            TypeDefinition replicateDataTd = base.ImportReference(typeof(ReplicateDataContainer<>)).CachedResolve(base.Session);
-            ReplicateData_Ctor_MethodRef = base.ImportReference(replicateDataTd.GetConstructor(parameterCount: 2));
+            TypeDefinition replicateDataTd = ImportReference(typeof(ReplicateDataContainer<>)).CachedResolve(Session);
+            ReplicateData_Ctor_MethodRef = ImportReference(replicateDataTd.GetConstructor(parameterCount: 2));
 
-            //Get/Set tick.
+            // Get/Set tick.
             locType = typeof(IReplicateData);
             foreach (SR.MethodInfo mi in locType.GetMethods())
             {
                 if (mi.Name == nameof(IReplicateData.GetTick))
                 {
-                    IReplicateData_GetTick_MethodRef = base.ImportReference(mi);
+                    IReplicateData_GetTick_MethodRef = ImportReference(mi);
                     break;
                 }
             }
@@ -142,7 +139,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 if (mi.Name == nameof(IReconcileData.GetTick))
                 {
-                    IReconcileData_GetTick_MethodRef = base.ImportReference(mi);
+                    IReconcileData_GetTick_MethodRef = ImportReference(mi);
                     break;
                 }
             }
@@ -154,7 +151,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Gets number of predictions by checking for prediction attributes. This does not perform error checking.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal uint GetPredictionCount(TypeDefinition typeDef)
         {
@@ -164,7 +161,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
                 {
-                    if (customAttribute.Is(base.GetClass<AttributeHelper>().ReplicateAttribute_FullName))
+                    if (customAttribute.Is(GetClass<AttributeHelper>().ReplicateAttribute_FullName))
                         return 1;
                 }
             }
@@ -175,14 +172,14 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Gets number of predictions by checking for prediction attributes in typeDef parents, excluding typerDef.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal uint GetPredictionCountInParents(TypeDefinition typeDef)
         {
             uint count = 0;
             do
             {
-                typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
+                typeDef = typeDef.GetNextBaseClassToProcess(Session);
                 if (typeDef != null)
                     count += GetPredictionCount(typeDef);
             } while (typeDef != null);
@@ -199,8 +196,8 @@ namespace FishNet.CodeGenerating.Processing
             replicateMd = null;
             reconcileMd = null;
 
-            string replicateAttributeFullName = base.GetClass<AttributeHelper>().ReplicateAttribute_FullName;
-            string reconcileAttributeFullName = base.GetClass<AttributeHelper>().ReconcileAttribute_FullName;
+            string replicateAttributeFullName = GetClass<AttributeHelper>().ReplicateAttribute_FullName;
+            string reconcileAttributeFullName = GetClass<AttributeHelper>().ReconcileAttribute_FullName;
 
             bool error = false;
             foreach (MethodDefinition methodDef in typeDef.Methods)
@@ -236,21 +233,21 @@ namespace FishNet.CodeGenerating.Processing
                     break;
             }
 
-            //Checks to make sure the CreateReconcile method exist and calls reconcile.
+            // Checks to make sure the CreateReconcile method exist and calls reconcile.
             bool CheckCreateReconcile(MethodDefinition reconcileMd)
             {
                 string crName = nameof(NetworkBehaviour.CreateReconcile);
                 MethodDefinition createReconcileMd = reconcileMd.DeclaringType.GetMethod(crName);
-                //Does not exist.
+                // Does not exist.
                 if (createReconcileMd == null)
                 {
-                    base.LogError($"{reconcileMd.DeclaringType.Name} does not implement method {crName}. Override method {crName} and use it to create your reconcile data, and call your reconcile method {reconcileMd.Name}. Call ");
+                    LogError($"{reconcileMd.DeclaringType.Name} does not implement method {crName}. Override method {crName} and use it to create your reconcile data, and call your reconcile method {reconcileMd.Name}. Call ");
                     return false;
                 }
-                //Exists, check for call.
+                // Exists, check for call.
                 else
                 {
-                    //Check for call instructions.
+                    // Check for call instructions.
                     foreach (Instruction inst in createReconcileMd.Body.Instructions)
                     {
                         if (inst.OpCode == OpCodes.Call || inst.OpCode == OpCodes.Callvirt)
@@ -263,8 +260,8 @@ namespace FishNet.CodeGenerating.Processing
                         }
                     }
 
-                    base.LogError($"{reconcileMd.DeclaringType.Name} implements {crName} but does not call reconcile method {reconcileMd.Name}. If you are calling CreateReconcile from another type please make a new method to call in {reconcileMd.DeclaringType.Name}, which in return calls CreateReconcile.");
-                    //Fallthrough.
+                    LogError($"{reconcileMd.DeclaringType.Name} implements {crName} but does not call reconcile method {reconcileMd.Name}. If you are calling CreateReconcile from another type please make a new method to call in {reconcileMd.DeclaringType.Name}, which in return calls CreateReconcile.");
+                    // Fallthrough.
                     return false;
                 }
             }
@@ -277,26 +274,26 @@ namespace FishNet.CodeGenerating.Processing
             {
                 bool isPrivate = md.Attributes.HasFlag(MethodAttributes.Private);
                 if (!isPrivate)
-                    base.LogError($"Method {md.Name} within {typeDef.Name} is a prediction method and must be private.");
+                    LogError($"Method {md.Name} within {typeDef.Name} is a prediction method and must be private.");
                 return isPrivate;
             }
 
             bool IsPredictionMethodAlreadyFound(MethodDefinition md)
             {
-                bool alreadyFound = (md != null);
+                bool alreadyFound = md != null;
                 if (alreadyFound)
-                    base.LogError($"{typeDef.Name} contains multiple prediction sets; currently only one set is allowed.");
+                    LogError($"{typeDef.Name} contains multiple prediction sets; currently only one set is allowed.");
 
                 return alreadyFound;
             }
 
-            if (!error && ((replicateMd == null) != (reconcileMd == null)))
+            if (!error && replicateMd == null != (reconcileMd == null))
             {
-                base.LogError($"{typeDef.Name} must contain both a [Replicate] and [Reconcile] method when using prediction.");
+                LogError($"{typeDef.Name} must contain both a [Replicate] and [Reconcile] method when using prediction.");
                 error = true;
             }
 
-            if (error || (replicateMd == null) || (reconcileMd == null))
+            if (error || replicateMd == null || reconcileMd == null)
                 return false;
             else
                 return true;
@@ -305,8 +302,8 @@ namespace FishNet.CodeGenerating.Processing
 
         internal bool Process(TypeDefinition typeDef)
         {
-            //Set prediction count in parents here. Increase count after each predictionAttributeMethods iteration.
-            //Do a for each loop on predictionAttributedMethods.
+            // Set prediction count in parents here. Increase count after each predictionAttributeMethods iteration.
+            // Do a for each loop on predictionAttributedMethods.
             /* NOTES: get all prediction attributed methods up front and store them inside predictionAttributedMethods.
              * To find the proper reconciles for replicates add an attribute field allowing users to assign Ids. EG ReplicateV2.Id = 1. Default
              * value will be 0. */
@@ -317,13 +314,13 @@ namespace FishNet.CodeGenerating.Processing
             if (!GetPredictionMethods(typeDef, out replicateMd, out reconcileMd))
                 return false;
 
-            RpcProcessor rp = base.GetClass<RpcProcessor>();
+            RpcProcessor rp = GetClass<RpcProcessor>();
             uint predictionRpcCount = GetPredictionCountInParents(typeDef) + rp.GetRpcCountInParents(typeDef);
 
             //If replication methods found but this hierarchy already has max.
             if (predictionRpcCount >= NetworkBehaviourHelper.MAX_RPC_ALLOWANCE)
             {
-                base.LogError($"{typeDef.FullName} and inherited types exceed {NetworkBehaviourHelper.MAX_PREDICTION_ALLOWANCE} replicated methods. Only {NetworkBehaviourHelper.MAX_PREDICTION_ALLOWANCE} replicated methods are supported per inheritance hierarchy.");
+                LogError($"{typeDef.FullName} and inherited types exceed {NetworkBehaviourHelper.MAX_PREDICTION_ALLOWANCE} replicated methods. Only {NetworkBehaviourHelper.MAX_PREDICTION_ALLOWANCE} replicated methods are supported per inheritance hierarchy.");
                 return false;
             }
 
@@ -333,8 +330,8 @@ namespace FishNet.CodeGenerating.Processing
             if (parameterError)
                 return false;
 
-            TypeDefinition replicateDataTd = replicateMd.Parameters[0].ParameterType.CachedResolve(base.Session);
-            TypeDefinition reconcileDataTd = reconcileMd.Parameters[0].ParameterType.CachedResolve(base.Session);
+            TypeDefinition replicateDataTd = replicateMd.Parameters[0].ParameterType.CachedResolve(Session);
+            TypeDefinition reconcileDataTd = reconcileMd.Parameters[0].ParameterType.CachedResolve(Session);
             //Ensure datas implement interfaces.
             bool interfacesImplemented = true;
             DataImplementInterfaces(replicateMd, true, ref interfacesImplemented);
@@ -350,18 +347,18 @@ namespace FishNet.CodeGenerating.Processing
              * generate a serializer for element type as well. */
             bool canSerialize;
             //Make sure replicate data can serialize.
-            canSerialize = base.GetClass<GeneralHelper>().HasSerializerAndDeserializer(replicateDataTd.MakeArrayType(), true);
+            canSerialize = GetClass<GeneralHelper>().HasSerializerAndDeserializer(replicateDataTd.MakeArrayType(), true);
             if (!canSerialize)
             {
-                base.LogError($"Replicate data type {replicateDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
+                LogError($"Replicate data type {replicateDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
                 return false;
             }
 
             //Make sure reconcile data can serialize.
-            canSerialize = base.GetClass<GeneralHelper>().HasSerializerAndDeserializer(reconcileDataTd, true);
+            canSerialize = GetClass<GeneralHelper>().HasSerializerAndDeserializer(reconcileDataTd, true);
             if (!canSerialize)
             {
-                base.LogError($"Reconcile data type {reconcileDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
+                LogError($"Reconcile data type {reconcileDataTd.Name} does not support serialization. Use a supported type or create a custom serializer.");
                 return false;
             }
 
@@ -385,8 +382,8 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private bool TickFieldIsNonSerializable(TypeDefinition dataTd, bool replicate)
         {
-            string methodName = (replicate) ? IReplicateData_GetTick_MethodRef.Name : IReconcileData_GetTick_MethodRef.Name;
-            MethodDefinition getMd = dataTd.GetMethodDefinitionInAnyBase(base.Session, methodName);
+            string methodName = replicate ? IReplicateData_GetTick_MethodRef.Name : IReconcileData_GetTick_MethodRef.Name;
+            MethodDefinition getMd = dataTd.GetMethodDefinitionInAnyBase(Session, methodName);
 
             //Try to find ldFld.
             Instruction ldFldInst = null;
@@ -402,7 +399,7 @@ namespace FishNet.CodeGenerating.Processing
             //If ldFld not found.
             if (ldFldInst == null)
             {
-                base.LogError($"{dataTd.FullName} method {getMd.Name} does not return a field type for the Tick. Make a new private or protected field of uint type and return it's value within {getMd.Name}.");
+                LogError($"{dataTd.FullName} method {getMd.Name} does not return a field type for the Tick. Make a new private or protected field of uint type and return it's value within {getMd.Name}.");
                 return false;
             }
 
@@ -410,7 +407,7 @@ namespace FishNet.CodeGenerating.Processing
             FieldDefinition fd = (FieldDefinition)ldFldInst.Operand;
             if (!fd.Attributes.HasFlag(FieldAttributes.Private) && !fd.Attributes.HasFlag(FieldAttributes.Family))
             {
-                base.LogError($"{dataTd.FullName} method {getMd.Name} returns a tick field it does not have the correct accessibility. Make the field {fd.Name} private or protected.");
+                LogError($"{dataTd.FullName} method {getMd.Name} returns a tick field it does not have the correct accessibility. Make the field {fd.Name} private or protected.");
                 return false;
             }
 
@@ -421,12 +418,12 @@ namespace FishNet.CodeGenerating.Processing
         private void DataImplementInterfaces(MethodDefinition methodDef, bool isReplicate, ref bool interfacesImplemented)
         {
             TypeReference dataTr = methodDef.Parameters[0].ParameterType;
-            string interfaceName = (isReplicate) ? IReplicateData_FullName : IReconcileData_FullName;
+            string interfaceName = isReplicate ? IReplicateData_FullName : IReconcileData_FullName;
             //If does not implement.
-            if (!dataTr.CachedResolve(base.Session).ImplementsInterfaceRecursive(base.Session, interfaceName))
+            if (!dataTr.CachedResolve(Session).ImplementsInterfaceRecursive(Session, interfaceName))
             {
-                string name = (isReplicate) ? typeof(IReplicateData).Name : typeof(IReconcileData).Name;
-                base.LogError($"Prediction data type {dataTr.Name} for method {methodDef.Name} in class {methodDef.DeclaringType.Name} must implement the {name} interface.");
+                string name = isReplicate ? typeof(IReplicateData).Name : typeof(IReconcileData).Name;
+                LogError($"Prediction data type {dataTr.Name} for method {methodDef.Name} in class {methodDef.DeclaringType.Name} must implement the {name} interface.");
                 interfacesImplemented = false;
             }
         }
@@ -440,8 +437,8 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor = injectionMethodDef.Body.GetILProcessor();
             List<Instruction> insts = new();
 
-            Register(readers.ReplicateReader.CachedResolve(base.Session), true);
-            Register(readers.ReconcileReader.CachedResolve(base.Session), false);
+            Register(readers.ReplicateReader.CachedResolve(Session), true);
+            Register(readers.ReconcileReader.CachedResolve(Session), false);
 
             void Register(MethodDefinition readerMd, bool replicate)
             {
@@ -455,13 +452,13 @@ namespace FishNet.CodeGenerating.Processing
                 MethodReference callMr;
                 if (replicate)
                 {
-                    ctorMr = base.GetClass<NetworkBehaviourHelper>().ReplicateRpcDelegate_Ctor_MethodRef;
-                    callMr = base.GetClass<NetworkBehaviourHelper>().RegisterReplicateRpc_MethodRef;
+                    ctorMr = GetClass<NetworkBehaviourHelper>().ReplicateRpcDelegate_Ctor_MethodRef;
+                    callMr = GetClass<NetworkBehaviourHelper>().RegisterReplicateRpc_MethodRef;
                 }
                 else
                 {
-                    ctorMr = base.GetClass<NetworkBehaviourHelper>().ReconcileRpcDelegate_Ctor_MethodRef;
-                    callMr = base.GetClass<NetworkBehaviourHelper>().RegisterReconcileRpc_MethodRef;
+                    ctorMr = GetClass<NetworkBehaviourHelper>().ReconcileRpcDelegate_Ctor_MethodRef;
+                    callMr = GetClass<NetworkBehaviourHelper>().RegisterReconcileRpc_MethodRef;
                 }
 
                 insts.Add(processor.Create(OpCodes.Newobj, ctorMr));
@@ -474,10 +471,10 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Initializes collection fields made during this process.
         /// </summary>
-        /// <param name="predictionFields"></param>
+        /// <param name = "predictionFields"></param>
         private void InitializeCollections(TypeDefinition typeDef, MethodDefinition replicateMd, MethodDefinition reconcileMd, CreatedPredictionFields predictionFields)
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
             TypeReference reconcileDataTr = reconcileMd.Parameters[0].ParameterType;
             MethodDefinition injectionMethodDef = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
@@ -502,11 +499,11 @@ namespace FishNet.CodeGenerating.Processing
                 MethodDefinition ctorMd;
                 if (isRingBuffer)
                     //ctorMd = base.GetClass<GeneralHelper>().RingBuffer_TypeRef.CachedResolve(base.Session).GetDefaultConstructor(base.Session);
-                    ctorMd = base.GetClass<GeneralHelper>().RingBuffer_TypeRef.CachedResolve(base.Session).GetConstructor(base.Session, 1);
+                    ctorMd = GetClass<GeneralHelper>().RingBuffer_TypeRef.CachedResolve(Session).GetConstructor(Session, 1);
                 else
-                    ctorMd = base.GetClass<GeneralHelper>().List_TypeRef.CachedResolve(base.Session).GetDefaultConstructor(base.Session);
+                    ctorMd = GetClass<GeneralHelper>().List_TypeRef.CachedResolve(Session).GetDefaultConstructor(Session);
 
-                MethodReference ctorMr = ctorMd.MakeHostInstanceGeneric(base.Session, lGit);
+                MethodReference ctorMr = ctorMd.MakeHostInstanceGeneric(Session, lGit);
 
                 List<Instruction> insts = new();
 
@@ -523,7 +520,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Initializes collection fields made during this process.
         /// </summary>
-        /// <param name="predictionFields"></param>
+        /// <param name = "predictionFields"></param>
         private void InitializeULDelegates(TypeDefinition typeDef, CreatedPredictionFields predictionFields, MethodDefinition replicateMd, MethodDefinition reconcileMd, MethodDefinition replicateULMd, MethodDefinition reconcileULMd)
         {
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
@@ -539,10 +536,10 @@ namespace FishNet.CodeGenerating.Processing
             {
                 insts.Clear();
 
-                MethodDefinition ctorMd = delegateTr.CachedResolve(base.Session).GetFirstConstructor(base.Session, true);
+                MethodDefinition ctorMd = delegateTr.CachedResolve(Session).GetFirstConstructor(Session, true);
                 GenericInstanceType collectionGit;
                 GetGenericULDelegate(dataTr, delegateType, out collectionGit);
-                MethodReference ctorMr = ctorMd.MakeHostInstanceGeneric(base.Session, collectionGit);
+                MethodReference ctorMr = ctorMd.MakeHostInstanceGeneric(Session, collectionGit);
 
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
                 insts.Add(processor.Create(OpCodes.Ldarg_0));
@@ -556,13 +553,13 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates field buffers for replicate datas.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="replicateMd"></param>
-        /// <param name=""></param>
+        /// <param name = "typeDef"></param>
+        /// <param name = "replicateMd"></param>
+        /// <param name = ""></param>
         /// <returns></returns>
         private void CreateFields(TypeDefinition typeDef, MethodDefinition replicateMd, MethodDefinition reconcileMd, out CreatedPredictionFields predictionFields)
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
             TypeReference replicateDataTr = replicateMd.Parameters[0].ParameterType;
             TypeReference reconcileDataTr = reconcileMd.Parameters[0].ParameterType;
 
@@ -615,7 +612,7 @@ namespace FishNet.CodeGenerating.Processing
                 LocalReconciles = localReconcilesFd,
 
                 LastReadReplicate = lastReadReplicateFd,
-                LastReadReconcile = lastReconcileDataFd,
+                LastReadReconcile = lastReconcileDataFd
             };
         }
 
@@ -626,7 +623,7 @@ namespace FishNet.CodeGenerating.Processing
         {
             //Replicate: data, state, channel.
             //Reconcile: data, asServer, channel.
-            int count = (replicateMethod) ? 3 : 2;
+            int count = replicateMethod ? 3 : 2;
 
             //Check parameter count.
             if (methodDef.Parameters.Count != count)
@@ -637,13 +634,13 @@ namespace FishNet.CodeGenerating.Processing
 
             string expectedName;
             //Data check.
-            if (!methodDef.Parameters[0].ParameterType.IsClassOrStruct(base.Session))
+            if (!methodDef.Parameters[0].ParameterType.IsClassOrStruct(Session))
             {
-                base.LogError($"Prediction methods must use a class or structure as the first parameter type. Structures are recommended to avoid allocations.");
+                LogError($"Prediction methods must use a class or structure as the first parameter type. Structures are recommended to avoid allocations.");
                 return true;
             }
 
-            expectedName = (replicateMethod) ? typeof(ReplicateState).Name : typeof(Channel).Name;
+            expectedName = replicateMethod ? typeof(ReplicateState).Name : typeof(Channel).Name;
             if (methodDef.Parameters[1].ParameterType.Name != expectedName)
             {
                 PrintParameterExpectations();
@@ -664,9 +661,9 @@ namespace FishNet.CodeGenerating.Processing
             void PrintParameterExpectations()
             {
                 if (replicateMethod)
-                    base.LogError($"Replicate method {methodDef.Name} within {typeDef.Name} requires exactly {count} parameters. In order: replicate data, state = ReplicateState.Invalid, channel = Channel.Unreliable");
+                    LogError($"Replicate method {methodDef.Name} within {typeDef.Name} requires exactly {count} parameters. In order: replicate data, state = ReplicateState.Invalid, channel = Channel.Unreliable");
                 else
-                    base.LogError($"Reconcile method {methodDef.Name} within {typeDef.Name} requires exactly {count} parameters. In order: reconcile data, channel = Channel.Unreliable.");
+                    LogError($"Reconcile method {methodDef.Name} within {typeDef.Name} requires exactly {count} parameters. In order: reconcile data, channel = Channel.Unreliable.");
             }
 
             //No errors with parameters.
@@ -679,14 +676,14 @@ namespace FishNet.CodeGenerating.Processing
         /// <returns></returns>
         private bool CreatePredictionMethods(TypeDefinition typeDef, MethodDefinition replicateMd, MethodDefinition reconcileMd, CreatedPredictionFields predictionFields, uint rpcCount, out PredictionReaders predictionReaders, out MethodDefinition replicateULMd, out MethodDefinition reconcileULMd)
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
+            NetworkBehaviourHelper nbh = GetClass<NetworkBehaviourHelper>();
             predictionReaders = null;
 
             uint startingRpcCount = rpcCount;
             string copySuffix = "___UL";
-            replicateULMd = base.GetClass<GeneralHelper>().CopyIntoNewMethod(replicateMd, $"{replicateMd.Name}{copySuffix}", out _);
-            reconcileULMd = base.GetClass<GeneralHelper>().CopyIntoNewMethod(reconcileMd, $"{reconcileMd.Name}{copySuffix}", out _);
+            replicateULMd = GetClass<GeneralHelper>().CopyIntoNewMethod(replicateMd, $"{replicateMd.Name}{copySuffix}", out _);
+            reconcileULMd = GetClass<GeneralHelper>().CopyIntoNewMethod(reconcileMd, $"{reconcileMd.Name}{copySuffix}", out _);
             replicateMd.Body.Instructions.Clear();
             reconcileMd.Body.Instructions.Clear();
 
@@ -721,7 +718,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 ParameterDefinition channelPd = replicateMd.Parameters[2];
 
-                GenericInstanceMethod replicateGim = base.GetClass<NetworkBehaviourHelper>().Replicate_Current_MethodRef.MakeGenericMethod(new TypeReference[] { replicateDataTr });
+                GenericInstanceMethod replicateGim = GetClass<NetworkBehaviourHelper>().Replicate_Current_MethodRef.MakeGenericMethod(new TypeReference[] { replicateDataTr });
 
                 /* ReplicateUserLogicDelegate<T> del
                  * uint methodHash
@@ -749,7 +746,7 @@ namespace FishNet.CodeGenerating.Processing
                 processor.Emit(OpCodes.Ldarg, replicateDataPd);
                 processor.Emit(OpCodes.Ldarg, channelPd);
                 GenericInstanceType git = GetGenericReplicateDataContainer(replicateDataTr);
-                MethodReference ctorMr = ReplicateData_Ctor_MethodRef.MakeHostInstanceGeneric(base.Session, git);
+                MethodReference ctorMr = ReplicateData_Ctor_MethodRef.MakeHostInstanceGeneric(Session, git);
                 processor.Emit(OpCodes.Newobj, ctorMr);
 
                 //Call nb.Replicate_Current.
@@ -771,12 +768,12 @@ namespace FishNet.CodeGenerating.Processing
 
             bool CreateEmptyReplicatesQueueIntoHistoryStart()
             {
-                MethodDefinition newMethodDef = nbh.EmptyReplicatesQueueIntoHistory_Start_MethodRef.CachedResolve(base.Session).CreateCopy(base.Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
+                MethodDefinition newMethodDef = nbh.EmptyReplicatesQueueIntoHistory_Start_MethodRef.CachedResolve(Session).CreateCopy(Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
                 typeDef.Methods.Add(newMethodDef);
 
                 ILProcessor processor = newMethodDef.Body.GetILProcessor();
 
-                MethodReference baseMethodGim = nbh.EmptyReplicatesQueueIntoHistory_MethodRef.GetMethodReference(base.Session, new TypeReference[] { predictionFields.ReplicateDataTypeRef });
+                MethodReference baseMethodGim = nbh.EmptyReplicatesQueueIntoHistory_MethodRef.GetMethodReference(Session, new TypeReference[] { predictionFields.ReplicateDataTypeRef });
 
                 processor.Emit(OpCodes.Ldarg_0);
                 processor.Emit(OpCodes.Ldarg_0);
@@ -792,7 +789,7 @@ namespace FishNet.CodeGenerating.Processing
             //Overrides reconcile start to call reconcile_client_internal.
             bool CreateReconcileStart()
             {
-                MethodDefinition newMethodDef = nbh.Reconcile_Client_Start_MethodRef.CachedResolve(base.Session).CreateCopy(base.Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
+                MethodDefinition newMethodDef = nbh.Reconcile_Client_Start_MethodRef.CachedResolve(Session).CreateCopy(Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
                 typeDef.Methods.Add(newMethodDef);
 
                 ILProcessor processor = newMethodDef.Body.GetILProcessor();
@@ -801,7 +798,7 @@ namespace FishNet.CodeGenerating.Processing
 
                 void Call_Reconcile_Client()
                 {
-                    MethodReference baseMethodGim = nbh.Reconcile_Client_MethodRef.GetMethodReference(base.Session, new TypeReference[] { predictionFields.LastReadReconcile.FieldType, predictionFields.ReplicateDataTypeRef });
+                    MethodReference baseMethodGim = nbh.Reconcile_Client_MethodRef.GetMethodReference(Session, new TypeReference[] { predictionFields.LastReadReconcile.FieldType, predictionFields.ReplicateDataTypeRef });
 
                     processor.Emit(OpCodes.Ldarg_0);
                     processor.Emit(OpCodes.Ldarg_0);
@@ -821,13 +818,13 @@ namespace FishNet.CodeGenerating.Processing
 
             bool CreateReplicateReplayStart()
             {
-                MethodDefinition newMethodDef = nbh.Replicate_Replay_Start_MethodRef.CachedResolve(base.Session).CreateCopy(base.Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
+                MethodDefinition newMethodDef = nbh.Replicate_Replay_Start_MethodRef.CachedResolve(Session).CreateCopy(Session, null, MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES);
                 typeDef.Methods.Add(newMethodDef);
 
                 ParameterDefinition replayTickPd = newMethodDef.Parameters[0];
                 ILProcessor processor = newMethodDef.Body.GetILProcessor();
 
-                MethodReference baseMethodGim = nbh.Replicate_Replay_MethodRef.GetMethodReference(base.Session, new TypeReference[] { predictionFields.ReplicateDataTypeRef });
+                MethodReference baseMethodGim = nbh.Replicate_Replay_MethodRef.GetMethodReference(Session, new TypeReference[] { predictionFields.ReplicateDataTypeRef });
 
                 //uint replicateTick, ReplicateUserLogicDelegate<T> del, List<T> replicates, Channel channel) where T : IReplicateData
                 processor.Emit(OpCodes.Ldarg_0);
@@ -850,28 +847,28 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates an override for the method responsible for resetting replicates.
         /// </summary>
-        /// <param name=""></param>
-        /// <param name=""></param>
+        /// <param name = ""></param>
+        /// <param name = ""></param>
         private void CreateClearReplicateCacheMethod(TypeDefinition typeDef, TypeReference replicateDataTr, TypeReference reconcileDataTr, CreatedPredictionFields predictionFields)
         {
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
+            NetworkBehaviourHelper nbh = GetClass<NetworkBehaviourHelper>();
 
             string methodName = nameof(NetworkBehaviour.ClearReplicateCache);
-            MethodDefinition baseClearMd = typeDef.GetMethodDefinitionInAnyBase(base.Session, methodName);
-            MethodDefinition clearMd = typeDef.GetOrCreateMethodDefinition(base.Session, methodName, baseClearMd, true, out bool created);
+            MethodDefinition baseClearMd = typeDef.GetMethodDefinitionInAnyBase(Session, methodName);
+            MethodDefinition clearMd = typeDef.GetOrCreateMethodDefinition(Session, methodName, baseClearMd, true, out bool created);
             clearMd.Attributes = MethodDefinitionExtensions.PUBLIC_VIRTUAL_ATTRIBUTES;
             //This class already has the method created when it should not.
             if (baseClearMd.DeclaringType == typeDef)
             {
-                base.LogError($"{typeDef.Name} overrides method {methodName} when it should not.");
+                LogError($"{typeDef.Name} overrides method {methodName} when it should not.");
                 return;
             }
 
             ILProcessor processor = clearMd.Body.GetILProcessor();
             //Call the base class first.
             processor.Emit(OpCodes.Ldarg_0);
-            MethodReference baseClearMr = base.ImportReference(baseClearMd);
+            MethodReference baseClearMr = ImportReference(baseClearMd);
             processor.Emit(OpCodes.Call, baseClearMr);
 
             //Call the actual clear method.
@@ -897,7 +894,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private void GetGenericULDelegate(TypeReference dataTr, System.Type delegateType, out GenericInstanceType git)
         {
-            TypeReference delDataTr = base.ImportReference(delegateType);
+            TypeReference delDataTr = ImportReference(delegateType);
             git = delDataTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
 
@@ -968,8 +965,8 @@ namespace FishNet.CodeGenerating.Processing
 
             ILProcessor processor = createdMd.Body.GetILProcessor();
 
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
+            NetworkBehaviourHelper nbh = GetClass<NetworkBehaviourHelper>();
 
             TypeReference dataTr = replicateMd.Parameters[0].ParameterType;
             //Create parameters.
@@ -977,7 +974,7 @@ namespace FishNet.CodeGenerating.Processing
             ParameterDefinition networkConnectionPd = gh.CreateParameter(createdMd, typeof(NetworkConnection));
             ParameterDefinition channelPd = gh.CreateParameter(createdMd, typeof(Channel));
 
-            MethodReference replicateReaderGim = nbh.Replicate_Reader_MethodRef.GetMethodReference(base.Session, dataTr);
+            MethodReference replicateReaderGim = nbh.Replicate_Reader_MethodRef.GetMethodReference(Session, dataTr);
 
             processor.Emit(OpCodes.Ldarg_0);
             processor.Emit(OpCodes.Ldc_I4, (int)hash);
@@ -1005,7 +1002,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Creates server side code for reconcileMd.
         /// </summary>
-        /// <param name="reconcileMd"></param>
+        /// <param name = "reconcileMd"></param>
         /// <returns></returns>
         private void ServerCreateReconcile(MethodDefinition reconcileMd, CreatedPredictionFields predictionFields, ref uint rpcCount)
         {
@@ -1013,7 +1010,7 @@ namespace FishNet.CodeGenerating.Processing
             ParameterDefinition channelPd = reconcileMd.Parameters[1];
             ILProcessor processor = reconcileMd.Body.GetILProcessor();
 
-            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+            NetworkBehaviourHelper nbh = GetClass<NetworkBehaviourHelper>();
             GenericInstanceMethod methodGim;
 
             /* Reconcile_Current. */
@@ -1032,7 +1029,7 @@ namespace FishNet.CodeGenerating.Processing
             processor.Emit(OpCodes.Ldarg, reconcileDataPd);
             //Channel.
             processor.Emit(OpCodes.Ldarg, channelPd);
-            
+
             processor.Emit(OpCodes.Call, methodGim);
 
             rpcCount++;
@@ -1052,15 +1049,15 @@ namespace FishNet.CodeGenerating.Processing
 
             ILProcessor processor = createdMd.Body.GetILProcessor();
 
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
-            NetworkBehaviourHelper nbh = base.GetClass<NetworkBehaviourHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
+            NetworkBehaviourHelper nbh = GetClass<NetworkBehaviourHelper>();
 
             TypeReference dataTr = reconcileMd.Parameters[0].ParameterType;
             //Create parameters.
             ParameterDefinition readerPd = gh.CreateParameter(createdMd, typeof(PooledReader));
             ParameterDefinition channelPd = gh.CreateParameter(createdMd, typeof(Channel));
 
-            MethodReference methodGim = nbh.Reconcile_Reader_MethodRef.GetMethodReference(base.Session, dataTr);
+            MethodReference methodGim = nbh.Reconcile_Reader_MethodRef.GetMethodReference(Session, dataTr);
 
             processor.Emit(OpCodes.Ldarg_0);
 
@@ -1084,7 +1081,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         public GenericInstanceType GetGenericReplicateDataContainer(TypeReference dataTr)
         {
-            TypeReference typeTr = base.ImportReference(typeof(ReplicateDataContainer<>));
+            TypeReference typeTr = ImportReference(typeof(ReplicateDataContainer<>));
             return typeTr.MakeGenericInstanceType(new TypeReference[] { dataTr });
         }
         #endregion

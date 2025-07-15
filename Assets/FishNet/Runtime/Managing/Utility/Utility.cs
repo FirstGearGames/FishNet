@@ -4,7 +4,6 @@ using FishNet.Transporting;
 
 namespace FishNet.Managing.Utility
 {
-
     public class Packets
     {
         /// <summary>
@@ -13,27 +12,23 @@ namespace FishNet.Managing.Utility
         internal static int GetPacketLength(ushort packetId, PooledReader reader, Channel channel)
         {
             /* Broadcast is a special circumstance where data
-            * will not be purged even if unreliable.
-            * This is because a broadcast receiver may not
-            * be set, which could be intentional. Because of this
-            * length is always sent to skip
-            * past the broadcast data. 
-            *
-            * Reliables also need length read in the instance a client
-            * sends data to an object which server is despawning. Without
-            * parsing length the remainer data from client will be corrupt. */
-            /* //todo: we will not always get length on reconciles once
+             * will not be purged even if unreliable.
+             * This is because a broadcast receiver may not
+             * be set, which could be intentional. Because of this
+             * length is always sent to skip
+             * past the broadcast data.
+             *
+             * Reliables also need length read in the instance a client
+             * sends data to an object which server is despawning. Without
+             * parsing length the remainer data from client will be corrupt. */
+            /* // todo: we will not always get length on reconciles once
              * the issue with parsed headers is resolved. */
             PacketId pid = (PacketId)packetId;
-            if (channel == Channel.Reliable ||
-                pid == PacketId.Broadcast ||
-                pid == PacketId.SyncType ||
-                pid == PacketId.Reconcile
-                )
+            if (channel == Channel.Reliable || pid == PacketId.Broadcast || pid == PacketId.SyncType || pid == PacketId.Reconcile)
             {
                 return reader.ReadInt32();
             }
-            //Unreliable purges remaining.
+            // Unreliable purges remaining.
             else if (channel == Channel.Unreliable)
             {
                 return (int)MissingObjectPacketLength.PurgeRemaiming;
@@ -49,6 +44,4 @@ namespace FishNet.Managing.Utility
             }
         }
     }
-
-
 }

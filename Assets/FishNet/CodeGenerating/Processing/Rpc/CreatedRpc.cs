@@ -4,7 +4,6 @@ using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Processing.Rpc
 {
-
     internal class CreatedRpc
     {
         public MethodDefinition OriginalMethodDef;
@@ -15,13 +14,11 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         public MethodDefinition LogicMethodDef;
         public MethodDefinition RedirectMethodDef;
         public bool RunLocally;
-
         public RpcType RpcType => AttributeData.RpcType;
         public CustomAttribute Attribute => AttributeData.Attribute;
         public TypeDefinition TypeDef => OriginalMethodDef.DeclaringType;
         public ModuleDefinition Module => OriginalMethodDef.Module;
     }
-
 
     internal static class CreatedRpcExtensions
     {
@@ -36,7 +33,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 if (lst[i].RpcType == rpcType)
                     return lst[i];
             }
-            //Fall through.
+            // Fall through.
             return null;
         }
 
@@ -53,6 +50,4 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             return result;
         }
     }
-
-
 }

@@ -14,6 +14,4 @@
         /// </summary>
         Unreliable = 1
     }
-
-
 }

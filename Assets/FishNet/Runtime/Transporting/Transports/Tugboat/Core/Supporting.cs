@@ -3,8 +3,6 @@ using System;
 
 namespace FishNet.Transporting.Tugboat
 {
-
-
     internal struct Packet
     {
         public readonly int ConnectionId;
@@ -22,7 +20,7 @@ namespace FishNet.Transporting.Tugboat
 
         public Packet(int sender, ArraySegment<byte> segment, byte channel, int mtu)
         {
-            //Prefer to max out returned array to mtu to reduce chance of resizing.
+            // Prefer to max out returned array to mtu to reduce chance of resizing.
             int arraySize = Math.Max(segment.Count, mtu);
             Data = ByteArrayPool.Retrieve(arraySize);
             Buffer.BlockCopy(segment.Array, segment.Offset, Data, 0, segment.Count);
@@ -40,19 +38,16 @@ namespace FishNet.Transporting.Tugboat
         {
             ByteArrayPool.Store(Data);
         }
-
     }
-
-
 }
 
 namespace FishNet.Transporting.Tugboat.Server
 {
-
     internal struct RemoteConnectionEvent
     {
         public readonly bool Connected;
         public readonly int ConnectionId;
+
         public RemoteConnectionEvent(bool connected, int connectionId)
         {
             Connected = connected;
@@ -60,4 +55,3 @@ namespace FishNet.Transporting.Tugboat.Server
         }
     }
 }
-

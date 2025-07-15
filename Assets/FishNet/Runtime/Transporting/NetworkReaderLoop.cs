@@ -23,11 +23,10 @@ namespace FishNet.Transporting
         {
             _timeManager.TickFixedUpdate();
         }
+
         private void Update()
         {
             _timeManager.TickUpdate();
         }
     }
-
-
 }

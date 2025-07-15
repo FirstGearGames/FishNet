@@ -2,10 +2,8 @@
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-
     internal static class FieldDefinitionExtensions
     {
-
         /// <summary>
         /// Makes a FieldDefinition generic if it has generic parameters.
         /// </summary>
@@ -14,9 +12,5 @@ namespace FishNet.CodeGenerating.Helping.Extension
             FieldReference fr = session.ImportReference(fd);
             return fr.TryMakeGenericInstance();
         }
-
-
-
     }
-
 }

@@ -1,5 +1,4 @@
-﻿
-using FishNet.Documenting;
+﻿using FishNet.Documenting;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -19,13 +18,12 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         Clear,
         /// <summary>
-        /// All operations for the tick have been processed. This only occurs on clients as the server is unable to be aware of when the user is done modifying the list.
-        /// </summary>
-        Complete,
-        /// <summary>
         /// An item has been updated within the collection. This is generally used when modifying data within a container.
         /// </summary>
-        Update,
+        Set,
+        /// <summary>
+        /// All operations for the tick have been processed. This only occurs on clients as the server is unable to be aware of when the user is done modifying the list.
+        /// </summary>
+        Complete
     }
-
 }

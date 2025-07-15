@@ -1,14 +1,14 @@
-﻿//using FishNet.CodeGenerating.Helping.Extension;
-//using FishNet.CodeGenerating.Processing;
-//using FishNet.Object.Synchronizing;
-//using FishNet.Object.Synchronizing.Internal;
-//using MonoFN.Cecil;
-//using MonoFN.Cecil.Rocks;
-//using System;
-//using System.Collections.Generic;
+﻿// using FishNet.CodeGenerating.Helping.Extension;
+// using FishNet.CodeGenerating.Processing;
+// using FishNet.Object.Synchronizing;
+// using FishNet.Object.Synchronizing.Internal;
+// using MonoFN.Cecil;
+// using MonoFN.Cecil.Rocks;
+// using System;
+// using System.Collections.Generic;
 
-//namespace FishNet.CodeGenerating.Helping
-//{
+// namespace FishNet.CodeGenerating.Helping
+// {
 //    internal class CreatedSyncVarGenerator : CodegenBase
 //    {
 //        private readonly Dictionary<string, DeclaredSyncType> _createdSyncVars = new Dictionary<string, DeclaredSyncType>();
@@ -24,7 +24,7 @@
 //        private const string SETVALUE_NAME = "SetValue";
 //        #endregion
 
-//        /* //feature add and test the dirty boolean changes
+//        /* // feature add and test the dirty boolean changes
 //         * eg... instead of base.Dirty()
 //         * do if (!base.Dirty()) return false;
 //         * See synclist for more info. */
@@ -71,7 +71,7 @@
 //                GenericInstanceType originalFdGit = SyncVar_TypeRef.MakeGenericInstanceType(new TypeReference[] { dataTr });
 //                TypeReference genericDataTr = originalFdGit.GenericArguments[0];
 
-//                //Make sure can serialize.
+//                // Make sure can serialize.
 //                bool canSerialize = base.GetClass<GeneralHelper>().HasSerializerAndDeserializer(genericDataTr, true);
 //                if (!canSerialize)
 //                {
@@ -79,7 +79,7 @@
 //                    return null;
 //                }
 
-//                //Set needed methods from syncbase.
+//                // Set needed methods from syncbase.
 //                MethodReference setSyncIndexMr;
 //                MethodReference initializeOnceMrGit = _syncVar_InitializeOnce_MethodRef.MakeHostInstanceGeneric(base.Session, originalFdGit);
 
@@ -90,13 +90,13 @@
 //                MethodReference getValueMr = null;
 //                foreach (MethodDefinition md in SyncVar_TypeRef.CachedResolve(base.Session).Methods)
 //                {
-//                    //GetValue.
+//                    // GetValue.
 //                    if (md.Name == GETVALUE_NAME)
 //                    {
 //                        MethodReference mr = base.ImportReference(md);
 //                        getValueMr = mr.MakeHostInstanceGeneric(base.Session, originalFdGit);
 //                    }
-//                    //SetValue.
+//                    // SetValue.
 //                    else if (md.Name == SETVALUE_NAME)
 //                    {
 //                        MethodReference mr = base.ImportReference(md);
@@ -113,8 +113,7 @@
 //            }
 //        }
 
-
 //    }
 
+// }
 
-//}

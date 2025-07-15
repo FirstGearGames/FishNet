@@ -2,7 +2,6 @@
 
 namespace FishNet.Transporting
 {
-
     /// <summary>
     /// PacketIds to indicate the type of packet which is being sent or arriving.
     /// </summary>
@@ -10,7 +9,9 @@ namespace FishNet.Transporting
     public enum PacketId : ushort
     {
         Unset = 0,
+        // Not used with network traffic statistics.
         Authenticated = 1,
+        // Not used with network traffic statistics.
         Split = 2,
         ObjectSpawn = 3,
         ObjectDespawn = 4,
@@ -19,17 +20,20 @@ namespace FishNet.Transporting
         ServerRpc = 8,
         ObserversRpc = 9,
         TargetRpc = 10,
+        // Not used with network traffic statistics.
         OwnershipChange = 11,
         Broadcast = 12,
-        UNUSED = 13,
+        // Used only as outbound identifier for network traffic statistics - this Id is never transmitted.
+        BulkSpawnOrDespawn = 13,
         PingPong = 14,
         Replicate = 15,
         Reconcile = 16,
+        // Not used with network traffic statistics.
         Disconnect = 17,
         TimingUpdate = 18,
         UNUSED2 = 19,
         StateUpdate = 20,
-        Version = 21,
+        // Not used with network traffic statistics.
+        Version = 21
     }
-
 }

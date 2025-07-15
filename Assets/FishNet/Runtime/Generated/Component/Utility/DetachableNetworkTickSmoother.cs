@@ -21,7 +21,6 @@ namespace FishNet.Component.Transforming
         [Tooltip("True to attach the object to it's original parent when OnStopClient is called.")]
         [SerializeField]
         private bool _attachOnStop = true;
-
         /// <summary>
         /// Object to follow, and smooth towards.
         /// </summary>
@@ -48,7 +47,6 @@ namespace FishNet.Component.Transforming
         [Range(0f, ushort.MaxValue)]
         [SerializeField]
         private float _teleportThreshold;
-
         /// <summary>
         /// True to synchronize the position of the followObject.
         /// </summary>
@@ -86,7 +84,6 @@ namespace FishNet.Component.Transforming
         /// World properties of the followObject during  post tick.
         /// </summary>
         private TransformProperties _postTickFollowObjectWorldProperties;
-
         /// <summary>
         /// How quickly to move towards target.
         /// </summary>
@@ -131,13 +128,13 @@ namespace FishNet.Component.Transforming
             _parent = transform.parent;
             transform.SetParent(null);
 
-            SetTimeManager(base.TimeManager);
-            //Unsub first in the rare chance we already subbed such as a stop callback issue.
+            SetTimeManager(TimeManager);
+            // Unsub first in the rare chance we already subbed such as a stop callback issue.
             ChangeSubscription(false);
             ChangeSubscription(true);
 
             _postTickFollowObjectWorldProperties = _followObject.GetWorldProperties();
-            _tickDelta = (float)base.TimeManager.TickDelta;
+            _tickDelta = (float)TimeManager.TickDelta;
             _initialized = true;
         }
 
@@ -147,12 +144,12 @@ namespace FishNet.Component.Transforming
             if (ApplicationState.IsQuitting())
                 return;
 #endif
-            //Reattach to parent.
+            // Reattach to parent.
             if (_attachOnStop && _parent != null)
             {
-                //Reparent
+                // Reparent
                 transform.SetParent(_parent);
-                //Set to instantiated local values.
+                // Set to instantiated local values.
                 transform.SetLocalProperties(_transformInstantiatedLocalProperties);
             }
 
@@ -177,7 +174,7 @@ namespace FishNet.Component.Transforming
                 return;
 
             _postTickFollowObjectWorldProperties.Update(_followObject);
-            //Unset values if not following the transform property.
+            // Unset values if not following the transform property.
             if (!_synchronizePosition)
                 _postTickFollowObjectWorldProperties.Position = transform.position;
             if (!_synchronizeRotation)
@@ -190,19 +187,18 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets a new PredictionManager to use.
         /// </summary>
-        /// <param name="tm"></param>
+        /// <param name = "tm"></param>
         private void SetTimeManager(TimeManager tm)
         {
             if (tm == _timeManager)
                 return;
 
-            //Unsub from current.
+            // Unsub from current.
             ChangeSubscription(false);
-            //Sub to newest.
+            // Sub to newest.
             _timeManager = tm;
             ChangeSubscription(true);
         }
-
 
         /// <summary>
         /// Changes the subscription to the TimeManager.
@@ -234,21 +230,16 @@ namespace FishNet.Component.Transforming
             if (!_initialized)
                 return;
 
-            float duration = (_tickDelta * _interpolation);
+            float duration = _tickDelta * _interpolation;
             /* If interpolation is 1 then add on a tiny amount
              * of more time to compensate for frame time, so that
              * the smoothing does not complete before the next tick,
              * as this would result in jitter. */
             if (_interpolation == 1)
-                duration += Mathf.Max(Time.deltaTime, (1f / 50f));
+                duration += Mathf.Max(Time.deltaTime, 1f / 50f);
 
-            float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRates.UNSET_VALUE;
+            float teleportT = _enableTeleport ? _teleportThreshold : MoveRates.UNSET_VALUE;
             _moveRates = MoveRates.GetWorldMoveRates(transform, _followObject, duration, teleportT);
         }
-
-
     }
-
-
 }
-

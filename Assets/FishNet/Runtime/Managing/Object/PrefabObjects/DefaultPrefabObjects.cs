@@ -11,9 +11,8 @@ using FishNet.Object;
 
 namespace FishNet.Managing.Object
 {
-
     [APIExclude]
-    //[CreateAssetMenu(fileName = "New DefaultPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Default Prefab Objects")]
+    // [CreateAssetMenu(fileName = "New DefaultPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Default Prefab Objects")]
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
         /// <summary>
@@ -36,13 +35,13 @@ namespace FishNet.Managing.Object
 
             for (int i = 0; i < count; i++)
             {
-                NetworkObject n = base.Prefabs[i];
+                NetworkObject n = Prefabs[i];
                 if (i < index)
                     continue;
 
                 string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
                 ulong hashcode = Hashing.GetStableHashU64(pathAndName);
-                //Already set.
+                // Already set.
                 if (n.AssetPathHash == hashcode)
                     continue;
 
@@ -57,7 +56,7 @@ namespace FishNet.Managing.Object
 #endif
         }
 
-        /// <summary> 
+        /// <summary>
         /// Sorts prefabs by name and path hashcode.
         /// </summary>
         internal void Sort()
@@ -69,28 +68,27 @@ namespace FishNet.Managing.Object
             List<ulong> hashcodes = new();
 
             bool error = false;
-            foreach (NetworkObject n in base.Prefabs)
+            foreach (NetworkObject n in Prefabs)
             {
                 hashcodes.Add(n.AssetPathHash);
-                //If hashcode is 0 something is wrong
+                // If hashcode is 0 something is wrong
                 if (n.AssetPathHash == 0)
                 {
                     error = true;
                     Debug.LogError($"AssetPathHash is not set for GameObject {n.name}.");
-                    
                 }
                 hashcodesAndNobs.Add(n.AssetPathHash, n);
             }
-            //An error occured, no reason to continue.
+            // An error occured, no reason to continue.
             if (error)
             {
                 Debug.LogError($"One or more NetworkObject prefabs did not have their AssetPathHash set. This usually occurs when a prefab cannot be saved. Check the specified prefabs for missing scripts or serialization errors and correct them, then use Fish-Networking -> Refresh Default Prefabs.");
                 return;
             }
 
-            //Once all hashes have been made re-add them to prefabs sorted.
+            // Once all hashes have been made re-add them to prefabs sorted.
             hashcodes.Sort();
-            //Build to a new list using sorted hashcodes.
+            // Build to a new list using sorted hashcodes.
             List<NetworkObject> sortedNobs = new();
             foreach (ulong hc in hashcodes)
                 sortedNobs.Add(hashcodesAndNobs[hc]);
@@ -98,8 +96,5 @@ namespace FishNet.Managing.Object
             base.Clear();
             base.AddObjects(sortedNobs, checkForDuplicates: false, initializeAdded: false);
         }
-
-
     }
-
 }

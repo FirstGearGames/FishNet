@@ -4,11 +4,10 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Layers
     {
         /* GetInteractableLayer methods is an implementation from this
-        * link: https://forum.unity.com/threads/is-there-a-way-to-get-the-layer-collision-matrix.260744/#post-3483886 */
+         * link: https:// forum.unity.com/threads/is-there-a-way-to-get-the-layer-collision-matrix.260744/#post-3483886 */
         /// <summary>
         /// Lookup of interactable layers for each layer.
         /// </summary>
@@ -33,7 +32,7 @@ namespace GameKit.Dependencies.Utilities
                         mask |= 1 << j;
                     }
                 }
-                //Setting without add check is quicker.
+                // Setting without add check is quicker.
                 _interactablesLayers[i] = mask;
             }
         }
@@ -53,7 +52,6 @@ namespace GameKit.Dependencies.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayerMask GetInteractableLayersMask(int layer) => (LayerMask)GetInteractableLayersValue(layer);
 
-
         /// <summary>
         /// Returns interactable layers value for a GameObject.
         /// </summary>
@@ -66,20 +64,20 @@ namespace GameKit.Dependencies.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static LayerMask GetInteractableLayersMask(GameObject go) => (LayerMask)GetInteractableLayersValue(go.layer);
 
-
         /// <summary>
         /// Converts a layer mask to a layer number.
         /// </summary>
-        /// <param name="mask"></param>
+        /// <param name = "mask"></param>
         /// <returns></returns>
         public static int LayerMaskToLayerNumber(LayerMask mask)
         {
             return LayerValueToLayerNumber(mask.value);
         }
+
         /// <summary>
         /// Converts a layer value int to a layer int.
         /// </summary>
-        /// <param name="bitmask"></param>
+        /// <param name = "bitmask"></param>
         /// <returns></returns>
         public static int LayerValueToLayerNumber(int bitmask)
         {
@@ -95,13 +93,12 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Returns if a LayerMask contains a specified layer.
         /// </summary>
-        /// <param name="layerMask">LayerMask to check for layer in.</param>
-        /// <param name="layer">Layer to check within LayerMask.</param>
+        /// <param name = "layerMask">LayerMask to check for layer in.</param>
+        /// <param name = "layer">Layer to check within LayerMask.</param>
         /// <returns></returns>
         public static bool ContainsLayer(LayerMask layerMask, int layer)
         {
-            return (layerMask == (layerMask | (1 << layer)));
+            return layerMask == (layerMask | (1 << layer));
         }
     }
-
 }

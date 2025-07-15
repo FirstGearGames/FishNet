@@ -21,15 +21,12 @@ namespace FishNet.Component.Transforming.Beta
 
         #region Private.
         /// <summary>
-        /// 
         /// </summary>
         private InitializationSettings _initializationSettings = new();
         /// <summary>
-        /// 
         /// </summary>
         private MovementSettings _ownerMovementSettings = new();
         /// <summary>
-        /// 
         /// </summary>
         private MovementSettings _spectatorMovementSettings = new();
         /// <summary>
@@ -75,7 +72,7 @@ namespace FishNet.Component.Transforming.Beta
             _ownerMovementSettings = ownerSettings;
             _spectatorMovementSettings = spectatorSettings;
 
-            _initializedOffline = (initializationSettings.InitializingNetworkBehaviour == null);
+            _initializedOffline = initializationSettings.InitializingNetworkBehaviour == null;
 
             _isInitialized = true;
         }
@@ -93,7 +90,7 @@ namespace FishNet.Component.Transforming.Beta
             if (!_isInitialized)
                 return;
 
-            bool canStart = (_initializedOffline) ? StartOffline() : StartOnline();
+            bool canStart = _initializedOffline ? StartOffline() : StartOnline();
 
             if (!canStart)
                 return;
@@ -137,8 +134,8 @@ namespace FishNet.Component.Transforming.Beta
                 SetTimeManager(tm: null);
             }
 
-            //Intentionally left blank.
-            //void StopOffline() { }
+            // Intentionally left blank.
+            // void StopOffline() { }
         }
 
         public void TimeManager_OnUpdate()
@@ -165,7 +162,6 @@ namespace FishNet.Component.Transforming.Beta
             UniversalSmoother.OnPostReplicateReplay(clientTick);
         }
 
-        
         private void TimeManager_OnRoundTripTimeUpdated(long rttMs)
         {
             UniversalSmoother.UpdateRealtimeInterpolation();
@@ -206,7 +202,7 @@ namespace FishNet.Component.Transforming.Beta
         //
         //     bool previousTargetTransformIsValid = (currentTargetTransform != null);
         //
-        //     //If target is different and old is not null then reset.
+        //     // If target is different and old is not null then reset.
         //     if (previousTargetTransformIsValid && clientStartCalled)
         //         OnStopClient();
         //
@@ -223,7 +219,7 @@ namespace FishNet.Component.Transforming.Beta
             if (tm == _timeManager)
                 return;
 
-            //Unsub from current.
+            // Unsub from current.
             ChangeSubscriptions(false);
             //Sub to newest.
             _timeManager = tm;
@@ -245,7 +241,7 @@ namespace FishNet.Component.Transforming.Beta
                 return;
             _subscribed = subscribe;
 
-            bool adaptiveIsOff = (_ownerMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off && _spectatorMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off);
+            bool adaptiveIsOff = _ownerMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off && _spectatorMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off;
 
             if (subscribe)
             {
@@ -286,7 +282,7 @@ namespace FishNet.Component.Transforming.Beta
             _timeManager = null;
             _initializingNetworkBehaviour = null;
             _graphicalTransform = null;
-            
+
             _subscribed = false;
             _subscribedToAdaptiveEvents = false;
 

@@ -1,9 +1,7 @@
 ﻿#if UNITY_EDITOR
-
 using UnityEngine;
 using UnityEditor;
 using FishNet.Configuring;
-
 using UnitySettingsProviderAttribute = UnityEditor.SettingsProviderAttribute;
 using UnitySettingsProvider = UnityEditor.SettingsProvider;
 using System.Collections.Generic;
@@ -27,8 +25,8 @@ namespace FishNet.Configuring.Editing
                 {
                     "Fish",
                     "Networking",
-                    "Configuration",
-                },
+                    "Configuration"
+                }
             };
         }
 
@@ -47,7 +45,7 @@ namespace FishNet.Configuring.Editing
 
             GUIStyle scrollViewStyle = new()
             {
-                padding = new(10, 10, 10, 10),
+                padding = new(10, 10, 10, 10)
             };
 
             _scrollView = GUILayout.BeginScrollView(_scrollView, scrollViewStyle);
@@ -56,7 +54,7 @@ namespace FishNet.Configuring.Editing
 
             GUIStyle toggleStyle = new(EditorStyles.toggle)
             {
-                richText = true,
+                richText = true
             };
 
             configuration.CodeStripping.StripReleaseBuilds = GUILayout.Toggle(configuration.CodeStripping.StripReleaseBuilds, $"{ObjectNames.NicifyVariableName(nameof(configuration.CodeStripping.StripReleaseBuilds))} <color=yellow>(Pro Only)</color>", toggleStyle);
@@ -66,7 +64,7 @@ namespace FishNet.Configuring.Editing
             if (configuration.CodeStripping.StripReleaseBuilds)
             {
                 EditorGUI.indentLevel++;
-                //Stripping Method.
+                // Stripping Method.
                 List<string> enumStrings = new();
                 foreach (string item in System.Enum.GetNames(typeof(StrippingTypes)))
                     enumStrings.Add(item);
@@ -78,7 +76,8 @@ namespace FishNet.Configuring.Editing
 
             GUILayout.EndScrollView();
 
-            if (EditorGUI.EndChangeCheck()) Configuration.Configurations.Write(true);
+            if (EditorGUI.EndChangeCheck())
+                Configuration.Configurations.Write(true);
         }
     }
 }

@@ -5,10 +5,8 @@ using UnityEngine;
 
 namespace FishNet.CodeGenerating.Helping
 {
-
     internal class TimeManagerHelper : CodegenBase
     {
-
         #region Reflection references.
         #endregion
 
@@ -16,7 +14,5 @@ namespace FishNet.CodeGenerating.Helping
         {
             return true;
         }
-
-
     }
 }

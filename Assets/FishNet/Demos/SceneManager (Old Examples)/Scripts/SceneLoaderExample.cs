@@ -7,7 +7,6 @@ using UnityEngine;
 
 namespace FishNet.Example.Scened
 {
-
     /// <summary>
     /// Loads a single scene, additive scenes, or both when a client
     /// enters or exits this trigger.
@@ -56,7 +55,6 @@ namespace FishNet.Example.Scened
         [Tooltip("True to fire when entering the trigger. False to fire when exiting the trigger.")]
         [SerializeField]
         private bool _onTriggerEnter = true;
-
         /// <summary>
         /// Used to prevent excessive triggering when two clients are loaded and server is separate.
         /// Client may enter trigger intentionally then when moved to a new scene will re-enter trigger
@@ -64,7 +62,6 @@ namespace FishNet.Example.Scened
         /// This scenario is extremely unlikely in production but keep it in mind.
         /// </summary>
         private Dictionary<NetworkConnection, float> _triggeredTimes = new();
-
 
         [Server(Logging = LoggingType.Off)]
         private void OnTriggerEnter(Collider other)
@@ -89,7 +86,7 @@ namespace FishNet.Example.Scened
             if (!InstanceFinder.NetworkManager.IsServerStarted)
                 return;
 
-            //NetworkObject isn't necessarily needed but to ensure its the player only run if found.
+            // NetworkObject isn't necessarily needed but to ensure its the player only run if found.
             if (triggeringIdentity == null)
                 return;
 
@@ -102,7 +99,7 @@ namespace FishNet.Example.Scened
             }
             _triggeredTimes[triggeringIdentity.Owner] = Time.time;
 
-            //Which objects to move.
+            // Which objects to move.
             List<NetworkObject> movedObjects = new();
             if (_moveAllObjects)
             {
@@ -116,33 +113,25 @@ namespace FishNet.Example.Scened
             {
                 movedObjects.Add(triggeringIdentity);
             }
-            //Load options.
+            // Load options.
             LoadOptions loadOptions = new()
             {
-                AutomaticallyUnload = _automaticallyUnload,
+                AutomaticallyUnload = _automaticallyUnload
             };
 
-            //Make scene data.
+            // Make scene data.
             SceneLoadData sld = new(_scenes);
             sld.PreferredActiveScene = new(sld.SceneLookupDatas[0]);
             sld.ReplaceScenes = _replaceOption;
             sld.Options = loadOptions;
             sld.MovedNetworkObjects = movedObjects.ToArray();
 
-            //Load for connection only.
+            // Load for connection only.
             if (_connectionOnly)
                 InstanceFinder.SceneManager.LoadConnectionScenes(triggeringIdentity.Owner, sld);
-            //Load for all clients.
+            // Load for all clients.
             else
                 InstanceFinder.SceneManager.LoadGlobalScenes(sld);
-
-
         }
-
-
     }
-
-
-
-
 }

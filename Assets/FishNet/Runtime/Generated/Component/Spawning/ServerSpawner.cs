@@ -42,7 +42,7 @@ namespace FishNet.Component.Spawning
             if (_serverManager == null)
                 return;
 
-            //Unsubscribe even if not automatically spawning; this is to protect against the user unchecking during play mode.
+            // Unsubscribe even if not automatically spawning; this is to protect against the user unchecking during play mode.
             _serverManager.OnServerConnectionState -= ServerManager_OnServerConnectionState;
         }
 
@@ -57,22 +57,22 @@ namespace FishNet.Component.Spawning
 
             if (_serverManager == null)
             {
-                NetworkManagerExtensions.LogWarning($"PlayerSpawner on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
+                NetworkManagerExtensions.LogWarning($"{nameof(ServerSpawner)} on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
                 return;
             }
 
-            //Only subscribe if to automatically spawn.
+            // Only subscribe if to automatically spawn.
             if (_automaticallySpawn)
                 _serverManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
         }
 
         private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs args)
         {
-            //If not started then exit.
+            // If not started then exit.
             if (args.ConnectionState != LocalConnectionState.Started)
                 return;
 
-            //If more than 1 server is started then exit. This means the user is using multipass and another server already started.
+            // If more than 1 server is started then exit. This means the user is using multipass and another server already started.
             if (!_serverManager.IsOnlyOneServerStarted())
                 return;
 
@@ -83,8 +83,8 @@ namespace FishNet.Component.Spawning
         {
             if (_serverManager == null)
                 return;
-            
-            //Spawn the objects now.
+
+            // Spawn the objects now.
             foreach (NetworkObject networkObject in _networkObjects)
             {
                 NetworkObject nob = _serverManager.NetworkManager.GetPooledInstantiated(networkObject, asServer: true);
@@ -97,6 +97,5 @@ namespace FishNet.Component.Spawning
         /// </summary>
         /// <remarks>This will spawn the objects again even if they were already spawned automatically or manually before.</remarks>
         public void Spawn() => Spawn_Internally();
-        
-   }
+    }
 }

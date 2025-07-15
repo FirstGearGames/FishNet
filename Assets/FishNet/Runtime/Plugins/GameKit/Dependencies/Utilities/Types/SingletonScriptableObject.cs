@@ -2,11 +2,10 @@
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
     /// <summary>
     /// Creates a singleton instance of a scriptable object.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name = "T"></typeparam>
     public abstract class SingletonScriptableObject<T> : ScriptableObject where T : ScriptableObject
     {
         private static T _instance = null;
@@ -16,7 +15,7 @@ namespace GameKit.Dependencies.Utilities.Types
             {
                 if (_instance == null)
                 {
-                    T[] results = UnityEngine.Resources.FindObjectsOfTypeAll<T>();
+                    T[] results = Resources.FindObjectsOfTypeAll<T>();
                     if (results.Length == 0)
                     {
                         Debug.LogError("SingletonScriptableObject: results length is 0 of " + typeof(T).ToString());
@@ -36,6 +35,4 @@ namespace GameKit.Dependencies.Utilities.Types
             }
         }
     }
-
-
 }

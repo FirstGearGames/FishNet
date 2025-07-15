@@ -24,7 +24,7 @@ namespace FishNet.Editing
         /// <summary>
         /// Sets FishNet assembly paths.
         /// </summary>
-        /// <param name="error"></param>
+        /// <param name = "error"></param>
         private static void UpdateFishNetPaths()
         {
             if (_fishNetGeneratedPath != string.Empty && _fishNetRuntimePath != string.Empty)
@@ -41,7 +41,7 @@ namespace FishNet.Editing
              * as well all network object prefabs. */
             foreach (string item in objectPaths)
             {
-                //Found directory to create object in.
+                // Found directory to create object in.
                 if (item.ToLower().Contains(runtimeName))
                     _fishNetRuntimePath = System.IO.Path.GetDirectoryName(item);
                 else if (item.ToLower().Contains(generatedName))
@@ -55,7 +55,7 @@ namespace FishNet.Editing
         /// <summary>
         /// Gets all GameObjects in Assets and optionally scenes.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name = "T"></typeparam>
         /// <returns></returns>
         public static List<GameObject> GetGameObjects(bool userAssemblies, bool fishNetAssembly, bool includeScenes, string[] ignoredPaths = null)
         {
@@ -116,6 +116,7 @@ namespace FishNet.Editing
 
             return results;
         }
+
         /// <summary>
         /// Gets all GameObjects in a scene.
         /// </summary>
@@ -123,7 +124,7 @@ namespace FishNet.Editing
         {
             List<GameObject> results = new();
             List<Transform> buffer = new();
-            //Iterate all root objects for the scene.
+            // Iterate all root objects for the scene.
             GameObject[] gos = s.GetRootGameObjects();
             for (int i = 0; i < gos.Length; i++)
             {
@@ -137,11 +138,10 @@ namespace FishNet.Editing
             return results;
         }
 
-
         /// <summary>
         /// Gets created ScriptableObjects of T.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <typeparam name = "T"></typeparam>
         /// <returns></returns>
         public static List<UnityEngine.Object> GetScriptableObjects<T>(bool fishNetAssembly, bool breakOnFirst = false)
         {
@@ -165,7 +165,7 @@ namespace FishNet.Editing
              * as well all network object prefabs. */
             foreach (string item in objectPaths)
             {
-                //This will skip hidden unity types.
+                // This will skip hidden unity types.
                 if (!item.EndsWith(".asset"))
                     continue;
                 if (fishNetAssembly)
@@ -193,7 +193,6 @@ namespace FishNet.Editing
 
             return results;
         }
-
     }
 }
 #endif

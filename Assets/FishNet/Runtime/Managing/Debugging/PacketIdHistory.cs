@@ -48,7 +48,7 @@ namespace FishNet.Managing.Debugging
         /// </summary>
         internal void ReceivedPacket(PacketId pId, bool packetFromServer)
         {
-            Queue<PacketId> queue = (packetFromServer) ? _serverPacketsReceived : _clientPacketsReceived;
+            Queue<PacketId> queue = packetFromServer ? _serverPacketsReceived : _clientPacketsReceived;
 
             queue.Enqueue(pId);
 
@@ -61,7 +61,7 @@ namespace FishNet.Managing.Debugging
         /// </summary>
         internal string GetReceivedPacketIds(bool packetsFromServer, bool resetReceived = false)
         {
-            string packetOriginTxt = (packetsFromServer) ? "from Server" : "from Client";
+            string packetOriginTxt = packetsFromServer ? "from Server" : "from Client";
 
             _stringBuilder.Clear();
             Queue<PacketId> queue = GetQueue(packetsFromServer);
@@ -70,7 +70,7 @@ namespace FishNet.Managing.Debugging
             foreach (PacketId item in queue)
                 _stringBuilder.AppendLine($"{item.ToString()}");
 
-            //Attach nob information.
+            // Attach nob information.
             _stringBuilder.Append($"The last parsed NetworkObject is ");
             NetworkObject lastNob = Reader.LastNetworkObject;
             if (lastNob != null)
@@ -78,7 +78,7 @@ namespace FishNet.Managing.Debugging
             else
                 _stringBuilder.Append("Unset");
 
-            //Attach nb information.
+            // Attach nb information.
             _stringBuilder.Append($", and NetworkBehaviour ");
             NetworkBehaviour lastNb = Reader.LastNetworkBehaviour;
             if (lastNb == null)
@@ -97,7 +97,7 @@ namespace FishNet.Managing.Debugging
         /// <summary>
         /// Returns which packet queue to use.
         /// </summary>
-        private Queue<PacketId> GetQueue(bool packetsFromServer) => (packetsFromServer) ? _serverPacketsReceived : _clientPacketsReceived;
+        private Queue<PacketId> GetQueue(bool packetsFromServer) => packetsFromServer ? _serverPacketsReceived : _clientPacketsReceived;
     }
 }
 #endif

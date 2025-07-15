@@ -1,5 +1,4 @@
-﻿
-using FishNet.Documenting;
+﻿using FishNet.Documenting;
 
 namespace FishNet.Object.Synchronizing
 {
@@ -27,5 +26,4 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         Complete
     }
-
 }

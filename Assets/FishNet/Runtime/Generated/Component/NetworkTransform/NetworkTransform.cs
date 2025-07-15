@@ -30,7 +30,7 @@ namespace FishNet.Component.Transforming
             Disabled = 0,
             CharacterController = 1,
             Rigidbody = 2,
-            Rigidbody2D = 3,
+            Rigidbody2D = 3
         }
 
         private struct ReceivedClientData
@@ -55,7 +55,7 @@ namespace FishNet.Component.Transforming
             /// <summary>
             /// Updates current values.
             /// </summary>
-            /// <param name="updateHasData">True to set all HasData to true.</param>
+            /// <param name = "updateHasData">True to set all HasData to true.</param>
             public void Update(ArraySegment<byte> data, Channel channel, bool updateHasData, uint localTick)
             {
                 if (Writer == null)
@@ -107,7 +107,7 @@ namespace FishNet.Component.Transforming
             ScaleY = 64,
             ScaleZ = 128,
             Nested = 256,
-            All = ~0u,
+            All = ~0u
         }
 
         [Flags]
@@ -118,7 +118,7 @@ namespace FishNet.Component.Transforming
             Rotation = 2,
             Scale = 4,
             Childed = 8,
-            Teleport = 16,
+            Teleport = 16
         }
 
         [Flags]
@@ -243,7 +243,6 @@ namespace FishNet.Component.Transforming
             /// True if default state. This becomes false during an update and true when resetting state.
             /// </summary>
             public bool IsDefault { get; private set; } = true;
-
             /// <summary>
             /// Tick this data was received or created.
             /// </summary>
@@ -317,10 +316,9 @@ namespace FishNet.Component.Transforming
 
         #region Public.
         /// <summary>
-        /// 
         /// </summary>
-        /// <param name="prev"></param>
-        /// <param name="next"></param>
+        /// <param name = "prev"></param>
+        /// <param name = "next"></param>
         [APIExclude]
         public delegate void DataReceivedChanged(TransformData prev, TransformData next);
 
@@ -328,22 +326,18 @@ namespace FishNet.Component.Transforming
         /// Called when new data is received. Previous and next data are provided. Next data may be manipulated.
         /// </summary>
         public event DataReceivedChanged OnDataReceived;
-
         /// <summary>
         /// Called when GoalData is updated.
         /// </summary>
         public event Action<GoalData> OnNextGoal;
-
         /// <summary>
         /// Called when the transform has reached it's goal.
         /// </summary>
         public event Action OnInterpolationComplete;
-
         /// <summary>
         /// True if the local client used TakeOwnership and is awaiting an ownership change.
         /// </summary>
         public bool TakenOwnership { get; private set; }
-
         /// <summary>
         /// NetworkBehaviour this transform is a child of.
         /// </summary>
@@ -387,9 +381,9 @@ namespace FishNet.Component.Transforming
         [Tooltip("How many ticks to extrapolate.")]
         [Range(0, 1024)]
         [SerializeField]
-#pragma warning disable CS0414 //Not in use.
+#pragma warning disable CS0414 // Not in use.
         private ushort _extrapolation = 2;
-#pragma warning restore CS0414 //Not in use.
+#pragma warning restore CS0414 // Not in use.
         /// <summary>
         /// True to enable teleport threshhold.
         /// </summary>
@@ -424,11 +418,11 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets SendToOwner. Only the server may call this method.
         /// </summary>
-        /// <param name="value">New value.</param>
+        /// <param name = "value">New value.</param>
         public void SetSendToOwner(bool value)
         {
             _sendToOwner = value;
-            if (base.IsServerInitialized)
+            if (IsServerInitialized)
                 ObserversSetSendToOwner(value);
         }
 
@@ -449,9 +443,15 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets if to synchronize position.
         /// </summary>
-        /// <param name="value">New value.</param>
+        /// <param name = "value">New value.</param>
         public void SetSynchronizePosition(bool value) => _synchronizePosition = value;
-
+        /// <summary>
+        /// Distance sensitivity on position checks.
+        /// </summary>
+        [Tooltip("Distance sensitivity on position checks.")]
+        [Range(0.00001f, 1.25f)]
+        [SerializeField]
+        private float _positionSensitivity = 0.001f;
         /// <summary>
         /// Axes to snap on position.
         /// </summary>
@@ -462,7 +462,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets which Position axes to snap.
         /// </summary>
-        /// <param name="axes">Axes to snap.</param>
+        /// <param name = "axes">Axes to snap.</param>
         public void SetPositionSnapping(SnappedAxes axes) => _positionSnapping = axes;
 
         /// <summary>
@@ -475,7 +475,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets if to synchronize rotation.
         /// </summary>
-        /// <param name="value">New value.</param>
+        /// <param name = "value">New value.</param>
         public void SetSynchronizeRotation(bool value) => _synchronizeRotation = value;
 
         /// <summary>
@@ -488,7 +488,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets which Scale axes to snap.
         /// </summary>
-        /// <param name="axes">Axes to snap.</param>
+        /// <param name = "axes">Axes to snap.</param>
         public void SetRotationSnapping(SnappedAxes axes) => _rotationSnapping = axes;
 
         /// <summary>
@@ -497,11 +497,17 @@ namespace FishNet.Component.Transforming
         [Tooltip("True to synchronize scale. Even while checked only changed values are sent.")]
         [SerializeField]
         private bool _synchronizeScale = true;
-
+        /// <summary>
+        /// Distance sensitivity on scale checks.
+        /// </summary>
+        [Tooltip("Distance sensitivity on scale checks.")]
+        [Range(0.00001f, 1.25f)]
+        [SerializeField]
+        private float _scaleSensitivity = 0.001f;
         /// <summary>
         /// Sets if to synchronize scale.
         /// </summary>
-        /// <param name="value">New value.</param>
+        /// <param name = "value">New value.</param>
         public void SetSynchronizeScale(bool value) => _synchronizeScale = value;
 
         /// <summary>
@@ -514,7 +520,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets which Scale axes to snap.
         /// </summary>
-        /// <param name="axes">Axes to snap.</param>
+        /// <param name = "axes">Axes to snap.</param>
         public void SetScaleSnapping(SnappedAxes axes) => _scaleSnapping = axes;
         #endregion
 
@@ -611,7 +617,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// If not unset a force send will occur on or after this tick.
         /// </summary>
-        private uint _forceSendTick = Managing.Timing.TimeManager.UNSET_TICK;
+        private uint _forceSendTick = TimeManager.UNSET_TICK;
         /// <summary>
         /// Returns all properties as changed.
         /// </summary>
@@ -651,7 +657,7 @@ namespace FishNet.Component.Transforming
         public override void OnStartNetwork()
         {
             _cachedTransform = transform;
-            _timeManager = base.TimeManager;
+            _timeManager = TimeManager;
 
             ChangeTickSubscription(true);
         }
@@ -669,9 +675,9 @@ namespace FishNet.Component.Transforming
             /* If not on the root then the initial properties may need to be synchronized
              * since the spawn message only sends root information. If initial
              * properties have changed update spawning connection. */
-            if (base.NetworkObject.gameObject != gameObject && _changedSinceStart)
+            if (NetworkObject.gameObject != gameObject && _changedSinceStart)
             {
-                //Send latest.
+                // Send latest.
                 PooledWriter writer = WriterPool.Retrieve();
                 SerializeChanged(_fullChanged, writer);
                 TargetUpdateTransform(connection, writer.GetArraySegment(), Channel.Reliable);
@@ -692,7 +698,7 @@ namespace FishNet.Component.Transforming
         {
             ConfigureComponents();
             _intervalsRemaining = 0;
-            //Reset last tick since each client sends their own ticks.
+            // Reset last tick since each client sends their own ticks.
             _lastServerRpcTick = 0;
 
             TryClearGoalDatas_OwnershipChange(prevOwner, true);
@@ -703,8 +709,8 @@ namespace FishNet.Component.Transforming
             ConfigureComponents();
             _intervalsRemaining = 0;
 
-            //Not new owner.
-            if (!base.IsOwner)
+            // Not new owner.
+            if (!IsOwner)
             {
                 /* If client authoritative and ownership was lost
                  * then default goals must be set to force the
@@ -729,18 +735,18 @@ namespace FishNet.Component.Transforming
         {
             if (_clientAuthoritative)
             {
-                //If not server
+                // If not server
                 if (!asServer)
                 {
-                    //If owner now then clear as the owner controls the object now and shouldnt use past datas.
-                    if (base.IsOwner)
+                    // If owner now then clear as the owner controls the object now and shouldnt use past datas.
+                    if (IsOwner)
                         _goalDataQueue.Clear();
                 }
-                //as Server.
+                // as Server.
                 else
                 {
-                    //If new owner is valid then clear to allow new owner datas.
-                    if (base.Owner.IsValid)
+                    // If new owner is valid then clear to allow new owner datas.
+                    if (Owner.IsValid)
                         _goalDataQueue.Clear();
                 }
             }
@@ -759,7 +765,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void InitializeFields(bool asServer)
         {
-            bool asClientAndNotHost = (!asServer && !base.IsServerStarted);
+            bool asClientAndNotHost = !asServer && !IsServerStarted;
 
             /* Even though these collections are nullified on clean up
              * they could still exist on the reinitialization for clientHost if
@@ -768,7 +774,7 @@ namespace FishNet.Component.Transforming
              * Because of this check count rather than null. */
             if (asClientAndNotHost || asServer)
             {
-                //Prefer to reset existing.
+                // Prefer to reset existing.
                 if (_lastSentTransformData != null)
                     _lastSentTransformData.ResetState();
                 else
@@ -787,17 +793,16 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Configures components automatically.
         /// </summary>
-
         /// <summary>
         /// Configures components automatically.
         /// </summary>
         private void ConfigureComponents()
         {
-            //Disabled.
+            // Disabled.
             if (_componentConfiguration == ComponentConfigurationType.Disabled)
                 return;
 
-            //RB.
+            // RB.
             if (_componentConfiguration == ComponentConfigurationType.Rigidbody)
             {
                 if (TryGetComponent(out Rigidbody c))
@@ -842,24 +847,24 @@ namespace FishNet.Component.Transforming
                     //Client auth.
                     if (_clientAuthoritative)
                     {
-                        c.enabled = base.IsController;
+                        c.enabled = IsController;
                     }
                     //Server auth.
                     else
                     {
                         //Not CSP.
                         if (_sendToOwner)
-                            c.enabled = base.IsServerInitialized;
+                            c.enabled = IsServerInitialized;
                         //Most likely CSP.
                         else
-                            c.enabled = (base.IsServerInitialized || base.IsOwner);
+                            c.enabled = IsServerInitialized || IsOwner;
                     }
                 }
             }
 
             bool CanMakeKinematic()
             {
-                bool isServerStarted = base.IsServerStarted;
+                bool isServerStarted = IsServerStarted;
 
                 //When not client auth, kinematic is always true if not server.
                 if (!_clientAuthoritative)
@@ -868,11 +873,11 @@ namespace FishNet.Component.Transforming
                 /* If here then is client-auth. */
 
                 //Owner shouldn't be kinematic as they are controller.
-                if (base.IsOwner)
+                if (IsOwner)
                     return false;
 
                 //Is server, and there is no owner.
-                if (isServerStarted && !base.Owner.IsActive)
+                if (isServerStarted && !Owner.IsActive)
                     return false;
 
                 return true;
@@ -885,9 +890,9 @@ namespace FishNet.Component.Transforming
         private void TimeManager_OnPostTick()
         {
             //If to force send via tick delay do so and reset force send tick.
-            if (_forceSendTick != Managing.Timing.TimeManager.UNSET_TICK && _timeManager.LocalTick > _forceSendTick)
+            if (_forceSendTick != TimeManager.UNSET_TICK && _timeManager.LocalTick > _forceSendTick)
             {
-                _forceSendTick = Managing.Timing.TimeManager.UNSET_TICK;
+                _forceSendTick = TimeManager.UNSET_TICK;
                 ForceSend();
             }
 
@@ -921,8 +926,8 @@ namespace FishNet.Component.Transforming
                     _intervalsRemaining = -1;
             }
 
-            bool isServerInitialized = base.IsServerInitialized;
-            bool isClientInitialized = base.IsClientInitialized;
+            bool isServerInitialized = IsServerInitialized;
+            bool isClientInitialized = IsClientInitialized;
 
             if (isServerInitialized)
             {
@@ -944,14 +949,14 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void ChangeTickSubscription(bool subscribe)
         {
-            if (subscribe == _subscribedToTicks || base.NetworkManager == null)
+            if (subscribe == _subscribedToTicks || NetworkManager == null)
                 return;
 
             _subscribedToTicks = subscribe;
             if (subscribe)
-                base.NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
+                NetworkManager.TimeManager.OnPostTick += TimeManager_OnPostTick;
             else
-                base.NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
+                NetworkManager.TimeManager.OnPostTick -= TimeManager_OnPostTick;
         }
 
         private void ChangeUpdateSubscription(bool subscribe)
@@ -975,12 +980,12 @@ namespace FishNet.Component.Transforming
             //Client auth.
             if (_clientAuthoritative)
             {
-                return base.IsController;
+                return IsController;
             }
             //Server auth.
             else
             {
-                if (base.IsServerInitialized)
+                if (IsServerInitialized)
                     return true;
             }
 
@@ -1000,7 +1005,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets SendToOwner value.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         [ObserversRpc(BufferLast = true, ExcludeServer = true)]
         private void ObserversSetSendToOwner(bool value)
         {
@@ -1014,7 +1019,7 @@ namespace FishNet.Component.Transforming
         {
             /* If there is a pending delayed force send then queue it
              * immediately and set a new delay tick. */
-            if (_forceSendTick != Managing.Timing.TimeManager.UNSET_TICK)
+            if (_forceSendTick != TimeManager.UNSET_TICK)
                 ForceSend();
             _forceSendTick = _timeManager.LocalTick + ticks;
         }
@@ -1032,15 +1037,15 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Updates the interval value over the network.
         /// </summary>
-        /// <param name="value">New interval.</param>
+        /// <param name = "value">New interval.</param>
         public void SetInterval(byte value)
         {
-            bool canSet = (base.IsServerInitialized && !_clientAuthoritative) || (base.IsServerInitialized && _clientAuthoritative && !base.Owner.IsValid) || (_clientAuthoritative && base.IsOwner);
+            bool canSet = (IsServerInitialized && !_clientAuthoritative) || (IsServerInitialized && _clientAuthoritative && !Owner.IsValid) || (_clientAuthoritative && IsOwner);
 
             if (!canSet)
                 return;
 
-            if (base.IsServerInitialized)
+            if (IsServerInitialized)
                 ObserversSetInterval(value);
             else
                 ServerSetInterval(value);
@@ -1049,7 +1054,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Updates the interval value.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         private void SetIntervalInternal(byte value)
         {
             value = (byte)Mathf.Max(value, 1);
@@ -1064,7 +1069,7 @@ namespace FishNet.Component.Transforming
         {
             if (!_clientAuthoritative)
             {
-                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
             }
 
@@ -1090,7 +1095,7 @@ namespace FishNet.Component.Transforming
             //If there is a parent try to output the behaviour on it.
             if (_synchronizeParent)
             {
-                if (base.NetworkObject.CurrentParentNetworkBehaviour != null)
+                if (NetworkObject.CurrentParentNetworkBehaviour != null)
                 {
                     t.parent.TryGetComponent(out parentBehaviour);
                     if (parentBehaviour == null)
@@ -1124,7 +1129,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void LogInvalidParent()
         {
-            base.NetworkManager.LogWarning($"{gameObject.name} [Id {base.ObjectId}] is childed but the parent {_cachedTransform.parent.name} does not contain a NetworkBehaviour component. To synchronize parents the parent object must have a NetworkBehaviour component, even if empty.");
+            NetworkManager.LogWarning($"{gameObject.name} [Id {ObjectId}] is childed but the parent {_cachedTransform.parent.name} does not contain a NetworkBehaviour component. To synchronize parents the parent object must have a NetworkBehaviour component, even if empty.");
         }
 
         /// <summary>
@@ -1149,7 +1154,7 @@ namespace FishNet.Component.Transforming
             float multiplier = 100f;
             /* Maximum value compressed may be
              * to send as compressed. */
-            float maxValue = (short.MaxValue - 1);
+            float maxValue = short.MaxValue - 1;
 
             Transform t = _cachedTransform;
             /* Position. */
@@ -1322,7 +1327,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void DeserializePacket(ArraySegment<byte> data, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull)
         {
-            PooledReader reader = ReaderPool.Retrieve(data, base.NetworkManager);
+            PooledReader reader = ReaderPool.Retrieve(data, NetworkManager);
             UpdateFlagA flagsA = (UpdateFlagA)reader.ReadUInt8Unpacked();
 
             int readerRemaining;
@@ -1455,8 +1460,8 @@ namespace FishNet.Component.Transforming
                 /* Check for being set without using nob.SetParent.
                  * Only check if was previously set inside this component; otherwise
                  * this would spam anytime the parent was null. */
-                if (base.NetworkObject.RuntimeParentNetworkBehaviour != null)
-                    base.NetworkManager.LogWarning($"{gameObject.name} parent object was removed without calling UnsetParent. Use networkObject.UnsetParent() to remove a NetworkObject from it's parent. This is being made a requirement in Fish-Networking v4.");
+                if (NetworkObject.RuntimeParentNetworkBehaviour != null)
+                    NetworkManager.LogWarning($"{gameObject.name} parent object was removed without calling UnsetParent. Use networkObject.UnsetParent() to remove a NetworkObject from it's parent. This is being made a requirement in Fish-Networking v4.");
 
                 ParentBehaviour = null;
                 _parentTransform = null;
@@ -1480,8 +1485,8 @@ namespace FishNet.Component.Transforming
                 {
                     ParentBehaviour = outParentBehaviour;
                     //Check for being set without using nob.SetParent.
-                    if (base.NetworkObject.CurrentParentNetworkBehaviour != ParentBehaviour)
-                        base.NetworkManager.LogWarning($"{gameObject.name} parent was set without calling SetParent. Use networkObject.SetParent(obj) to assign a NetworkObject a new parent. This is being made a requirement in Fish-Networking v4.");
+                    if (NetworkObject.CurrentParentNetworkBehaviour != ParentBehaviour)
+                        NetworkManager.LogWarning($"{gameObject.name} parent was set without calling SetParent. Use networkObject.SetParent(obj) to assign a NetworkObject a new parent. This is being made a requirement in Fish-Networking v4.");
                 }
             }
         }
@@ -1489,10 +1494,10 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets the transforms parent if it's changed.
         /// </summary>
-        /// <param name="parent"></param>
+        /// <param name = "parent"></param>
         private void SetParent(NetworkBehaviour parent, RateData rd)
         {
-            Transform target = (parent == null) ? null : parent.transform;
+            Transform target = parent == null ? null : parent.transform;
             Transform t = _cachedTransform;
             //Unchanged.
             if (target == t.parent)
@@ -1501,9 +1506,9 @@ namespace FishNet.Component.Transforming
             Vector3 scale = t.localScale;
             //Set parent after scale is cached so scale can be maintained after changing parent.
             if (target != null)
-                base.NetworkObject.SetParent(parent);
+                NetworkObject.SetParent(parent);
             else
-                base.NetworkObject.UnsetParent();
+                NetworkObject.UnsetParent();
 
             t.localScale = scale;
 
@@ -1522,26 +1527,26 @@ namespace FishNet.Component.Transforming
                 return;
 
             //Cannot move if neither is active.
-            if (!base.IsServerInitialized && !base.IsClientInitialized)
+            if (!IsServerInitialized && !IsClientInitialized)
                 return;
 
             //If client auth and the owner don't move towards target.
             if (_clientAuthoritative)
             {
-                if (base.IsOwner || TakenOwnership)
+                if (IsOwner || TakenOwnership)
                     return;
             }
             else
             {
                 //If not client authoritative, is owner, and don't sync to owner.
-                if (base.IsOwner && !_sendToOwner)
+                if (IsOwner && !_sendToOwner)
                     return;
             }
 
             //True if not client controlled.
-            bool controlledByClient = (_clientAuthoritative && base.Owner.IsActive);
+            bool controlledByClient = _clientAuthoritative && Owner.IsActive;
             //If not controlled by client and is server then no reason to move.
-            if (!controlledByClient && base.IsServerInitialized)
+            if (!controlledByClient && IsServerInitialized)
                 return;
 
             /* Once here it's safe to assume the object will be moving.
@@ -1558,7 +1563,7 @@ namespace FishNet.Component.Transforming
             float multiplier = 1f;
             int queueCount = _goalDataQueue.Count;
             //Increase move rate slightly if over queue count.
-            if (queueCount > (_interpolation + 1))
+            if (queueCount > _interpolation + 1)
                 multiplier += 0.05f;
 
             //Rate to update. Changes per property.
@@ -1572,7 +1577,7 @@ namespace FishNet.Component.Transforming
             if (_synchronizePosition)
             {
                 rate = rd.Position;
-                Vector3 posGoal = (td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable) ? td.ExtrapolatedPosition : td.Position;
+                Vector3 posGoal = td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable ? td.ExtrapolatedPosition : td.Position;
                 // ReSharper disable once CompareOfFloatsByEqualityOperator
                 if (rate == -1f)
                     t.localPosition = td.Position;
@@ -1602,7 +1607,7 @@ namespace FishNet.Component.Transforming
                     t.localScale = Vector3.MoveTowards(t.localScale, td.Scale, rate * delta);
             }
 
-            float timeRemaining = rd.TimeRemaining - (delta * multiplier);
+            float timeRemaining = rd.TimeRemaining - delta * multiplier;
             if (timeRemaining < -delta)
                 timeRemaining = -delta;
             rd.TimeRemaining = timeRemaining;
@@ -1640,12 +1645,12 @@ namespace FishNet.Component.Transforming
         private void SendToClients()
         {
             //True if clientAuthoritative and there is an owner.
-            bool clientAuthoritativeWithOwner = (_clientAuthoritative && base.Owner.IsValid);
+            bool clientAuthoritativeWithOwner = _clientAuthoritative && Owner.IsValid;
             //Channel to send rpc on.
             Channel channel = Channel.Unreliable;
             /* If relaying from client and owner isnt clientHost.
              * If owner is clientHost just send current server values. */
-            if (clientAuthoritativeWithOwner && !base.Owner.IsLocalClient)
+            if (clientAuthoritativeWithOwner && !Owner.IsLocalClient)
             {
                 /* If there is not new data yet and the last received was not reliable
                  * then a packet maybe did not arrive when expected. See if we need
@@ -1657,7 +1662,7 @@ namespace FishNet.Component.Transforming
                      * to send reliably. */
                     uint maxPassedTicks = (uint)(1 + _interpolation + _extrapolation);
                     uint localTick = _timeManager.LocalTick;
-                    if ((localTick - _authoritativeClientData.LocalTick) > maxPassedTicks)
+                    if (localTick - _authoritativeClientData.LocalTick > maxPassedTicks)
                         _authoritativeClientData.SendReliably();
                     //Not enough time to send reliably, just don't need update.
                     else
@@ -1724,11 +1729,11 @@ namespace FishNet.Component.Transforming
              * for statistics tracking but to keep the code more simple
              * we won't be doing that. Server out however still is tracked,
              * which is generally considered more important data. */
-            if (base.IsServerInitialized)
+            if (IsServerInitialized)
                 return;
 
             //Not client auth or not owner.
-            if (!_clientAuthoritative || !base.IsOwner)
+            if (!_clientAuthoritative || !IsOwner)
                 return;
 
             //Channel to send on.
@@ -1774,7 +1779,7 @@ namespace FishNet.Component.Transforming
         private bool HasChanged(TransformData td)
         {
             Transform t = _cachedTransform;
-            bool changed = (td.Position != t.localPosition || td.Rotation != t.localRotation || td.Scale != t.localScale);
+            bool changed = td.Position != t.localPosition || td.Rotation != t.localRotation || td.Scale != t.localScale;
 
             return changed;
         }
@@ -1784,7 +1789,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private bool HasChanged(TransformData a, TransformData b)
         {
-            return (a.Position != b.Position) || (a.Rotation != b.Rotation) || (a.Scale != b.Scale) || (a.ParentBehaviour != b.ParentBehaviour);
+            return a.Position != b.Position || a.Rotation != b.Rotation || a.Scale != b.Scale || a.ParentBehaviour != b.ParentBehaviour;
         }
         ///// <summary>
         ///// Returns if there is any change between two datas and outputs what has changed.
@@ -1842,11 +1847,11 @@ namespace FishNet.Component.Transforming
             Transform t = _cachedTransform;
 
             Vector3 position = t.localPosition;
-            if (Mathf.Abs(position.x - lastPosition.x) >= 0.001f)
+            if (Mathf.Abs(position.x - lastPosition.x) >= _positionSensitivity)
                 changed |= ChangedDelta.PositionX;
-            if (Mathf.Abs(position.y - lastPosition.y) >= 0.001f)
+            if (Mathf.Abs(position.y - lastPosition.y) >= _positionSensitivity)
                 changed |= ChangedDelta.PositionY;
-            if (Mathf.Abs(position.z - lastPosition.z) >= 0.001f)
+            if (Mathf.Abs(position.z - lastPosition.z) >= _positionSensitivity)
                 changed |= ChangedDelta.PositionZ;
 
             Quaternion rotation = t.localRotation;
@@ -1857,11 +1862,11 @@ namespace FishNet.Component.Transforming
             startChanged = changed;
 
             Vector3 scale = t.localScale;
-            if (Mathf.Abs(scale.x - lastScale.x) >= 0.001f)
+            if (Mathf.Abs(scale.x - lastScale.x) >= _scaleSensitivity)
                 changed |= ChangedDelta.ScaleX;
-            if (Mathf.Abs(scale.y - lastScale.y) >= 0.001f)
+            if (Mathf.Abs(scale.y - lastScale.y) >= _scaleSensitivity)
                 changed |= ChangedDelta.ScaleY;
-            if (Mathf.Abs(scale.z - lastScale.z) >= 0.001f)
+            if (Mathf.Abs(scale.z - lastScale.z) >= _scaleSensitivity)
                 changed |= ChangedDelta.ScaleZ;
 
             if (changed != ChangedDelta.Unset && ParentBehaviour != null)
@@ -1893,9 +1898,9 @@ namespace FishNet.Component.Transforming
             {
                 Vector3 startPosition = t.localPosition;
                 Vector3 position;
-                position.x = (force || _positionSnapping.X) ? transformData.Position.x : t.localPosition.x;
-                position.y = (force || _positionSnapping.Y) ? transformData.Position.y : t.localPosition.y;
-                position.z = (force || _positionSnapping.Z) ? transformData.Position.z : t.localPosition.z;
+                position.x = force || _positionSnapping.X ? transformData.Position.x : t.localPosition.x;
+                position.y = force || _positionSnapping.Y ? transformData.Position.y : t.localPosition.y;
+                position.z = force || _positionSnapping.Z ? transformData.Position.z : t.localPosition.z;
                 t.localPosition = position;
             }
 
@@ -1904,9 +1909,9 @@ namespace FishNet.Component.Transforming
             {
                 Vector3 eulers;
                 Vector3 goalEulers = transformData.Rotation.eulerAngles;
-                eulers.x = (force || _rotationSnapping.X) ? goalEulers.x : t.localEulerAngles.x;
-                eulers.y = (force || _rotationSnapping.Y) ? goalEulers.y : t.localEulerAngles.y;
-                eulers.z = (force || _rotationSnapping.Z) ? goalEulers.z : t.localEulerAngles.z;
+                eulers.x = force || _rotationSnapping.X ? goalEulers.x : t.localEulerAngles.x;
+                eulers.y = force || _rotationSnapping.Y ? goalEulers.y : t.localEulerAngles.y;
+                eulers.z = force || _rotationSnapping.Z ? goalEulers.z : t.localEulerAngles.z;
                 t.localEulerAngles = eulers;
             }
 
@@ -1914,9 +1919,9 @@ namespace FishNet.Component.Transforming
             if (_synchronizeScale)
             {
                 Vector3 scale;
-                scale.x = (force || _scaleSnapping.X) ? transformData.Scale.x : t.localScale.x;
-                scale.y = (force || _scaleSnapping.Y) ? transformData.Scale.y : t.localScale.y;
-                scale.z = (force || _scaleSnapping.Z) ? transformData.Scale.z : t.localScale.z;
+                scale.x = force || _scaleSnapping.X ? transformData.Scale.x : t.localScale.x;
+                scale.y = force || _scaleSnapping.Y ? transformData.Scale.y : t.localScale.y;
+                scale.z = force || _scaleSnapping.Z ? transformData.Scale.z : t.localScale.z;
                 t.localScale = scale;
             }
         }
@@ -2017,12 +2022,12 @@ namespace FishNet.Component.Transforming
                     //If last position rate is known then compare against it.
                     if (unalteredPositionRate > 0f && rd.LastUnalteredPositionRate > 0f)
                     {
-                        float percentage = Mathf.Abs(1f - (unalteredPositionRate / rd.LastUnalteredPositionRate));
+                        float percentage = Mathf.Abs(1f - unalteredPositionRate / rd.LastUnalteredPositionRate);
                         /* If percentage change is more than 25% then speed is considered
                          * to have changed drastically. */
                         if (percentage > 0.25f)
                         {
-                            float c = (rd.LastUnalteredPositionRate / unalteredPositionRate);
+                            float c = rd.LastUnalteredPositionRate / unalteredPositionRate;
                             /* Sometimes stop and goes can incorrectly trigger
                              * an abnormal detection. Fortunately abnornalties tend
                              * to either skip a tick or send twice in one tick.
@@ -2043,7 +2048,7 @@ namespace FishNet.Component.Transforming
                     }
 
                     //abnormalCorrection = 1f;
-                    positionRate = (unalteredPositionRate * abnormalCorrection);
+                    positionRate = unalteredPositionRate * abnormalCorrection;
                     if (positionRate <= 0f)
                         positionRate = -1f;
                 }
@@ -2060,7 +2065,7 @@ namespace FishNet.Component.Transforming
                 }
                 else
                 {
-                    rotationRate = (distance / timePassed) * abnormalCorrection;
+                    rotationRate = distance / timePassed * abnormalCorrection;
                     if (rotationRate <= 0f)
                         rotationRate = -1f;
                 }
@@ -2077,7 +2082,7 @@ namespace FishNet.Component.Transforming
                 }
                 else
                 {
-                    scaleRate = (distance / timePassed) * abnormalCorrection;
+                    scaleRate = distance / timePassed * abnormalCorrection;
                     if (scaleRate <= 0f)
                         scaleRate = -1f;
                 }
@@ -2098,9 +2103,9 @@ namespace FishNet.Component.Transforming
             bool LowDistance(float dist, bool rotation)
             {
                 if (rotation)
-                    return (dist < 1f);
+                    return dist < 1f;
                 else
-                    return (dist < 0.0001f);
+                    return dist < 0.0001f;
             }
         }
 
@@ -2116,13 +2121,13 @@ namespace FishNet.Component.Transforming
              * was either not set or reliable, in which case the tick
              * difference should be considered 1. */
             if (lastTick == 0)
-                lastTick = (nextTd.Tick - _interval);
+                lastTick = nextTd.Tick - _interval;
 
-            long tickDifference = (nextTd.Tick - lastTick);
+            long tickDifference = nextTd.Tick - lastTick;
             if (tickDifference < minimum)
                 tickDifference = minimum;
 
-            timePassed = (float)base.NetworkManager.TimeManager.TicksToTime((uint)tickDifference);
+            timePassed = (float)NetworkManager.TimeManager.TicksToTime((uint)tickDifference);
             return (uint)tickDifference;
         }
         #endregion
@@ -2146,7 +2151,7 @@ namespace FishNet.Component.Transforming
         {
 #if DEVELOPMENT
             //If receiver is client host then do nothing, clientHost need not process.
-            if (base.IsServerInitialized && conn.IsLocalClient)
+            if (IsServerInitialized && conn.IsLocalClient)
                 return;
 #endif
             /* Zero data was sent, this should not be possible.
@@ -2164,11 +2169,11 @@ namespace FishNet.Component.Transforming
         [ObserversRpc]
         private void ObserversUpdateClientAuthoritativeTransform(ArraySegment<byte> data, Channel channel)
         {
-            if (!_clientAuthoritative && base.IsOwner && !_sendToOwner)
+            if (!_clientAuthoritative && IsOwner && !_sendToOwner)
                 return;
-            if (_clientAuthoritative && base.IsOwner)
+            if (_clientAuthoritative && IsOwner)
                 return;
-            if (base.IsServerInitialized)
+            if (IsServerInitialized)
                 return;
             //Not new data.
             uint lastPacketTick = _timeManager.LastPacketTick.LastRemoteTick;
@@ -2187,11 +2192,11 @@ namespace FishNet.Component.Transforming
         {
             if (!_clientAuthoritative)
             {
-                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
             }
 
-            TimeManager tm = base.TimeManager;
+            TimeManager tm = TimeManager;
             //Not new data.
             uint lastPacketTick = tm.LastPacketTick.LastRemoteTick;
             if (lastPacketTick <= _lastServerRpcTick)
@@ -2207,10 +2212,10 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void DataReceived(ArraySegment<byte> data, Channel channel, bool asServer)
         {
-            if (base.IsDeinitializing)
+            if (IsDeinitializing)
                 return;
 
-            TransformData prevTd = (asServer) ? _lastReceivedClientTransformData : _lastReceivedServerTransformData;
+            TransformData prevTd = asServer ? _lastReceivedClientTransformData : _lastReceivedServerTransformData;
             RateData prevRd = _lastCalculatedRateData;
 
             ChangedFull changedFull = ChangedFull.Unset;
@@ -2224,7 +2229,7 @@ namespace FishNet.Component.Transforming
             bool hasChanged = HasChanged(prevTd, nextTd);
 
             //If server only teleport.
-            if (asServer && !base.IsClientStarted)
+            if (asServer && !IsClientStarted)
             {
                 uint tickDifference = GetTickDifference(prevTd, nextGd, 1, out float timePassed);
                 SetInstantRates(nextGd.Rates, tickDifference, timePassed);
@@ -2235,19 +2240,19 @@ namespace FishNet.Component.Transforming
                 SetCalculatedRates(prevTd, prevRd, nextGd, changedFull, hasChanged, channel);
             }
 
-            _lastReceiveReliable = (channel == Channel.Reliable);
+            _lastReceiveReliable = channel == Channel.Reliable;
             /* If channel is reliable then this is a settled packet.
              * Set tick to UNSET. When this occurs time calculations
              * assume only 1 tick has passed. */
             if (channel == Channel.Reliable)
-                nextTd.Tick = Managing.Timing.TimeManager.UNSET_TICK;
+                nextTd.Tick = TimeManager.UNSET_TICK;
 
             prevTd.Update(nextTd);
             prevRd.Update(nextGd.Rates);
 
             nextGd.ReceivedTick = _timeManager.LocalTick;
 
-            bool currentDataNull = (_currentGoalData == null);
+            bool currentDataNull = _currentGoalData == null;
             /* If extrapolating then immediately break the extrapolation
              * in favor of newest results. This will keep the buffer
              * at 0 until the transform settles but the only other option is
@@ -2264,7 +2269,7 @@ namespace FishNet.Component.Transforming
              * and set current data.
              *
              * Also if reliable then begin moving. */
-            else if (currentDataNull && _goalDataQueue.Count >= _interpolation || channel == Channel.Reliable)
+            else if ((currentDataNull && _goalDataQueue.Count >= _interpolation) || channel == Channel.Reliable)
             {
                 if (_goalDataQueue.Count > 0)
                 {
@@ -2293,7 +2298,7 @@ namespace FishNet.Component.Transforming
              * when connections are unstable results may come in chunks
              * and for a better experience the older parts of the chunks
              * will be dropped. */
-            if (_goalDataQueue.Count > (_interpolation + 3))
+            if (_goalDataQueue.Count > _interpolation + 3)
             {
                 while (_goalDataQueue.Count > _interpolation)
                 {
@@ -2357,20 +2362,20 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Updates which properties are synchronized.
         /// </summary>
-        /// <param name="value">Properties to synchronize.</param>
+        /// <param name = "value">Properties to synchronize.</param>
         public void SetSynchronizedProperties(SynchronizedProperty value)
         {
             //If sending from the server.
-            if (base.IsServerInitialized)
+            if (IsServerInitialized)
             {
                 //If no owner, or not client auth.
-                if (base.IsController || !_clientAuthoritative)
+                if (IsController || !_clientAuthoritative)
                     ObserversSetSynchronizedProperties(value);
                 else
                     return;
             }
             //Sending from client.
-            else if (_clientAuthoritative && base.IsOwner)
+            else if (_clientAuthoritative && IsOwner)
             {
                 ServerSetSynchronizedProperties(value);
             }
@@ -2392,7 +2397,7 @@ namespace FishNet.Component.Transforming
         {
             if (!_clientAuthoritative)
             {
-                base.Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {base.Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {Owner.ClientId} has been kicked for trying to update this object without client authority.");
                 return;
             }
 

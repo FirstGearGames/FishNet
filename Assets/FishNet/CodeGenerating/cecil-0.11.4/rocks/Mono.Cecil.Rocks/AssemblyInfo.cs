@@ -10,6 +10,5 @@
 
 using System;
 
-//[assembly: AssemblyTitle ("MonoFN.Cecil.Rocks")]
-
-[assembly: CLSCompliant (false)]
+// [assembly: AssemblyTitle ("MonoFN.Cecil.Rocks")]
+[assembly: CLSCompliant(false)]

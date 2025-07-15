@@ -8,29 +8,26 @@
 // Licensed under the MIT/X11 license.
 //
 
-namespace MonoFN.Cecil.Metadata {
+namespace MonoFN.Cecil.Metadata
+{
+    internal sealed class UserStringHeap : StringHeap
+    {
+        public UserStringHeap(byte[] data) : base(data) { }
 
-	sealed class UserStringHeap : StringHeap {
+        protected override string ReadStringAt(uint index)
+        {
+            int start = (int)index;
 
-		public UserStringHeap (byte [] data)
-			: base (data)
-		{
-		}
+            uint length = (uint)(data.ReadCompressedUInt32(ref start) & ~1);
+            if (length < 1)
+                return string.Empty;
 
-		protected override string ReadStringAt (uint index)
-		{
-			int start = (int)index;
+            var chars = new char [length / 2];
 
-			uint length = (uint)(data.ReadCompressedUInt32 (ref start) & ~1);
-			if (length < 1)
-				return string.Empty;
+            for (int i = start, j = 0; i < start + length; i += 2)
+                chars[j++] = (char)(data[i] | (data[i + 1] << 8));
 
-			var chars = new char [length / 2];
-
-			for (int i = start, j = 0; i < start + length; i += 2)
-				chars [j++] = (char)(data [i] | (data [i + 1] << 8));
-
-			return new string (chars);
-		}
-	}
+            return new(chars);
+        }
+    }
 }

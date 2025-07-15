@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     public class DDOL : MonoBehaviour
     {
         #region Public.
@@ -19,7 +17,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// </summary>
         public static DDOL GetDDOL()
         {
-            //Not yet made.
+            // Not yet made.
             if (_instance == null)
             {
                 GameObject obj = new();
@@ -29,13 +27,11 @@ namespace GameKit.Dependencies.Utilities.Types
                 _instance = ddol;
                 return ddol;
             }
-            //Already  made.
+            // Already  made.
             else
             {
                 return _instance;
             }
         }
     }
-
-
 }

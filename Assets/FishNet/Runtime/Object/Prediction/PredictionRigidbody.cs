@@ -116,14 +116,14 @@ namespace FishNet.Object.Prediction
 
         [DefaultDeltaReader]
         public static PredictionRigidbody.EntryData ReadDeltaEntryData(this Reader r) => r.ReadEntryData();
-        
+
         [DefaultDeltaWriter]
         public static bool WriteDeltaPredictionRigidbody(this Writer w, PredictionRigidbody pr)
         {
             w.WritePredictionRigidbody(pr);
             return true;
         }
-        
+
         [DefaultDeltaReader]
         public static PredictionRigidbody ReadDeltaPredictionRigidbody(this Reader r) => r.ReadPredictionRigidbody();
     }
@@ -164,11 +164,11 @@ namespace FishNet.Object.Prediction
             /// <summary>
             /// Used for Explosive.
             /// </summary>
-            /// <param name="force"></param>
-            /// <param name="position"></param>
-            /// <param name="radius"></param>
-            /// <param name="upwardsModifier"></param>
-            /// <param name="mode"></param>
+            /// <param name = "force"></param>
+            /// <param name = "position"></param>
+            /// <param name = "radius"></param>
+            /// <param name = "upwardsModifier"></param>
+            /// <param name = "mode"></param>
             public AllForceData(float force, Vector3 position, float radius, float upwardsModifier, ForceMode mode) : this()
             {
                 FloatForce = force;
@@ -181,7 +181,7 @@ namespace FishNet.Object.Prediction
 
         public interface IForceData { }
 
-        //How the force was applied.
+        // How the force was applied.
         [System.Flags]
         public enum ForceApplicationType : byte
         {
@@ -190,7 +190,7 @@ namespace FishNet.Object.Prediction
             AddForce = 4,
             AddRelativeForce = 8,
             AddTorque = 16,
-            AddRelativeTorque = 32,
+            AddRelativeTorque = 32
         }
 
         [UseGlobalCustomSerializer]
@@ -221,7 +221,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns if there are any pending forces.
         /// </summary>
-        public bool HasPendingForces => (_pendingForces != null && _pendingForces.Count > 0);
+        public bool HasPendingForces => _pendingForces != null && _pendingForces.Count > 0;
         #endregion
 
         #region Internal.
@@ -256,7 +256,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Rigidbody which force is applied.
         /// </summary>
-        /// <param name="rb"></param>
+        /// <param name = "rb"></param>
         public void Initialize(Rigidbody rb)
         {
             Rigidbody = rb;
@@ -361,7 +361,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Manually clears pending forces.
         /// </summary>
-        /// <param name="velocity">True to clear velocities, false to clear angular velocities.</param>
+        /// <param name = "velocity">True to clear velocities, false to clear angular velocities.</param>
         public void ClearPendingForces(bool velocity)
         {
             RemoveForces(velocity);
@@ -386,7 +386,7 @@ namespace FishNet.Object.Prediction
                 foreach (EntryData item in pr._pendingForces)
                     _pendingForces.Add(new(item));
             }
-            //Set state.
+            // Set state.
             Rigidbody.SetState(pr.RigidbodyState);
 
             ResettableObjectCaches<PredictionRigidbody>.Store(pr);
@@ -395,12 +395,12 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Removes forces from pendingForces.
         /// </summary>
-        /// <param name="velocity">True to remove if velocity, false if to remove angular velocity.</param>
+        /// <param name = "velocity">True to remove if velocity, false if to remove angular velocity.</param>
         private void RemoveForces(bool velocity)
         {
             if (_pendingForces.Count > 0)
             {
-                ForceApplicationType velocityApplicationTypes = (ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce | ForceApplicationType.AddExplosiveForce);
+                ForceApplicationType velocityApplicationTypes = ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce | ForceApplicationType.AddExplosiveForce;
 
                 List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
                 foreach (EntryData item in _pendingForces)
@@ -408,7 +408,7 @@ namespace FishNet.Object.Prediction
                     if (VelocityApplicationTypesContains(item.Type) == !velocity)
                         newDatas.Add(item);
                 }
-                //Add back to _pendingForces if changed.
+                // Add back to _pendingForces if changed.
                 if (newDatas.Count != _pendingForces.Count)
                 {
                     _pendingForces.Clear();

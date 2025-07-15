@@ -1,5 +1,4 @@
-﻿
-namespace FishNet.Observing
+﻿namespace FishNet.Observing
 {
     /// <summary>
     /// How a condition is handled.
@@ -14,6 +13,6 @@ namespace FishNet.Observing
         /// <summary>
         /// Condition requires checks at regular intervals. The intervals are handled internally.
         /// </summary>
-        Timed = 2,
+        Timed = 2
     }
 }

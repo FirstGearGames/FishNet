@@ -1,5 +1,4 @@
-﻿
-namespace FishNet.Managing.Scened
+﻿namespace FishNet.Managing.Scened
 {
     /// <summary>
     /// Settings to apply when loading a scene.
@@ -18,7 +17,7 @@ namespace FishNet.Managing.Scened
             /// <summary>
             /// Unloads scenes for connections but keeps scene loaded on server even if no connections are within it.
             /// </summary>
-            KeepUnused = 1,
+            KeepUnused = 1
         }
 
         /// <summary>
@@ -30,6 +29,4 @@ namespace FishNet.Managing.Scened
         /// </summary>
         public bool Addressables;
     }
-
-
 }

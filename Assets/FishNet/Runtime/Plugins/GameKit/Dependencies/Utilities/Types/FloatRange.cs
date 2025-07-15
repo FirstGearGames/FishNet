@@ -2,8 +2,6 @@
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     [System.Serializable]
     public struct FloatRange
     {
@@ -12,6 +10,7 @@ namespace GameKit.Dependencies.Utilities.Types
             Minimum = minimum;
             Maximum = maximum;
         }
+
         /// <summary>
         /// Minimum range.
         /// </summary>
@@ -35,6 +34,4 @@ namespace GameKit.Dependencies.Utilities.Types
             return Mathf.Lerp(Minimum, Maximum, percent);
         }
     }
-
-
 }

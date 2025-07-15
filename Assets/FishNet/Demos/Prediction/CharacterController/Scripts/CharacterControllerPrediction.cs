@@ -55,13 +55,12 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             /// True if run is held.
             /// </summary>
             public readonly bool Run;
-
             /// <summary>
             /// Tick is set at runtime. There is no need to manually assign this value.
             /// </summary>
             private uint _tick;
 
-            public void Dispose() 
+            public void Dispose()
             {
                 OneTimeInputs.ResetState();
             }
@@ -95,16 +94,12 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             /// Amount of stamina remaining to run or jump.
             /// </summary>
             public float Stamina;
-
             public MovingPlatform CurrentPlatform;
-
             /// <summary>
             /// Tick is set at runtime. There is no need to manually assign this value.
             /// </summary>
             private uint _tick;
-
             public void Dispose() { }
-
             public uint GetTick() => _tick;
             public void SetTick(uint value) => _tick = value;
         }
@@ -118,7 +113,6 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// Current stamina remaining.
         /// </summary>
         public float Stamina { get; private set; }
-
         /// <summary>
         /// Amount of force for jumping.
         /// </summary>
@@ -131,7 +125,6 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         [Tooltip("How quickly to move.")]
         [SerializeField]
         private float _moveRate = 4f;
-
         /// <summary>
         /// Current vertical velocity.
         /// </summary>
@@ -168,14 +161,14 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             _characterTrigger = GetComponentInChildren<NetworkTrigger>();
             _characterTrigger.OnEnter += CharacterTrigger_OnEnter;
             _characterTrigger.OnExit += CharacterTrigger_OnExit;
-            
-            //We only need the OnTick callback for non-physics.
-            base.SetTickCallbacks(TickCallback.Tick);
+
+            // We only need the OnTick callback for non-physics.
+            SetTickCallbacks(TickCallback.Tick);
         }
 
         public override void OnOwnershipClient(NetworkConnection prevOwner)
         {
-            if (base.IsOwner)
+            if (IsOwner)
                 OnOwner?.Invoke(this);
         }
 
@@ -189,7 +182,8 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// </summary>
         private void SetOneTimeInputs()
         {
-            if (!base.IsOwner) return;
+            if (!IsOwner)
+                return;
 
             /* Check to jump. */
             if (Input.GetKeyDown(KeyCode.Space))
@@ -210,16 +204,17 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             /* Only the controller needs to build move data.
              * This could be the server if the server if no owner, for example
              * such as AI, or the owner of the object. */
-            if (!base.IsOwner) return default;
+            if (!IsOwner)
+                return default;
 
             float horizontal = Input.GetAxisRaw("Horizontal");
             float vertical = Input.GetAxisRaw("Vertical");
-            //Run when left shift is held.
+            // Run when left shift is held.
             bool run = Input.GetKey(KeyCode.LeftShift);
 
             ReplicateData md = new(new(horizontal, vertical), run, _oneTimeInputs);
 
-            //Reset one tine inputs since they've been processed for the tick.
+            // Reset one tine inputs since they've been processed for the tick.
             _oneTimeInputs.ResetState();
 
             return md;
@@ -249,22 +244,22 @@ namespace FishNet.Demo.Prediction.CharacterControllers
              * test this behavior. */
             // if (base.IsServerStarted)
             // {
-            //     //Exit early if 10 ticks have not passed.
+            //     // Exit early if 10 ticks have not passed.
             //     if (base.TimeManager.LocalTick % 10 != 0) return;
             // }
 
-            //Build the data using current information and call the reconcile method.
+            // Build the data using current information and call the reconcile method.
             ReconcileData rd = new(transform.localPosition, _verticalVelocity, Stamina, _currentPlatform);
             PerformReconcile(rd);
         }
 
         [Replicate]
         private void PerformReplicate(ReplicateData rd, ReplicateState state = ReplicateState.Invalid, Channel channel = Channel.Unreliable)
-        {            
-            //Always use the tickDelta as your delta when performing actions inside replicate.
-            float delta = (float)base.TimeManager.TickDelta;
+        {
+            // Always use the tickDelta as your delta when performing actions inside replicate.
+            float delta = (float)TimeManager.TickDelta;
             bool useDefaultForces = false;
-            
+
             /* When client only run some checks to
              * further predict the clients future movement.
              * This can keep the object more inlined with real-time by
@@ -274,8 +269,8 @@ namespace FishNet.Demo.Prediction.CharacterControllers
              * Doing this does risk a chance of graphical jitter in the
              * scenario a de-synchronization occurs, but if only predicting
              * a couple ticks the chances are low. */
-            //See https://fish-networking.gitbook.io/docs/manual/guides/prediction/version-2/creating-code/predicting-states
-            if (!base.IsServerStarted && !base.IsOwner)
+            // See https:// fish-networking.gitbook.io/docs/manual/guides/prediction/version-2/creating-code/predicting-states
+            if (!IsServerStarted && !IsOwner)
             {
                 /* If ticked then set last ticked value.
                  * Ticked means the replicate is being run from the tick cycle, more
@@ -286,7 +281,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
                      * If you are only using value types in your data you do not need to call Dispose.
                      * You must implement dispose manually to cache any non-value types, if you wish. */
                     _lastTickedReplicateData.Dispose();
-                    //Set new.
+                    // Set new.
                     _lastTickedReplicateData = rd;
                 }
                 /* In the future means there is no way the data can be known to this client
@@ -331,7 +326,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
                     }
                 }
             }
-            
+
             Vector3 forces;
 
             if (useDefaultForces)
@@ -347,16 +342,16 @@ namespace FishNet.Demo.Prediction.CharacterControllers
                  * update properly. */
                 forces = new(0f, -1f, 0f);
             }
-            //Calculate forces.
+            // Calculate forces.
             else
             {
-                //Stamina regained over every second.
+                // Stamina regained over every second.
                 const float regainedStamina = 25f;
-                //Add stamina with every tick.
+                // Add stamina with every tick.
                 ModifyStamina(regainedStamina * delta);
 
-                //Add gravity. Extra gravity is added for snappier jumps.
-                _verticalVelocity += (Physics.gravity.y * delta * 3f);
+                // Add gravity. Extra gravity is added for snappier jumps.
+                _verticalVelocity += Physics.gravity.y * delta * 3f;
                 //Cap gravity to -20f so the player doesn't fall too fast.
                 if (_verticalVelocity < -40f)
                     _verticalVelocity = -40f;
@@ -417,7 +412,6 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             transform.localPosition = rd.Position;
         }
 
-      
         /// <summary>
         /// Called when the trigger on this object enters another collider.
         /// </summary>
@@ -430,7 +424,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
             _currentPlatform = mp;
             SetParent();
         }
-        
+
         /// <summary>
         /// Called when the trigger on this object exits another collider.
         /// </summary>
@@ -477,7 +471,8 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// <returns>>True if stamina was available and removed.</returns>
         private bool TryRemoveStamina(float value)
         {
-            if (Stamina < value) return false;
+            if (Stamina < value)
+                return false;
 
             Stamina -= value;
             return true;

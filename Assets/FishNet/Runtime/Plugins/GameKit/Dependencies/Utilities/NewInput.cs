@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class NewInput
     {
         /// <summary>
@@ -21,27 +20,24 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static bool GetButtonHeld(Key key)
         {
-            return (Keyboard != null) ?
-                Keyboard[key].isPressed : false;
+            return (Keyboard != null) ? Keyboard[key].isPressed : false;
         }
+
         /// <summary>
         /// Returns if a button is pressed on any map.
         /// </summary>
         public static bool GetButtonPressed(Key key)
         {
-            return (Keyboard != null) ?
-                Keyboard[key].wasPressedThisFrame : false;
+            return (Keyboard != null) ? Keyboard[key].wasPressedThisFrame : false;
         }
+
         /// <summary>
         /// Returns if a button is released on any map.
         /// </summary>
         public static bool GetButtonReleased(Key key)
         {
-            return (Keyboard != null) ?
-                Keyboard[key].wasReleasedThisFrame : false;
+            return (Keyboard != null) ? Keyboard[key].wasReleasedThisFrame : false;
         }
-
-
     }
 
     public static class MouseExtensions
@@ -54,7 +50,6 @@ namespace GameKit.Dependencies.Utilities
 
     public static class KeyboardExtensions
     {
-
         public static bool GetKeyPressed(this Keyboard kb, Key kc)
         {
             return kb[kc].wasPressedThisFrame;
@@ -69,9 +64,6 @@ namespace GameKit.Dependencies.Utilities
         {
             return kb[kc].wasReleasedThisFrame;
         }
-
-
-
     }
 
     public static class InputActionMapExtensions
@@ -108,6 +100,7 @@ namespace GameKit.Dependencies.Utilities
         {
             return map.GetAxisRaw(inputName, out _);
         }
+
         public static float GetAxisRaw(this InputActionMap map, string inputName, out bool found)
         {
             found = false;
@@ -172,6 +165,7 @@ namespace GameKit.Dependencies.Utilities
         {
             return GetAxisRaw(ia, out _);
         }
+
         public static float GetAxisRaw(this InputAction ia, out bool found)
         {
             found = false;
@@ -202,7 +196,5 @@ namespace GameKit.Dependencies.Utilities
         }
         #endregion
     }
-
 }
-
 #endif

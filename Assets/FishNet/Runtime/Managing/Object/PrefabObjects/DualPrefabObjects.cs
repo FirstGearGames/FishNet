@@ -6,14 +6,12 @@ using UnityEngine;
 
 namespace FishNet.Managing.Object
 {
-
-    //document
+    // document
     [APIExclude]
     [CreateAssetMenu(fileName = "New DualPrefabObjects", menuName = "FishNet/Spawnable Prefabs/Dual Prefab Objects")]
     public class DualPrefabObjects : PrefabObjects
     {
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("Prefabs which may be spawned.")]
         [SerializeField]
@@ -27,6 +25,7 @@ namespace FishNet.Managing.Object
         {
             _prefabs.Clear();
         }
+
         public override int GetObjectCount()
         {
             return _prefabs.Count;
@@ -42,10 +41,10 @@ namespace FishNet.Managing.Object
             else
             {
                 DualPrefab dp = _prefabs[id];
-                NetworkObject nob = (asServer) ? dp.Server : dp.Client;
+                NetworkObject nob = asServer ? dp.Server : dp.Client;
                 if (nob == null)
                 {
-                    string lookupSide = (asServer) ? "server" : "client";
+                    string lookupSide = asServer ? "server" : "client";
                     NetworkManagerExtensions.LogError($"Prefab for {lookupSide} on id {id} is null ");
                 }
 
@@ -102,7 +101,6 @@ namespace FishNet.Managing.Object
             _prefabs.Add(dp);
         }
 
-        
         public override void InitializePrefabRange(int startIndex)
         {
             for (int i = startIndex; i < _prefabs.Count; i++)
@@ -111,7 +109,6 @@ namespace FishNet.Managing.Object
                 ManagedObjects.InitializePrefab(_prefabs[i].Client, i, CollectionId);
             }
         }
-
 
         #region Unused.
         public override void AddObject(NetworkObject networkObject, bool checkForDuplicates = false, bool initializeAdded = true)

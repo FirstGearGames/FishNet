@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace FishNet.Example.Scened
 {
-
     /// <summary>
     /// Unloads specified scenes when entering or exiting this trigger.
     /// </summary>
@@ -36,7 +35,6 @@ namespace FishNet.Example.Scened
         [SerializeField]
         private bool _onTriggerEnter = true;
 
-
         [Server(Logging = LoggingType.Off)]
         private void OnTriggerEnter(Collider other)
         {
@@ -58,34 +56,30 @@ namespace FishNet.Example.Scened
         /// <summary>
         /// Unload scenes.
         /// </summary>
-        /// <param name="triggeringIdentity"></param>
+        /// <param name = "triggeringIdentity"></param>
         private void UnloadScenes(NetworkObject triggeringIdentity)
         {
             if (!InstanceFinder.NetworkManager.IsServerStarted)
                 return;
 
-            //NetworkObject isn't necessarily needed but to ensure its the player only run if nob is found.
+            // NetworkObject isn't necessarily needed but to ensure its the player only run if nob is found.
             if (triggeringIdentity == null)
                 return;
 
             UnloadOptions unloadOptions = new()
             {
-                Mode = (_unloadUnused) ? UnloadOptions.ServerUnloadMode.UnloadUnused : UnloadOptions.ServerUnloadMode.KeepUnused
+                Mode = _unloadUnused ? UnloadOptions.ServerUnloadMode.UnloadUnused : UnloadOptions.ServerUnloadMode.KeepUnused
             };
 
             SceneUnloadData sud = new(_scenes);
             sud.Options = unloadOptions;
 
-            //Unload only for the triggering connection.
+            // Unload only for the triggering connection.
             if (_connectionOnly)
                 InstanceFinder.SceneManager.UnloadConnectionScenes(triggeringIdentity.Owner, sud);
-            //Unload for all players.
+            // Unload for all players.
             else
                 InstanceFinder.SceneManager.UnloadGlobalScenes(sud);
         }
-
-
     }
-
-
 }

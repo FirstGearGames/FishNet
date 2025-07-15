@@ -25,8 +25,8 @@ namespace FishNet.Object
         /// </summary>
         internal void RemoveClientRpcLinkIndexes()
         {
-            //if (NetworkManager != null)
-                NetworkManager.ClientManager.Objects.RemoveLinkIndexes(_rpcLinkIndexes);
+            // if (NetworkManager != null)
+            NetworkManager.ClientManager.Objects.RemoveLinkIndexes(_rpcLinkIndexes);
         }
     }
 }

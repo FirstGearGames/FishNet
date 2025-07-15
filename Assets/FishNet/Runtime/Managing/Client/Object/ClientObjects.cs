@@ -46,7 +46,7 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal void OnServerConnectionState(ServerConnectionStateArgs args)
         {
-            //Nothing needs to be done if started.
+            // Nothing needs to be done if started.
             if (args.ConnectionState == LocalConnectionState.Started)
                 return;
 
@@ -62,14 +62,14 @@ namespace FishNet.Managing.Client
 
             /* Only perform this step if the transport being stopped
              * is the one which client is connected to. */
-            if (NetworkManager.IsClientStarted && args.TransportIndex == base.NetworkManager.ClientManager.GetTransportIndex())
-                base.NetworkManager.ClientManager.StopConnection();
+            if (NetworkManager.IsClientStarted && args.TransportIndex == NetworkManager.ClientManager.GetTransportIndex())
+                NetworkManager.ClientManager.StopConnection();
         }
 
         /// <summary>
         /// Called when the connection state changes for the local client.
         /// </summary>
-        /// <param name="args"></param>
+        /// <param name = "args"></param>
         internal void OnClientConnectionState(ClientConnectionStateArgs args)
         {
             /* If new state is not started then reset
@@ -78,12 +78,12 @@ namespace FishNet.Managing.Client
             {
                 _objectCache.Reset();
 
-                //If not server then deinitialize normally.
-                if (!base.NetworkManager.IsServerStarted)
+                // If not server then deinitialize normally.
+                if (!NetworkManager.IsServerStarted)
                 {
                     base.DespawnWithoutSynchronization(recursive: true, asServer: false);
                 }
-                //Otherwise invoke stop callbacks only for client side.
+                // Otherwise invoke stop callbacks only for client side.
                 else
                 {
                     foreach (NetworkObject n in Spawned.Values)
@@ -99,22 +99,22 @@ namespace FishNet.Managing.Client
                 /* Clear spawned and scene objects as they will be rebuilt.
                  * Spawned would have already be cleared if DespawnSpawned
                  * was called but it won't hurt anything clearing an empty collection. */
-                base.Spawned.Clear();
-                base.SceneObjects_Internal.Clear();
+                Spawned.Clear();
+                SceneObjects_Internal.Clear();
             }
         }
 
         /// <summary>
         /// Called when a scene is loaded.
         /// </summary>
-        /// <param name="s"></param>
-        /// <param name="arg1"></param>
+        /// <param name = "s"></param>
+        /// <param name = "arg1"></param>
         [APIExclude]
         protected internal override void SceneManager_sceneLoaded(Scene s, LoadSceneMode arg1)
         {
             base.SceneManager_sceneLoaded(s, arg1);
 
-            if (!base.NetworkManager.IsClientStarted)
+            if (!NetworkManager.IsClientStarted)
                 return;
             /* When a scene first loads for a client it should disable
              * all network objects in that scene. The server will send
@@ -128,7 +128,7 @@ namespace FishNet.Managing.Client
         internal override void AddToSpawned(NetworkObject nob, bool asServer)
         {
             base.AddToSpawned(nob, asServer);
-            //If being added as client and is also server.
+            // If being added as client and is also server.
             if (NetworkManager.IsServerStarted)
                 nob.SetRenderersVisible(true);
         }
@@ -147,14 +147,18 @@ namespace FishNet.Managing.Client
                 return;
             }
 
-            networkObject.InitializePredictedObject_Client(base.NetworkManager, objectId, ownerConnection, base.NetworkManager.ClientManager.Connection);
+            networkObject.InitializePredictedObject_Client(NetworkManager, objectId, ownerConnection, NetworkManager.ClientManager.Connection);
             NetworkManager.ClientManager.Objects.AddToSpawned(networkObject, false);
             networkObject.Initialize(asServer: false, invokeSyncTypeCallbacks: true);
 
             PooledWriter writer = WriterPool.Retrieve();
             if (WriteSpawn(networkObject, writer, connection: null))
             {
-                base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
+#if DEVELOPMENT && !UNITY_SERVER
+                if (NetworkTrafficStatistics != null)
+                    NetworkTrafficStatistics.AddOutboundPacketIdData(PacketId.ObjectSpawn, string.Empty, writer.Length, networkObject.gameObject, asServer: false);
+#endif
+                NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
                 //Also dequeue entry, since we only peeked it earlier.
                 predictedObjectIds.Dequeue();
             }
@@ -167,7 +171,7 @@ namespace FishNet.Managing.Client
             {
                 networkObject.SetIsDestroying();
                 networkObject.Deinitialize(asServer: false);
-                
+
                 NetworkManager.StorePooledOrDestroyInstantiated(networkObject, asServer: false);
             }
 
@@ -181,7 +185,7 @@ namespace FishNet.Managing.Client
         {
             PooledWriter writer = WriterPool.Retrieve();
             WriteDepawn(networkObject, writer);
-            base.NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
+            NetworkManager.TransportManager.SendToServer((byte)Channel.Reliable, writer.GetArraySegment());
             writer.Store();
 
             base.Despawn(networkObject, networkObject.GetDefaultDespawnType(), asServer: false);
@@ -208,13 +212,13 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Adds NetworkObjects within s to SceneObjects, and despawns them.
         /// </summary>
-        /// <param name="s"></param>
+        /// <param name = "s"></param>
         private void RegisterAndDespawnSceneObjects(Scene s)
         {
             List<NetworkObject> nobs = CollectionCaches<NetworkObject>.RetrieveList();
             Scenes.GetSceneNetworkObjects(s, false, true, true, ref nobs);
 
-            bool isServerStarted = base.NetworkManager.IsServerStarted;
+            bool isServerStarted = NetworkManager.IsServerStarted;
 
             int nobsCount = nobs.Count;
             for (int i = 0; i < nobsCount; i++)
@@ -229,9 +233,9 @@ namespace FishNet.Managing.Client
 
                 if (nob.GetIsNetworked())
                 {
-                    base.AddToSceneObjects(nob);
+                    AddToSceneObjects(nob);
                     //Only run if not also server, as this already ran on server.
-                    if (!base.NetworkManager.IsServerStarted)
+                    if (!NetworkManager.IsServerStarted)
                         nob.gameObject.SetActive(false);
                 }
             }
@@ -242,7 +246,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Called when a NetworkObject runs Deactivate.
         /// </summary>
-        /// <param name="nob"></param>
+        /// <param name = "nob"></param>
         internal override void NetworkObjectDestroyed(NetworkObject nob, bool asServer)
         {
             nob.RemoveClientRpcLinkIndexes();
@@ -252,7 +256,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Parses an OwnershipChange packet.
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void ParseOwnershipChange(PooledReader reader)
         {
             NetworkObject nob = reader.ReadNetworkObject();
@@ -264,14 +268,13 @@ namespace FishNet.Managing.Client
         }
 
         /// <summary>
-        /// Parses a received syncVar.
+        /// Parses a received SyncType.
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void ParseSyncType(PooledReader reader, Channel channel)
         {
-            //cleanup this is unique to synctypes where length comes first.
-            //this will change once I tidy up synctypes.
-            ushort packetId = (ushort)PacketId.SyncType;
+            int readerPositionAfterDebug = reader.Position;
+
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int length = (int)ReservedLengthWriter.ReadLength(reader, NetworkBehaviour.SYNCTYPE_RESERVE_BYTES);
 
@@ -283,23 +286,31 @@ namespace FishNet.Managing.Client
                  * The only way to know where completion of syncvar is, versus
                  * when another packet starts is by including the length. */
                 if (length > 0)
-                    nb.ReadSyncType(reader, length);
+                    nb.ReadSyncType(readerPositionAfterDebug, reader, length);
             }
             else
             {
-                SkipDataLength(packetId, reader, length);
+                SkipDataLength((ushort)PacketId.SyncType, reader, length);
             }
         }
 
         /// <summary>
-        /// Parses a 
+        /// Parses a
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void ParsePredictedSpawnResult(PooledReader reader)
         {
+            int readerPositionAfterDebug = reader.Position;
+
             bool success = reader.ReadBoolean();
             int usedObjectId = reader.ReadNetworkObjectId();
             int nextObjectId = reader.ReadNetworkObjectId();
+
+#if DEVELOPMENT && !UNITY_SERVER
+            if (NetworkTrafficStatistics != null)
+                NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.PredictedSpawnResult, string.Empty, reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH,gameObject: null,  asServer: false);
+#endif
+
             if (nextObjectId != NetworkObject.UNSET_OBJECTID_VALUE)
                 NetworkManager.ClientManager.Connection.PredictedObjectIds.Enqueue(nextObjectId);
 
@@ -320,68 +331,71 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Parses a ReconcileRpc.
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void ParseReconcileRpc(PooledReader reader, Channel channel)
         {
 #if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int readerRemainingAfterLength, out string rpcInformation, out uint expectedReadAmount);
+            NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int readerRemainingAfterLength, out string rpcInformation, out uint expectedReadAmount);
 #endif
+            int readerStartAfterDebug = reader.Position;
 
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
 
             if (nb != null && nb.IsSpawned)
-                nb.OnReconcileRpc(null, reader, channel);
+                nb.OnReconcileRpc(readerStartAfterDebug, hash: null, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
 
 #if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, readerRemainingAfterLength, rpcInformation, expectedReadAmount, channel);
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, readerRemainingAfterLength, rpcInformation, expectedReadAmount, channel);
 #endif
         }
 
         /// <summary>
         /// Parses an ObserversRpc.
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void ParseObserversRpc(PooledReader reader, Channel channel)
         {
 #if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+            NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
 #endif
+            int readerStartAfterDebug = reader.Position;
 
             NetworkBehaviour nb = reader.ReadNetworkBehaviour(logException: false);
             int dataLength = Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
             if (nb != null && nb.IsSpawned)
             {
-                nb.ReadObserversRpc(fromRpcLink: false, methodHash: 0, reader, channel);
+                nb.ReadObserversRpc(readerStartAfterDebug, fromRpcLink: false, hash: 0, reader, channel);
             }
             else
             {
-                base.NetworkManager.Log($"NetworkBehaviour not found for an ObserverRpc. Rpc data will be discarded.");
+                NetworkManager.Log($"NetworkBehaviour not found for an ObserverRpc. Rpc data will be discarded.");
                 SkipDataLength((ushort)PacketId.ObserversRpc, reader, dataLength);
             }
 
 #if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, base.NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
+            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
 #endif
         }
 
         /// <summary>
         /// Parses a TargetRpc.
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void ParseTargetRpc(PooledReader reader, Channel channel)
         {
 #if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(base.NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
+            NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
 #endif
+            int readerStartAfterDebug = reader.Position;
 
             NetworkBehaviour nb = reader.ReadNetworkBehaviour();
             int dataLength = Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
 
             if (nb != null && nb.IsSpawned)
-                nb.ReadTargetRpc(fromRpcLink: false, methodHash: 0, reader, channel);
+                nb.ReadTargetRpc(readerStartAfterDebug, fromRpcLink: false, hash: 0, reader, channel);
             else
                 SkipDataLength((ushort)PacketId.TargetRpc, reader, dataLength);
         }
@@ -391,6 +405,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         internal void ReadSpawn(PooledReader reader)
         {
+#if DEVELOPMENT && !UNITY_SERVER
+            int readerPositionAfterDebug = reader.Position;
+#endif
+
             SpawnType st = (SpawnType)reader.ReadUInt8Unpacked();
 
             bool sceneObject = st.FastContains(SpawnType.Scene);
@@ -404,7 +422,7 @@ namespace FishNet.Managing.Client
             Vector3? localPosition;
             Quaternion? localRotation;
             Vector3? localScale;
-            base.ReadTransformProperties(reader, out localPosition, out localRotation, out localScale);
+            ReadTransformProperties(reader, out localPosition, out localRotation, out localScale);
 
             int prefabId = 0;
             ulong sceneId = 0;
@@ -413,10 +431,10 @@ namespace FishNet.Managing.Client
 
             if (sceneObject)
             {
-                base.ReadSceneObjectId(reader, out sceneId);
+                ReadSceneObjectId(reader, out sceneId);
 #if DEVELOPMENT
                 if (NetworkManager.ClientManager.IsServerDevelopment)
-                    base.CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
+                    CheckReadSceneObjectDetails(reader, ref sceneName, ref objectName);
 #endif
             }
             else
@@ -424,19 +442,24 @@ namespace FishNet.Managing.Client
                 prefabId = reader.ReadNetworkObjectId();
             }
 
-            ArraySegment<byte> payload = base.ReadPayload(reader);
+            ArraySegment<byte> payload = ReadPayload(reader);
             ArraySegment<byte> rpcLinks = ReadRpcLinks(reader);
             ArraySegment<byte> syncTypes = ReadSyncTypesForSpawn(reader);
+
+#if DEVELOPMENT && !UNITY_SERVER
+            if (NetworkTrafficStatistics != null)
+                NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.ObjectSpawn, string.Empty, reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
+#endif
 
             bool isPredictedSpawner = st.FastContains(SpawnType.IsPredictedSpawner);
 
             //If found in spawn already.
-            if (base.Spawned.TryGetValue(objectId, out NetworkObject nob))
+            if (Spawned.TryGetValue(objectId, out NetworkObject nob))
             {
                 /* If not server then extra checks must be done. Client should never
                  * receive spawn messages for already spawned objects, unless they locally
                  * predicted spawned the object. */
-                if (!base.NetworkManager.IsServerStarted)
+                if (!NetworkManager.IsServerStarted)
                 {
                     //Not predicted spawner.
                     if (!st.FastContains(SpawnType.IsPredictedSpawner))
@@ -475,18 +498,27 @@ namespace FishNet.Managing.Client
             }
 
 
-            _objectCache.AddSpawn(base.NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncTypes);
+            _objectCache.AddSpawn(NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncTypes);
         }
 
         /// <summary>
         /// Caches a received despawn to be processed after all spawns and despawns are received for the tick.
         /// </summary>
-        /// <param name="reader"></param>
+        /// <param name = "reader"></param>
         internal void CacheDespawn(PooledReader reader)
         {
+#if DEVELOPMENT && !UNITY_SERVER
+            int readerPositionAfterDebug = reader.Position;
+#endif
+
             DespawnType despawnType;
             int objectId = reader.ReadNetworkObjectForDespawn(out despawnType);
             _objectCache.AddDespawn(objectId, despawnType);
+
+#if DEVELOPMENT && !UNITY_SERVER
+            if (NetworkTrafficStatistics != null)
+                NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.ObjectDespawn, string.Empty, reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
+#endif
         }
 
         /// <summary>
@@ -502,7 +534,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Gets a nested NetworkObject within it's root.
         /// </summary>
-        /// <param name="cnob"></param>
+        /// <param name = "cnob"></param>
         /// <returns></returns>
         internal NetworkObject GetNestedNetworkObject(CachedNetworkObject cnob)
         {
@@ -520,7 +552,7 @@ namespace FishNet.Managing.Client
             if (rootNob == null)
             {
                 //Only log if not clientHost.
-                if (!base.NetworkManager.IsServerStarted)
+                if (!NetworkManager.IsServerStarted)
                     NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} and a parentId of {rootObjectId} could not be spawned because parent was not found.");
                 return null;
             }
@@ -542,7 +574,7 @@ namespace FishNet.Managing.Client
             if (nob == null)
             {
                 //Only log if not clientHost.
-                if (!base.NetworkManager.IsServerStarted)
+                if (!NetworkManager.IsServerStarted)
                     NetworkManager.LogError($"Nested spawned object with componentIndex of {componentIndex} could not be found as a child NetworkObject of {rootNob.name}.");
                 return null;
             }
@@ -620,7 +652,7 @@ namespace FishNet.Managing.Client
                 return null;
             }
 
-            NetworkManager networkManager = base.NetworkManager;
+            NetworkManager networkManager = NetworkManager;
             int prefabId = cnob.PrefabId.Value;
             NetworkObject result;
 
@@ -671,7 +703,7 @@ namespace FishNet.Managing.Client
                     }
                 }
 
-                ObjectPoolRetrieveOption retrieveOptions = (ObjectPoolRetrieveOption.MakeActive | ObjectPoolRetrieveOption.LocalSpace);
+                ObjectPoolRetrieveOption retrieveOptions = ObjectPoolRetrieveOption.MakeActive | ObjectPoolRetrieveOption.LocalSpace;
                 result = networkManager.GetPooledInstantiated(prefabId, collectionId, retrieveOptions, parentTransform, cnob.Position, cnob.Rotation, cnob.Scale, asServer: false);
 
                 //Only need to set IsGlobal also if not host.
@@ -695,13 +727,13 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Gets a NetworkObject from Spawned, or object cache.
         /// </summary>
-        /// <param name="cnob"></param>
+        /// <param name = "cnob"></param>
         /// <returns></returns>
         internal NetworkObject GetSpawnedNetworkObject(CachedNetworkObject cnob)
         {
             NetworkObject nob;
             //Try checking already spawned objects first.
-            if (base.Spawned.TryGetValueIL2CPP(cnob.ObjectId, out nob))
+            if (Spawned.TryGetValueIL2CPP(cnob.ObjectId, out nob))
             {
                 return nob;
             }

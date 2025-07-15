@@ -12,6 +12,6 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Server and clients can change the value of the SyncType. When changed by client the value is not sent to the server.
         /// </summary>
-        ClientUnsynchronized = 1,
+        ClientUnsynchronized = 1
     }
 }

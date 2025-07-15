@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.Types.Editing
 {
-    /* Source https://forum.unity.com/threads/how-to-link-scenes-in-the-inspector.383140/ */
+    /* Source https:// forum.unity.com/threads/how-to-link-scenes-in-the-inspector.383140/ */
 
     [CustomPropertyDrawer(typeof(SceneAttribute))]
     public class SceneDrawer : PropertyDrawer

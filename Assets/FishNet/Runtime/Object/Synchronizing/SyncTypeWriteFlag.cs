@@ -5,7 +5,7 @@ namespace FishNet.Object.Synchronizing
     {
         Unset = 0,
         IgnoreInterval = 1,
-        ForceReliable = 2,
+        ForceReliable = 2
     }
 
     internal static class SyncTypeWriteFlagExtensions

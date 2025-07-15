@@ -4,24 +4,21 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Disks
     {
-
-
         /// <summary>
         /// Writes specified text to a file path.
         /// </summary>
-        /// <param name="text"></param>
-        /// <param name="path"></param>
-        /// <param name="formatPath">True to format the path to the current platform.</param>
+        /// <param name = "text"></param>
+        /// <param name = "path"></param>
+        /// <param name = "formatPath">True to format the path to the current platform.</param>
         public static void WriteToFile(string text, string path, bool formatPath = true)
         {
-            //If to format the path for the platform.
+            // If to format the path for the platform.
             if (formatPath)
                 path = FormatPlatformPath(path);
 
-            //Path came back or was passed in as an empty string.
+            // Path came back or was passed in as an empty string.
             if (path == string.Empty)
             {
                 Debug.LogError("Path cannot be null.");
@@ -30,9 +27,9 @@ namespace GameKit.Dependencies.Utilities
 
             try
             {
-                //Get directory path.
+                // Get directory path.
                 string directory = Path.GetDirectoryName(path);
-                //If directory doesn't exist try to create it.
+                // If directory doesn't exist try to create it.
                 if (!Directory.Exists(directory))
                     Directory.CreateDirectory(directory);
 
@@ -40,7 +37,9 @@ namespace GameKit.Dependencies.Utilities
                 using (FileStream fs = new(path, FileMode.Create))
                 {
                     using (StreamWriter writer = new(fs))
+                    {
                         writer.Write(text);
+                    }
                 }
             }
             catch (Exception ex)
@@ -58,7 +57,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Formats a file path to the current platform.
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name = "path"></param>
         /// <returns></returns>
         public static string FormatPlatformPath(string path)
         {
@@ -97,6 +96,4 @@ namespace GameKit.Dependencies.Utilities
             return convertedPath;
         }
     }
-
-
 }

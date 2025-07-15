@@ -17,7 +17,6 @@ using Mirror;
 using MirrorNetworkTransformBase = Mirror.NetworkTransformBase;
 using MirrorNetworkTransformChild = Mirror.NetworkTransformChild;
 using MirrorNetworkAnimator = Mirror.NetworkAnimator;
-
 #if FGG_ASSETS
 using FlexNetworkAnimator = FirstGearGames.Mirrors.Assets.FlexNetworkAnimators.FlexNetworkAnimator;
 using FlexNetworkTransformBase = FirstGearGames.Mirrors.Assets.FlexNetworkTransforms.FlexNetworkTransformBase;
@@ -30,7 +29,6 @@ using FlexSceneChecker = FirstGearGames.FlexSceneManager.FlexSceneChecker;
 
 namespace FishNet.Upgrading.Mirror.Editing
 {
-
     /* IMPORTANT IMPORTANT IMPORTANT IMPORTANT 
     * If you receive errors about missing Mirror components,
     * such as NetworkIdentity, then remove MIRROR and any other
@@ -88,10 +86,7 @@ namespace FishNet.Upgrading.Mirror.Editing
         /// True if initialized.
         /// </summary>
         private bool _initialized;
-
-
         private const string OBJECT_NAME_PREFIX = "MirrorUpgrade";
-
 
         private void Awake()
         {
@@ -139,7 +134,7 @@ namespace FishNet.Upgrading.Mirror.Editing
 
             GameObject go = _gameObjects[_goIndex];
             _goIndex++;
-            //Go went empty?
+            // Go went empty?
             if (go == null)
                 return;
 
@@ -185,14 +180,13 @@ namespace FishNet.Upgrading.Mirror.Editing
                 _goIndex--;
                 return;
             }
-            //NetworkIdentity must be done last.
+            // NetworkIdentity must be done last.
             if (IterateNetworkIdentity(go))
             {
                 _changed = true;
                 _replacedNetworkIdentities++;
             }
         }
-
 
         /// <summary>
         /// Finds Condition scripts to be used with NetworkObserver.
@@ -205,7 +199,7 @@ namespace FishNet.Upgrading.Mirror.Editing
             if (_sceneCondition == null)
             {
                 scriptableObjects = Finding.GetScriptableObjects<SceneCondition>(true, true);
-                //Use the first found scene condition, there should be only one.
+                // Use the first found scene condition, there should be only one.
                 if (scriptableObjects.Count > 0)
                     _sceneCondition = (SceneCondition)scriptableObjects[0];
 
@@ -232,7 +226,6 @@ namespace FishNet.Upgrading.Mirror.Editing
                     Debug.LogError("DistanceCondition could not be found. Upgrading proximity checker components will not function.");
             }
         }
-
 
         private bool IterateNetworkTransform(GameObject go)
         {
@@ -263,7 +256,7 @@ namespace FishNet.Upgrading.Mirror.Editing
                     target.gameObject.AddComponent<FNNetworkTransform>();
             }
 
-            //Fall through, nothing was replaced.
+            // Fall through, nothing was replaced.
             return false;
         }
 
@@ -295,7 +288,6 @@ namespace FishNet.Upgrading.Mirror.Editing
 
             return false;
         }
-
 
         private bool IterateSceneChecker(GameObject go)
         {
@@ -329,7 +321,7 @@ namespace FishNet.Upgrading.Mirror.Editing
                     }
                 }
 
-                //If not able to find scene condition then add one.
+                // If not able to find scene condition then add one.
                 if (!conditionFound)
                     networkObserver.ObserverConditionsInternal.Add(_sceneCondition);
             }
@@ -337,13 +329,11 @@ namespace FishNet.Upgrading.Mirror.Editing
             return false;
         }
 
-
-
         private bool IterateProximityChecker(GameObject go)
         {
-           if (_distanceCondition == null)
+            if (_distanceCondition == null)
                 return false;
-            
+
 #if FGG_PROJECTS
             if (go.TryGetComponent(out FastProximityChecker fpc))
             {
@@ -371,14 +361,13 @@ namespace FishNet.Upgrading.Mirror.Editing
                     }
                 }
 
-                //If not able to find scene condition then add one.
+                // If not able to find scene condition then add one.
                 if (!conditionFound)
                     networkObserver.ObserverConditionsInternal.Add(_distanceCondition);
             }
 
             return false;
         }
-
 
         private bool IterateNetworkIdentity(GameObject go)
         {
@@ -387,7 +376,7 @@ namespace FishNet.Upgrading.Mirror.Editing
                 EditorUtility.SetDirty(go);
                 DestroyImmediate(netIdentity, true);
 
-                //Add nob if doesn't exist.
+                // Add nob if doesn't exist.
                 if (!go.TryGetComponent<NetworkObject>(out _))
                     go.AddComponent<NetworkObject>();
 
@@ -397,14 +386,11 @@ namespace FishNet.Upgrading.Mirror.Editing
             return false;
         }
 
-
         private static void PrintSaveWarning()
         {
             Debug.LogWarning("You must File -> Save for changes to complete.");
         }
     }
-
-
 }
 #endif
 #endif

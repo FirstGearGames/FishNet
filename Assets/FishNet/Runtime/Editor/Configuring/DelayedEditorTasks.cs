@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR
 using System;
 using FishNet.Configuring;
+using FishNet.Configuring.EditorCloning;
 using FishNet.Managing;
 using UnityEditor;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace FishNet.Editing
 
         static DelayedEditorTasks()
         {
-            if (Configuration.IsMultiplayerClone())
+            if (CloneChecker.IsMultiplayerClone(out _))
                 return;
 
             const string startupCheckString = "FishNetDelayedEditorTasks";
@@ -39,7 +40,7 @@ namespace FishNet.Editing
 
             LogFeedbackLink();
 
-            //First time use, no other actions should be done.
+            // First time use, no other actions should be done.
             if (FishNetGettingStartedEditor.ShowGettingStarted())
                 return;
 
@@ -48,10 +49,10 @@ namespace FishNet.Editing
 
         private static void LogFeedbackLink()
         {
-            //Only log the link when editor opens.
+            // Only log the link when editor opens.
             if (Time.realtimeSinceStartup < 10f)
             {
-                string msg = $"Thank you for using Fish-Networking! If you have any feedback -- be suggestions, documentation, or performance related, let us know through our anonymous Google feedback form!{Environment.NewLine}" + @"<color=#67d419>https://forms.gle/1g13VY4KKMnEqpkp6</color>";
+                string msg = $"Thank you for using Fish-Networking! If you have any feedback -- be suggestions, documentation, or performance related, let us know through our anonymous Google feedback form!{Environment.NewLine}" + @"<color=#67d419>https:// forms.gle/1g13VY4KKMnEqpkp6</color>";
                 Debug.Log(msg);
             }
         }

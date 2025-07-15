@@ -3,9 +3,9 @@ using FishNet.Utility;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(UtilityConstants.GENERATED_ASSEMBLY_NAME)]
+
 namespace FishNet.Managing.Scened
 {
-
     /// <summary>
     /// Data generated when unloading a scene.
     /// </summary>
@@ -34,8 +34,8 @@ namespace FishNet.Managing.Scened
         /// </summary>
         [System.NonSerialized]
         public readonly bool AsServer;
-
         public UnloadQueueData() { }
+
         internal UnloadQueueData(SceneScopeType scopeType, NetworkConnection[] conns, SceneUnloadData sceneUnloadData, string[] globalScenes, bool asServer)
         {
             ScopeType = scopeType;
@@ -44,10 +44,5 @@ namespace FishNet.Managing.Scened
             GlobalScenes = globalScenes;
             AsServer = asServer;
         }
-
-
     }
-
-
-
 }

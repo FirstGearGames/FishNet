@@ -11,13 +11,12 @@ namespace FishNet.Editing
     {
         private Texture2D _fishnetLogo, _reviewButtonBg, _reviewButtonBgHover;
         private GUIStyle _labelStyle, _reviewButtonStyle;
-
         private const string SHOWED_GETTING_STARTED = "ShowedFishNetGettingStarted";
 
-        [MenuItem("Tools/Fish-Networking/Getting Started",isValidateFunction: false, 9999)]
+        [MenuItem("Tools/Fish-Networking/Getting Started", isValidateFunction: false, 9999)]
         public static void GettingStartedMenu()
         {
-            FishNetGettingStartedEditor window = (FishNetGettingStartedEditor)EditorWindow.GetWindow(typeof(FishNetGettingStartedEditor));
+            FishNetGettingStartedEditor window = (FishNetGettingStartedEditor)GetWindow(typeof(FishNetGettingStartedEditor));
             window.position = new(0, 0, 320, 355);
             Rect mainPos;
             mainPos = EditorGUIUtility.GetMainWindowPosition();
@@ -32,7 +31,7 @@ namespace FishNet.Editing
             window._labelStyle = new("label");
             window._labelStyle.fontSize = 24;
             window._labelStyle.wordWrap = true;
-            //window.labelStyle.alignment = TextAnchor.MiddleCenter;
+            // window.labelStyle.alignment = TextAnchor.MiddleCenter;
             window._labelStyle.normal.textColor = new Color32(74, 195, 255, 255);
 
             window._reviewButtonBg = MakeBackgroundTexture(1, 1, new Color32(52, 111, 255, 255));
@@ -67,7 +66,7 @@ namespace FishNet.Editing
 
         private void OnGUI()
         {
-            GUILayout.Box(_fishnetLogo, GUILayout.Width(this.position.width), GUILayout.Height(128));
+            GUILayout.Box(_fishnetLogo, GUILayout.Width(position.width), GUILayout.Height(128));
             GUILayout.Space(20);
 
             GUILayout.Label("Have you considered leaving us a review?", _labelStyle, GUILayout.Width(280));
@@ -76,43 +75,43 @@ namespace FishNet.Editing
 
             if (GUILayout.Button("Leave us a review!", _reviewButtonStyle))
             {
-                Application.OpenURL("https://assetstore.unity.com/packages/tools/network/fish-net-networking-evolved-207815");
+                Application.OpenURL("https:// assetstore.unity.com/packages/tools/network/fish-net-networking-evolved-207815");
             }
 
             GUILayout.Space(20);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Documentation", GUILayout.Width(this.position.width * 0.485f)))
+            if (GUILayout.Button("Documentation", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https://fish-networking.gitbook.io/docs/");
+                Application.OpenURL("https:// fish-networking.gitbook.io/docs/");
             }
 
-            if (GUILayout.Button("Discord", GUILayout.Width(this.position.width * 0.485f)))
+            if (GUILayout.Button("Discord", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https://discord.gg/Ta9HgDh4Hj");
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("FishNet Pro", GUILayout.Width(this.position.width * 0.485f)))
-            {
-                Application.OpenURL("https://fish-networking.gitbook.io/docs/master/pro");
-            }
-
-            if (GUILayout.Button("Github", GUILayout.Width(this.position.width * 0.485f)))
-            {
-                Application.OpenURL("https://github.com/FirstGearGames/FishNet");
+                Application.OpenURL("https:// discord.gg/Ta9HgDh4Hj");
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Pro Downloads", GUILayout.Width(this.position.width * 0.485f)))
+            if (GUILayout.Button("FishNet Pro", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https://www.firstgeargames.com/");
+                Application.OpenURL("https:// fish-networking.gitbook.io/docs/master/pro");
             }
 
-            //if (GUILayout.Button("Examples", GUILayout.Width(this.position.width * 0.485f)))
-            //{
+            if (GUILayout.Button("Github", GUILayout.Width(position.width * 0.485f)))
+            {
+                Application.OpenURL("https:// github.com/FirstGearGames/FishNet");
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Pro Downloads", GUILayout.Width(position.width * 0.485f)))
+            {
+                Application.OpenURL("https:// www.firstgeargames.com/");
+            }
+
+            // if (GUILayout.Button("Examples", GUILayout.Width(this.position.width * 0.485f)))
+            // {
             //    Application.OpenURL("https://fish-networking.gitbook.io/docs/manual/tutorials/example-projects");
             //}
             EditorGUILayout.EndHorizontal();
@@ -133,7 +132,6 @@ namespace FishNet.Editing
             backgroundTexture.Apply();
             return backgroundTexture;
         }
-        
     }
 }
 #endif

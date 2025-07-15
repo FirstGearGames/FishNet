@@ -63,30 +63,27 @@ namespace LiteNetLib
             }
         }
 
-        //Header
+        // Header
         public PacketProperty Property
         {
             get => (PacketProperty)(RawData[0] & 0x1F);
             set => RawData[0] = (byte)((RawData[0] & 0xE0) | (byte)value);
         }
-
         public byte ConnectionNumber
         {
             get => (byte)((RawData[0] & 0x60) >> 5);
-            set => RawData[0] = (byte) ((RawData[0] & 0x9F) | (value << 5));
+            set => RawData[0] = (byte)((RawData[0] & 0x9F) | (value << 5));
         }
-
         public ushort Sequence
         {
             get => BitConverter.ToUInt16(RawData, 1);
             set => FastBitConverter.GetBytes(RawData, 1, value);
         }
-
         public bool IsFragmented => (RawData[0] & 0x80) != 0;
 
         public void MarkFragmented()
         {
-            RawData[0] |= 0x80; //set first bit
+            RawData[0] |= 0x80; // set first bit
         }
 
         public byte ChannelId
@@ -94,33 +91,30 @@ namespace LiteNetLib
             get => RawData[3];
             set => RawData[3] = value;
         }
-
         public ushort FragmentId
         {
             get => BitConverter.ToUInt16(RawData, 4);
             set => FastBitConverter.GetBytes(RawData, 4, value);
         }
-
         public ushort FragmentPart
         {
             get => BitConverter.ToUInt16(RawData, 6);
             set => FastBitConverter.GetBytes(RawData, 6, value);
         }
-
         public ushort FragmentsTotal
         {
             get => BitConverter.ToUInt16(RawData, 8);
             set => FastBitConverter.GetBytes(RawData, 8, value);
         }
 
-        //Data
+        // Data
         public byte[] RawData;
         public int Size;
 
-        //Delivery
+        // Delivery
         public object UserData;
 
-        //Pool node
+        // Pool node
         public NetPacket Next;
 
         public NetPacket(int size)
@@ -157,8 +151,8 @@ namespace LiteNetLib
             return Size >= headerSize && (!fragmented || Size >= headerSize + NetConstants.FragmentHeaderSize);
         }
 
-        #if LITENETLIB_SPANS || NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
-        public static implicit operator Span<byte>(NetPacket p) => new Span<byte>(p.RawData, 0, p.Size);
-        #endif
+#if LITENETLIB_SPANS || NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
+        public static implicit operator Span<byte>(NetPacket p) => new(p.RawData, 0, p.Size);
+#endif
     }
 }

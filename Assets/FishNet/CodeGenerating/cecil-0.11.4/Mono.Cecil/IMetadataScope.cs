@@ -8,16 +8,18 @@
 // Licensed under the MIT/X11 license.
 //
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public enum MetadataScopeType
+    {
+        AssemblyNameReference,
+        ModuleReference,
+        ModuleDefinition
+    }
 
-	public enum MetadataScopeType {
-		AssemblyNameReference,
-		ModuleReference,
-		ModuleDefinition,
-	}
-
-	public interface IMetadataScope : IMetadataTokenProvider {
-		MetadataScopeType MetadataScopeType { get; }
-		string Name { get; set; }
-	}
+    public interface IMetadataScope : IMetadataTokenProvider
+    {
+        MetadataScopeType MetadataScopeType { get; }
+        string Name { get; set; }
+    }
 }

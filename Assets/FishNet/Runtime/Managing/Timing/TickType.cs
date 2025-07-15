@@ -6,5 +6,4 @@
         LocalTick = 1,
         LastPacketTick = 2
     }
-
 }

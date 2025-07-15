@@ -1,8 +1,5 @@
-﻿
-namespace GameKit.Dependencies.Utilities.Types
+﻿namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     [System.Serializable]
     public struct UIntRange
     {
@@ -11,6 +8,7 @@ namespace GameKit.Dependencies.Utilities.Types
             Minimum = minimum;
             Maximum = maximum;
         }
+
         /// <summary>
         /// Minimum range.
         /// </summary>
@@ -28,6 +26,7 @@ namespace GameKit.Dependencies.Utilities.Types
         {
             return UInts.RandomExclusiveRange(Minimum, Maximum);
         }
+
         /// <summary>
         /// Returns an inclusive random value between Minimum and Maximum.
         /// </summary>
@@ -42,8 +41,6 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// True if value is within range of Minimum and Maximum.
         /// </summary>
-        public bool InRange(uint value) => (value >= Minimum) && (value <= Maximum);
+        public bool InRange(uint value) => value >= Minimum && value <= Maximum;
     }
-
-
 }

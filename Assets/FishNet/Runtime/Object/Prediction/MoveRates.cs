@@ -26,7 +26,6 @@ namespace FishNet.Object.Prediction
         /// Time remaining until the move is complete.
         /// </summary>
         public float TimeRemaining;
-
         /// <summary>
         /// Value used when data is not set.
         /// </summary>
@@ -35,7 +34,6 @@ namespace FishNet.Object.Prediction
         /// Value used when move rate should be instant.
         /// </summary>
         public const float INSTANT_VALUE = float.PositiveInfinity;
-
         /// <summary>
         /// True if any data is set. Once set, this will remain true until ResetState is called.
         /// </summary>
@@ -81,28 +79,27 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// True if a positional move rate is set.
         /// </summary>
-        public bool IsPositionSet => (Position != UNSET_VALUE);
+        public bool IsPositionSet => Position != UNSET_VALUE;
         /// <summary>
         /// True if rotation move rate is set.
         /// </summary>
-        public bool IsRotationSet => (Rotation != UNSET_VALUE);
+        public bool IsRotationSet => Rotation != UNSET_VALUE;
         /// <summary>
         /// True if a scale move rate is set.
         /// </summary>
-        public bool IsScaleSet => (Scale != UNSET_VALUE);
-
+        public bool IsScaleSet => Scale != UNSET_VALUE;
         /// <summary>
         /// True if position move rate should be instant.
         /// </summary>
-        public bool IsPositionInstantValue => (Position == INSTANT_VALUE);
+        public bool IsPositionInstantValue => Position == INSTANT_VALUE;
         /// <summary>
         /// True if rotation move rate should be instant.
         /// </summary>
-        public bool IsRotationInstantValue => (Rotation == INSTANT_VALUE);
+        public bool IsRotationInstantValue => Rotation == INSTANT_VALUE;
         /// <summary>
         /// True if scale move rate should be instant.
         /// </summary>
-        public bool IsScaleInstantValue => (Scale == INSTANT_VALUE);
+        public bool IsScaleInstantValue => Scale == INSTANT_VALUE;
 
         /// <summary>
         /// Sets all rates to instant.
@@ -154,7 +151,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void ResetState()
         {
-            Update(MoveRates.UNSET_VALUE, MoveRates.UNSET_VALUE, MoveRates.UNSET_VALUE, timeRemaining: 0f);
+            Update(UNSET_VALUE, UNSET_VALUE, UNSET_VALUE, timeRemaining: 0f);
 
             IsValid = false;
         }
@@ -208,7 +205,7 @@ namespace FishNet.Object.Prediction
 
             /* Position. */
             rate = toPosition.GetRate(fromPosition, duration, out float distance);
-            //Basic teleport check.
+            // Basic teleport check.
             if (teleportThreshold != UNSET_VALUE && distance > teleportThreshold)
                 return new(INSTANT_VALUE, INSTANT_VALUE, INSTANT_VALUE, duration);
 
@@ -266,7 +263,7 @@ namespace FishNet.Object.Prediction
             Move(movingTransform, TransformPropertiesFlag.Everything, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta, useWorldSpace);
             TimeRemaining -= delta;
         }
-        
+
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
@@ -296,19 +293,27 @@ namespace FishNet.Object.Prediction
                 if (containsPosition)
                 {
                     if (posRate == INSTANT_VALUE)
+                    {
                         t.position = posGoal;
+                    }
                     else if (posRate == UNSET_VALUE) { }
                     else
+                    {
                         t.position = Vector3.MoveTowards(t.position, posGoal, posRate * delta);
+                    }
                 }
 
                 if (containsRotation)
                 {
                     if (rotRate == INSTANT_VALUE)
+                    {
                         t.rotation = rotGoal;
+                    }
                     else if (rotRate == UNSET_VALUE) { }
                     else
+                    {
                         t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, rotRate * delta);
+                    }
                 }
             }
             //Local space.
@@ -317,19 +322,27 @@ namespace FishNet.Object.Prediction
                 if (containsPosition)
                 {
                     if (posRate == INSTANT_VALUE)
+                    {
                         t.localPosition = posGoal;
+                    }
                     else if (posRate == UNSET_VALUE) { }
                     else
+                    {
                         t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, posRate * delta);
+                    }
                 }
 
                 if (containsRotation)
                 {
                     if (rotRate == INSTANT_VALUE)
+                    {
                         t.localRotation = rotGoal;
+                    }
                     else if (rotRate == UNSET_VALUE) { }
                     else
+                    {
                         t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, rotRate * delta);
+                    }
                 }
             }
 
@@ -337,10 +350,14 @@ namespace FishNet.Object.Prediction
             if (containsScale)
             {
                 if (scaleRate == INSTANT_VALUE)
+                {
                     t.localScale = scaleGoal;
+                }
                 else if (scaleRate == UNSET_VALUE) { }
                 else
+                {
                     t.localScale = Vector3.MoveTowards(t.localScale, scaleGoal, scaleRate * delta);
+                }
             }
         }
     }
@@ -355,7 +372,6 @@ namespace FishNet.Object.Prediction
         /// Container of all move rate information.
         /// </summary>
         private MoveRates _moveRates = new();
-
         /// <summary>
         /// Rate at which to move Position.
         /// </summary>
@@ -372,7 +388,6 @@ namespace FishNet.Object.Prediction
         /// Time remaining until the move is complete.
         /// </summary>
         public float TimeRemaining => _moveRates.TimeRemaining;
-
         /// <summary>
         /// True if position move rate should be instant.
         /// </summary>
@@ -385,17 +400,14 @@ namespace FishNet.Object.Prediction
         /// True if scale move rate should be instant.
         /// </summary>
         public bool IsScaleInstantValue => _moveRates.IsScaleInstantValue;
-
         /// <summary>
         /// True if any data is set.
         /// </summary>
         public bool IsValid => _moveRates.IsValid;
-
-        public MoveRatesCls(float value) => _moveRates = new MoveRates(value);
-        public MoveRatesCls(float position, float rotation) => _moveRates = new MoveRates(position, rotation);
-        public MoveRatesCls(float position, float rotation, float scale) => _moveRates = new MoveRates(position, rotation, scale);
-        public MoveRatesCls(float position, float rotation, float scale, float timeRemaining) => _moveRates = new MoveRates(position, rotation, scale, timeRemaining);
-
+        public MoveRatesCls(float value) => _moveRates = new(value);
+        public MoveRatesCls(float position, float rotation) => _moveRates = new(position, rotation);
+        public MoveRatesCls(float position, float rotation, float scale) => _moveRates = new(position, rotation, scale);
+        public MoveRatesCls(float position, float rotation, float scale, float timeRemaining) => _moveRates = new(position, rotation, scale, timeRemaining);
         public MoveRatesCls() => _moveRates.ResetState();
 
         /// <summary>
@@ -422,19 +434,18 @@ namespace FishNet.Object.Prediction
         /// Updaes values.
         /// </summary>
         public void Update(MoveRatesCls mr) => _moveRates.Update(mr.Position, mr.Rotation, mr.Scale);
-        
+
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
         public void Move(Transform movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, delta, useWorldSpace);
-        
+
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
         public void Move(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, movedProperties, delta, useWorldSpace);
 
         public void ResetState() => _moveRates.ResetState();
-
         public void InitializeState() { }
     }
 }

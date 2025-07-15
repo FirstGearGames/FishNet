@@ -20,14 +20,11 @@ namespace FishNet.Transporting.Yak.Client
         private Queue<LocalPacket> _incoming = new();
         #endregion
 
-        
-
         /// <summary>
         /// Starts the client connection.
         /// </summary>
         internal bool StartConnection()
         {
-            
             return true;
         }
 
@@ -51,7 +48,5 @@ namespace FishNet.Transporting.Yak.Client
         #region Local server.
         
         #endregion
-
-
     }
 }

@@ -5,7 +5,6 @@ using UnityEditor;
 using UnityEngine;
 using LayoutTools = GameKit.Dependencies.Utilities.EditorGuiLayoutTools;
 
-
 namespace FishNet.Component.Transforming.Editing
 {
     [CustomEditor(typeof(NetworkTransform), true)]
@@ -23,31 +22,34 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _sendToOwner;
         private SerializedProperty _interval;
         private SerializedProperty _synchronizePosition;
+        private SerializedProperty _positionSensitivity;
         private SerializedProperty _positionSnapping;
         private SerializedProperty _synchronizeRotation;
         private SerializedProperty _rotationSnapping;
         private SerializedProperty _synchronizeScale;
+        private SerializedProperty _scaleSensitivity;
         private SerializedProperty _scaleSnapping;
-
 
         protected virtual void OnEnable()
         {
             _componentConfiguration = serializedObject.FindProperty(nameof(_componentConfiguration));
-            _synchronizeParent = serializedObject.FindProperty("_synchronizeParent");
-            _packing = serializedObject.FindProperty("_packing");
-            _interpolation = serializedObject.FindProperty("_interpolation");
-            _extrapolation = serializedObject.FindProperty("_extrapolation");
-            _enableTeleport = serializedObject.FindProperty("_enableTeleport");
-            _teleportThreshold = serializedObject.FindProperty("_teleportThreshold");
-            _clientAuthoritative = serializedObject.FindProperty("_clientAuthoritative");
-            _sendToOwner = serializedObject.FindProperty("_sendToOwner");
+            _synchronizeParent = serializedObject.FindProperty(nameof(_synchronizeParent));
+            _packing = serializedObject.FindProperty(nameof(_packing));
+            _interpolation = serializedObject.FindProperty(nameof(_interpolation));
+            _extrapolation = serializedObject.FindProperty(nameof(_extrapolation));
+            _enableTeleport = serializedObject.FindProperty(nameof(_enableTeleport));
+            _teleportThreshold = serializedObject.FindProperty(nameof(_teleportThreshold));
+            _clientAuthoritative = serializedObject.FindProperty(nameof(_clientAuthoritative));
+            _sendToOwner = serializedObject.FindProperty(nameof(_sendToOwner));
             _interval = serializedObject.FindProperty(nameof(_interval));
-            _synchronizePosition = serializedObject.FindProperty("_synchronizePosition");
-            _positionSnapping = serializedObject.FindProperty("_positionSnapping");
-            _synchronizeRotation = serializedObject.FindProperty("_synchronizeRotation");
-            _rotationSnapping = serializedObject.FindProperty("_rotationSnapping");
-            _synchronizeScale = serializedObject.FindProperty("_synchronizeScale");
-            _scaleSnapping = serializedObject.FindProperty("_scaleSnapping");
+            _synchronizePosition = serializedObject.FindProperty(nameof(_synchronizePosition));
+            _positionSensitivity = serializedObject.FindProperty(nameof(_positionSensitivity));
+            _positionSnapping = serializedObject.FindProperty(nameof(_positionSnapping));
+            _synchronizeRotation = serializedObject.FindProperty(nameof(_synchronizeRotation));
+            _rotationSnapping = serializedObject.FindProperty(nameof(_rotationSnapping));
+            _synchronizeScale = serializedObject.FindProperty(nameof(_synchronizeScale));
+            _scaleSensitivity = serializedObject.FindProperty(nameof(_scaleSensitivity));
+            _scaleSnapping = serializedObject.FindProperty(nameof(_scaleSnapping));
         }
 
         public override void OnInspectorGUI()
@@ -113,6 +115,7 @@ namespace FishNet.Component.Transforming.Editing
             {
                 EditorGUI.indentLevel += 2;
                 EditorGUILayout.PropertyField(_positionSnapping);
+                EditorGUILayout.PropertyField(_positionSensitivity);
                 EditorGUI.indentLevel -= 2;
             }
 
@@ -131,6 +134,7 @@ namespace FishNet.Component.Transforming.Editing
             {
                 EditorGUI.indentLevel += 2;
                 EditorGUILayout.PropertyField(_scaleSnapping);
+                EditorGUILayout.PropertyField(_scaleSensitivity);
                 EditorGUI.indentLevel -= 2;
             }
 

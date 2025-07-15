@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace FishNet.Object.Prediction
 {
-    [System.Flags]
+    [Flags]
     public enum ReplicateState : byte
     {
         /// <summary>
@@ -19,18 +19,18 @@ namespace FishNet.Object.Prediction
         /// Server and clients use this flag.
         /// Flag will be set if data tick has run outside a reconcile, such as from user code within OnTick.
         /// </summary>
-        Ticked = (1 << 0), //1
+        Ticked = 1 << 0, // 1
         /// <summary>
         /// Only client will use this flag.
         /// Flag is set if data is being run during a reconcile.
         /// </summary>
-        Replayed = (1 << 1), //2
+        Replayed = 1 << 1, // 2
         /// <summary>
         /// Server and client use this flag.
         /// Data has been created by the server or client.
         /// This indicates that data is known and was intentionally sent.
         /// </summary>
-        Created = (1 << 2), //4
+        Created = 1 << 2 // 4
     }
 
     public static class ReplicateStateExtensions
@@ -39,7 +39,7 @@ namespace FishNet.Object.Prediction
         /// Returns if value is valid.
         /// This should never be false.
         /// </summary>
-        public static bool IsValid(this ReplicateState value) => (value != ReplicateState.Invalid);
+        public static bool IsValid(this ReplicateState value) => value != ReplicateState.Invalid;
 
         /// <summary>
         /// Returns if value contains ReplicateState.Ticked.
@@ -62,22 +62,22 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns if value is (ReplicateState.Ticked | ReplicateState.Created).
         /// </summary>
-        public static bool IsTickedCreated(this ReplicateState value) => (value == (ReplicateState.Ticked | ReplicateState.Created));
+        public static bool IsTickedCreated(this ReplicateState value) => value == (ReplicateState.Ticked | ReplicateState.Created);
 
         /// <summary>
         /// Returns if value equals ReplicateState.Ticked.
         /// </summary>
-        public static bool IsTickedNonCreated(this ReplicateState value) => (value == ReplicateState.Ticked);
+        public static bool IsTickedNonCreated(this ReplicateState value) => value == ReplicateState.Ticked;
 
         /// <summary>
         /// Returns if value is (ReplicateState.Replayed | ReplicateState.Ticked | ReplicateState.Created).
         /// </summary>
-        public static bool IsReplayedCreated(this ReplicateState value) => (value == (ReplicateState.Replayed | ReplicateState.Created));
+        public static bool IsReplayedCreated(this ReplicateState value) => value == (ReplicateState.Replayed | ReplicateState.Created);
 
         /// <summary>
         /// Returns if value is ReplicateState.Replayed without ReplicateState.Ticked nor ReplicateState.Created.
         /// </summary>
-        public static bool IsFuture(this ReplicateState value) => (value == ReplicateState.Replayed);
+        public static bool IsFuture(this ReplicateState value) => value == ReplicateState.Replayed;
 
         [Obsolete("Use ContainsCreated.")]
         public static bool IsCreated(this ReplicateState value) => value.ContainsCreated();
@@ -93,9 +93,9 @@ using FishNet.Utility;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
+
 namespace FishNet.Object
 {
-
     public enum ReplicateState : byte
     {
         /// <summary>
@@ -150,6 +150,7 @@ namespace FishNet.Object
         /// This should never be false.
         /// </summary>
         public static bool IsValid(this ReplicateState value) => (value != ReplicateState.Invalid);
+
         /// <summary>
         /// Returns if value is replayed.
         /// </summary>
@@ -160,6 +161,7 @@ namespace FishNet.Object
         /// Returns if value is user created.
         /// </summary>
         public static bool IsCreated(this ReplicateState value) => (value == ReplicateState.CurrentCreated || value == ReplicateState.ReplayedCreated);
+
         /// <summary>
         /// Returns if value is predicted.
         /// </summary>

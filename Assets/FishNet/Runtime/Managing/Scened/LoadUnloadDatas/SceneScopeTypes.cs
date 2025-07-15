@@ -2,7 +2,7 @@
 {
     /// <summary>
     /// Type of scopes for a scene load or unload.
-    /// </summary> 
+    /// </summary>
     public enum SceneScopeType : byte
     {
         /// <summary>
@@ -14,5 +14,4 @@
         /// </summary>
         Connections = 1
     }
-
 }

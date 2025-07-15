@@ -7,15 +7,14 @@ using System.Threading.Tasks;
 
 namespace FishNet.Transporting.Tugboat
 {
-
     public abstract class CommonSocket
     {
-
         #region Internal.
         /// <summary>
         /// Current ConnectionState.
         /// </summary>
         private LocalConnectionState _connectionState = LocalConnectionState.Stopped;
+
         /// <summary>
         /// Returns the current ConnectionState.
         /// </summary>
@@ -24,13 +23,14 @@ namespace FishNet.Transporting.Tugboat
         {
             return _connectionState;
         }
+
         /// <summary>
         /// Sets a new connection state.
         /// </summary>
-        /// <param name="connectionState"></param>
+        /// <param name = "connectionState"></param>
         protected void SetConnectionState(LocalConnectionState connectionState, bool asServer)
         {
-            //If state hasn't changed.
+            // If state hasn't changed.
             if (connectionState == _connectionState)
                 return;
 
@@ -41,7 +41,7 @@ namespace FishNet.Transporting.Tugboat
                 Transport.HandleClientConnectionState(new(connectionState, Transport.Index));
         }
         #endregion
-        
+
         #region Internal.
         /// <summary>
         /// NetManager for this socket.
@@ -59,7 +59,7 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         protected Transport Transport;
         #endregion
-        
+
         #region Private.
         /// <summary>
         /// Locks the NetManager to stop it.
@@ -75,7 +75,7 @@ namespace FishNet.Transporting.Tugboat
             if (GetConnectionState() != LocalConnectionState.Started)
                 return;
 
-            //ConnectionId isn't used from client to server.
+            // ConnectionId isn't used from client to server.
             Packet outgoing = new(connectionId, segment, channelId, mtu);
             queue.Enqueue(outgoing);
         }
@@ -88,7 +88,7 @@ namespace FishNet.Transporting.Tugboat
             if (netManager == null)
                 return;
 
-            timeout = (timeout == 0) ? int.MaxValue : Math.Min(int.MaxValue, (timeout * 1000));
+            timeout = timeout == 0 ? int.MaxValue : Math.Min(int.MaxValue, timeout * 1000);
             netManager.DisconnectTimeout = timeout;
         }
 
@@ -103,7 +103,7 @@ namespace FishNet.Transporting.Tugboat
         /// <summary>
         /// Clears a queue using Packet type.
         /// </summary>
-        /// <param name="queue"></param>
+        /// <param name = "queue"></param>
         internal void ClearPacketQueue(ref ConcurrentQueue<Packet> queue)
         {
             while (queue.TryDequeue(out Packet p))
@@ -113,7 +113,7 @@ namespace FishNet.Transporting.Tugboat
         /// <summary>
         /// Clears a queue using Packet type.
         /// </summary>
-        /// <param name="queue"></param>
+        /// <param name = "queue"></param>
         internal void ClearPacketQueue(ref Queue<Packet> queue)
         {
             int count = queue.Count;
@@ -129,17 +129,16 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         internal virtual void Listener_NetworkReceiveEvent(ConcurrentQueue<Packet> queue, NetPeer fromPeer, NetPacketReader reader, DeliveryMethod deliveryMethod, int mtu)
         {
-            //Set buffer.
+            // Set buffer.
             int dataLen = reader.AvailableBytes;
-            //Prefer to max out returned array to mtu to reduce chance of resizing.
+            // Prefer to max out returned array to mtu to reduce chance of resizing.
             int arraySize = Math.Max(dataLen, mtu);
             byte[] data = ByteArrayPool.Retrieve(arraySize);
             reader.GetBytes(data, dataLen);
             //Id.
             int id = fromPeer.Id;
             //Channel.
-            byte channel = (deliveryMethod == DeliveryMethod.Unreliable) ?
-                (byte)Channel.Unreliable : (byte)Channel.Reliable;
+            byte channel = deliveryMethod == DeliveryMethod.Unreliable ? (byte)Channel.Unreliable : (byte)Channel.Reliable;
             //Add to packets.
             Packet packet = new(id, data, dataLen, channel);
             queue.Enqueue(packet);
@@ -210,7 +209,5 @@ namespace FishNet.Transporting.Tugboat
 
             return (ushort)port;
         }
-
     }
-
 }

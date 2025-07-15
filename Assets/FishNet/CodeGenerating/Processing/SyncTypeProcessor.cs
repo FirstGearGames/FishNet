@@ -18,7 +18,6 @@ namespace FishNet.CodeGenerating.Processing
         #region Reflection references.
         private TypeReference _syncBase_TypeRef;
         private TypeReference _syncVar_TypeRef;
-
 #pragma warning disable CS0618 // Type or member is obsolete
         private string _syncVarAttribute_FullName = typeof(SyncVarAttribute).FullName;
         private string _syncObjectAttribute_FullName = typeof(SyncObjectAttribute).FullName;
@@ -34,10 +33,10 @@ namespace FishNet.CodeGenerating.Processing
         public override bool ImportReferences()
         {
             System.Type svType = typeof(SyncVar<>);
-            _syncVar_TypeRef = base.ImportReference(svType);
+            _syncVar_TypeRef = ImportReference(svType);
 
             System.Type syncBaseType = typeof(SyncBase);
-            _syncBase_TypeRef = base.ImportReference(syncBaseType).Resolve();
+            _syncBase_TypeRef = ImportReference(syncBaseType).Resolve();
 
             return true;
         }
@@ -45,7 +44,7 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Processes SyncVars and Objects.
         /// </summary>
-        /// <param name="syncTypeHash">Number of SyncTypes implemented in this typeDef and those inherited of.</param>
+        /// <param name = "syncTypeHash">Number of SyncTypes implemented in this typeDef and those inherited of.</param>
         internal bool ProcessLocal(TypeDefinition typeDef)
         {
             bool modified = false;
@@ -53,37 +52,37 @@ namespace FishNet.CodeGenerating.Processing
             ValidateVersion3ToVersion4SyncVars(typeDef);
 
             uint startingHash = GetSyncTypeCountInParents(typeDef);
-            uint totalSyncTypes = (startingHash + GetSyncTypeCount(typeDef));
+            uint totalSyncTypes = startingHash + GetSyncTypeCount(typeDef);
             if (totalSyncTypes > NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE)
             {
-                base.LogError($"Found {totalSyncTypes} SyncTypes within {typeDef.FullName} and inherited classes. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
+                LogError($"Found {totalSyncTypes} SyncTypes within {typeDef.FullName} and inherited classes. The maximum number of allowed SyncTypes within type and inherited types is {NetworkBehaviourHelper.MAX_SYNCTYPE_ALLOWANCE}. Remove SyncTypes or condense them using data containers, or a custom SyncObject.");
                 return false;
             }
 
             FieldDefinition[] fieldDefs = typeDef.Fields.ToArray();
             foreach (FieldDefinition fd in fieldDefs)
             {
-                //Check if uses old attributes first.
+                // Check if uses old attributes first.
                 if (HasSyncTypeAttributeUnchecked(fd))
                 {
-                    base.LogError($"SyncType {fd.Name} on type {fd.DeclaringType.FullName} implements [SyncVar] or [SyncObject]. These attributes are no longer supported as of version 4. Please see Break Solutions within the documentation to resolve these errors.");
+                    LogError($"SyncType {fd.Name} on type {fd.DeclaringType.FullName} implements [SyncVar] or [SyncObject]. These attributes are no longer supported as of version 4. Please see Break Solutions within the documentation to resolve these errors.");
                     continue;
                 }
                 SyncType st = GetSyncType(fd);
-                //Not a sync type field.
+                // Not a sync type field.
                 if (st == SyncType.Unset)
                     continue;
-                //Needs to be addressed if this ever occurs.
+                // Needs to be addressed if this ever occurs.
                 if (st == SyncType.Unhandled)
                 {
-                    base.LogError($"Field {fd.Name} in type {fd.DeclaringType.FullName} is unhandled.");
+                    LogError($"Field {fd.Name} in type {fd.DeclaringType.FullName} is unhandled.");
                     return false;
                 }
-                //Errors occurred while checking the synctype field.
+                // Errors occurred while checking the synctype field.
                 if (!IsSyncTypeFieldValid(fd, true))
                     return false;
 
-                bool isSyncObject = (st != SyncType.Variable);
+                bool isSyncObject = st != SyncType.Variable;
                 bool isGeneric = fd.FieldType.IsGenericInstance;
                 if (isGeneric)
                 {
@@ -102,11 +101,10 @@ namespace FishNet.CodeGenerating.Processing
             return modified;
         }
 
-
         /// <summary>
         /// Gets number of SyncTypes by checking for SyncVar/Object attributes. This does not perform error checking.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal uint GetSyncTypeCount(TypeDefinition typeDef)
         {
@@ -128,7 +126,7 @@ namespace FishNet.CodeGenerating.Processing
             uint count = 0;
             while (true)
             {
-                typeDef = typeDef.GetNextBaseClassToProcess(base.Session);
+                typeDef = typeDef.GetNextBaseClassToProcess(Session);
                 if (typeDef != null)
                     count += GetSyncTypeCount(typeDef);
                 else
@@ -143,7 +141,7 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         internal bool IsSyncType(FieldReference fieldRef)
         {
-            FieldDefinition fd = fieldRef.CachedResolve(base.Session);
+            FieldDefinition fd = fieldRef.CachedResolve(Session);
             return IsSyncType(fd);
         }
 
@@ -152,17 +150,15 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         internal bool IsSyncType(FieldDefinition fieldDef)
         {
-            TypeDefinition ftTypeDef = fieldDef.FieldType.CachedResolve(base.Session);
+            TypeDefinition ftTypeDef = fieldDef.FieldType.CachedResolve(Session);
             /* TypeDef may be null for certain generated types,
              * as well for some normal types such as queue because Unity broke
              * them in 2022+ and decided the issue was not worth resolving. */
             if (ftTypeDef == null)
                 return false;
 
-            return ftTypeDef.InheritsFrom<SyncBase>(base.Session);
+            return ftTypeDef.InheritsFrom<SyncBase>(Session);
         }
-
-
 
         /// <summary>
         /// Throws an error on any SyncVars which are comparing null on the SyncVar field, or trying to set the field null.
@@ -170,37 +166,37 @@ namespace FishNet.CodeGenerating.Processing
         private void ValidateVersion3ToVersion4SyncVars(TypeDefinition td)
         {
 #if !FISHNET_DISABLE_V3TOV4_HELPERS
-            /* In version3 since the user could reference the field directly like a value these actions were allowed. Doing so now however would cause unintended behavior.            
-            * For example...
-            * [SyncVar]
-            * private Player _myPlayer;
-            * 
-            * void SomeMethod()
-            * {
-            *      if (_myPlayer == null) doStuff();
-            * }
-            * The above context would be valid in version 3.
-            * 
-            * But if the user converted without paying close attention, which is reasonable to miss, this would not work as intended.
-            * For example...             
-            * private readonly SyncVar<Player> _myPlayer = new();
-            * 
-            * void SomeMethod()
-            * {
-            *      if (_myPlayer == null) doStuff();
-            * }
-            * The above is not the same behavior as the field _myPlayer would never be null. Instead the code should look like this...
-            * 
-            * void SomeMethod()
-            * {
-            *      if (_myPlayer.Value == null) doStuff();
-            * }
-            * The checks below will catch this scenarios.
-            */
+            /* In version3 since the user could reference the field directly like a value these actions were allowed. Doing so now however would cause unintended behavior.
+             * For example...
+             * [SyncVar]
+             * private Player _myPlayer;
+             *
+             * void SomeMethod()
+             * {
+             *      if (_myPlayer == null) doStuff();
+             * }
+             * The above context would be valid in version 3.
+             *
+             * But if the user converted without paying close attention, which is reasonable to miss, this would not work as intended.
+             * For example...
+             * private readonly SyncVar<Player> _myPlayer = new();
+             *
+             * void SomeMethod()
+             * {
+             *      if (_myPlayer == null) doStuff();
+             * }
+             * The above is not the same behavior as the field _myPlayer would never be null. Instead the code should look like this...
+             *
+             * void SomeMethod()
+             * {
+             *      if (_myPlayer.Value == null) doStuff();
+             * }
+             * The checks below will catch this scenarios.
+             */
 
             foreach (MethodDefinition methodDef in td.Methods)
             {
-                //Ignore constructors.
+                // Ignore constructors.
                 if (methodDef.IsConstructor)
                     continue;
                 if (methodDef.IsAbstract)
@@ -212,35 +208,33 @@ namespace FishNet.CodeGenerating.Processing
                     /* Loading a field. (Getter) */
                     if ((inst.OpCode == OpCodes.Ldfld || inst.OpCode == OpCodes.Ldflda) && inst.Operand is FieldReference opFieldld)
                     {
-                        FieldReference resolvedOpField = opFieldld.CachedResolve(base.Session);
+                        FieldReference resolvedOpField = opFieldld.CachedResolve(Session);
                         if (resolvedOpField == null)
-                            resolvedOpField = opFieldld.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldld.Name, base.Session);
+                            resolvedOpField = opFieldld.DeclaringType.CachedResolve(Session).GetFieldReference(opFieldld.Name, Session);
 
                         if (IsSyncType(resolvedOpField))
                         {
-                            //Check next opcode for a brfalse/true.
-                            //If there are more instructions to check, which there should always be.
-                            if (i < (methodDef.Body.Instructions.Count - 1))
+                            // Check next opcode for a brfalse/true.
+                            // If there are more instructions to check, which there should always be.
+                            if (i < methodDef.Body.Instructions.Count - 1)
                             {
                                 Instruction nextInst = methodDef.Body.Instructions[i + 1];
-                                if (nextInst.OpCode == OpCodes.Brfalse || nextInst.OpCode == OpCodes.Brfalse_S ||
-                                    nextInst.OpCode == OpCodes.Brtrue || nextInst.OpCode == OpCodes.Brtrue_S)
-                                    base.LogError($"Method {methodDef.Name} in class {td.Name} is comparing null for the SyncType field {resolvedOpField.Name}. SyncType fields should never be null; did you intend to compare the SyncType.Value instead?");
+                                if (nextInst.OpCode == OpCodes.Brfalse || nextInst.OpCode == OpCodes.Brfalse_S || nextInst.OpCode == OpCodes.Brtrue || nextInst.OpCode == OpCodes.Brtrue_S)
+                                    LogError($"Method {methodDef.Name} in class {td.Name} is comparing null for the SyncType field {resolvedOpField.Name}. SyncType fields should never be null; did you intend to compare the SyncType.Value instead?");
                             }
                         }
                     }
                     /* Setting a field. (Setter) */
                     else if (inst.OpCode == OpCodes.Stfld && inst.Operand is FieldReference opFieldst)
                     {
-                        FieldReference resolvedOpField = opFieldst.CachedResolve(base.Session);
+                        FieldReference resolvedOpField = opFieldst.CachedResolve(Session);
                         if (resolvedOpField == null)
-                            resolvedOpField = opFieldst.DeclaringType.CachedResolve(base.Session).GetFieldReference(opFieldst.Name, base.Session);
+                            resolvedOpField = opFieldst.DeclaringType.CachedResolve(Session).GetFieldReference(opFieldst.Name, Session);
 
                         if (IsSyncType(resolvedOpField))
-                            base.LogError($"Method {methodDef.Name} in class {td.Name} is setting value to the SyncType field {resolvedOpField.Name}. This will result in the SyncType not functioning.");
+                            LogError($"Method {methodDef.Name} in class {td.Name} is setting value to the SyncType field {resolvedOpField.Name}. This will result in the SyncType not functioning.");
                     }
                 }
-
             }
 #endif
         }
@@ -250,30 +244,30 @@ namespace FishNet.CodeGenerating.Processing
         /// </summary>
         private bool IsSyncTypeFieldValid(FieldDefinition fieldDef, bool outputError)
         {
-            //Static.
+            // Static.
             if (fieldDef.IsStatic)
             {
                 if (outputError)
-                    base.LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} cannot be static.");
+                    LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} cannot be static.");
                 return false;
             }
-            //Generic.
+            // Generic.
             if (fieldDef.FieldType.IsGenericParameter)
             {
                 if (outputError)
-                    base.LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} cannot be be generic.");
+                    LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} cannot be be generic.");
                 return false;
             }
 
-            //todo checking if field is initialized would be good.
-            
+            // todo checking if field is initialized would be good.
+
             /* Forces readonly unless user allows for serialization.
              * If within this logic then the field is readonly. */
             if (!fieldDef.Attributes.HasFlag(FieldAttributes.InitOnly))
             {
                 bool ignoreRequirement = false;
                 string attributeFullName = typeof(AllowMutableSyncTypeAttribute).FullName;
-                //Check if has attribute to bypass readonly check.
+                // Check if has attribute to bypass readonly check.
                 foreach (CustomAttribute item in fieldDef.CustomAttributes)
                 {
                     if (item.AttributeType.FullName == attributeFullName)
@@ -286,12 +280,12 @@ namespace FishNet.CodeGenerating.Processing
                 if (!ignoreRequirement)
                 {
                     if (outputError)
-                        base.LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} must be readonly or decorated with the {nameof(AllowMutableSyncTypeAttribute)} attribute. If allowing muteable do not ever re-assign the field at runtime.");
+                        LogError($"{fieldDef.Name} SyncType in type {fieldDef.DeclaringType.FullName} must be readonly or decorated with the {nameof(AllowMutableSyncTypeAttribute)} attribute. If allowing muteable do not ever re-assign the field at runtime.");
                     return false;
                 }
             }
 
-            //Fall through/pass.
+            // Fall through/pass.
             return true;
         }
 
@@ -303,11 +297,11 @@ namespace FishNet.CodeGenerating.Processing
             if (!IsSyncType(fieldDef))
                 return SyncType.Unset;
 
-            TypeDefinition fieldTypeDef = fieldDef.FieldType.CachedResolve(base.Session);
+            TypeDefinition fieldTypeDef = fieldDef.FieldType.CachedResolve(Session);
 
-            ObjectHelper oh = base.GetClass<ObjectHelper>();
+            ObjectHelper oh = GetClass<ObjectHelper>();
             string fdName = fieldDef.FieldType.Name;
-            if (fdName == oh.SyncVar_Name || fieldTypeDef.ImplementsInterfaceRecursive<ISyncVar>(base.Session))
+            if (fdName == oh.SyncVar_Name || fieldTypeDef.ImplementsInterfaceRecursive<ISyncVar>(Session))
                 return SyncType.Variable;
             else if (fdName == oh.SyncList_Name)
                 return SyncType.List;
@@ -315,29 +309,28 @@ namespace FishNet.CodeGenerating.Processing
                 return SyncType.Dictionary;
             else if (fdName == oh.SyncHashSet_Name)
                 return SyncType.HashSet;
-            //Custom types must also implement ICustomSync.
-            else if (fieldTypeDef.ImplementsInterfaceRecursive<ICustomSync>(base.Session))
+            // Custom types must also implement ICustomSync.
+            else if (fieldTypeDef.ImplementsInterfaceRecursive<ICustomSync>(Session))
                 return SyncType.Custom;
             else
                 return SyncType.Unhandled;
         }
-
 
         /// <summary>
         /// Tries to create a SyncType that does not use generics.
         /// </summary>
         private bool TryCreateNonGenericSyncType(uint hash, FieldDefinition originalFieldDef, bool isSyncObject)
         {
-            TypeDefinition fieldTypeTd = originalFieldDef.FieldType.CachedResolve(base.Session);
+            TypeDefinition fieldTypeTd = originalFieldDef.FieldType.CachedResolve(Session);
             if (!fieldTypeTd.ImplementsInterface<ICustomSync>())
             {
-                base.LogError($"SyncType field {originalFieldDef.Name} in type {originalFieldDef.DeclaringType.FullName} does not implement {nameof(ICustomSync)}. Non-generic SyncTypes must implement {nameof(ICustomSync)}. See documentation on Custom SyncTypes for more information.");
+                LogError($"SyncType field {originalFieldDef.Name} in type {originalFieldDef.DeclaringType.FullName} does not implement {nameof(ICustomSync)}. Non-generic SyncTypes must implement {nameof(ICustomSync)}. See documentation on Custom SyncTypes for more information.");
                 return false;
             }
-            //Get the serialized type.
-            MethodDefinition getSerialziedTypeMd = originalFieldDef.FieldType.CachedResolve(base.Session).GetMethod(GETSERIALIZEDTYPE_METHOD_NAME);
-            MethodReference getSerialziedTypeMr = base.ImportReference(getSerialziedTypeMd);
-            Collection<Instruction> instructions = getSerialziedTypeMr.CachedResolve(base.Session).Body.Instructions;
+            // Get the serialized type.
+            MethodDefinition getSerialziedTypeMd = originalFieldDef.FieldType.CachedResolve(Session).GetMethod(GETSERIALIZEDTYPE_METHOD_NAME);
+            MethodReference getSerialziedTypeMr = ImportReference(getSerialziedTypeMd);
+            Collection<Instruction> instructions = getSerialziedTypeMr.CachedResolve(Session).Body.Instructions;
 
             bool checkForSerializer = true;
             TypeReference serializedDataTypeRef = null;
@@ -348,7 +341,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 checkForSerializer = false;
             }
-            //If not returning null then make a serializer for return type.
+            // If not returning null then make a serializer for return type.
             else
             {
                 foreach (Instruction item in instructions)
@@ -359,14 +352,14 @@ namespace FishNet.CodeGenerating.Processing
                         break;
                     }
 
-                    //This token references the type.
+                    // This token references the type.
                     if (item.OpCode == OpCodes.Ldtoken)
                     {
                         TypeReference importedTr = null;
                         if (item.Operand is TypeDefinition td)
-                            importedTr = base.ImportReference(td);
+                            importedTr = ImportReference(td);
                         else if (item.Operand is TypeReference tr)
-                            importedTr = base.ImportReference(tr);
+                            importedTr = ImportReference(tr);
 
                         if (importedTr != null)
                             serializedDataTypeRef = importedTr;
@@ -375,19 +368,19 @@ namespace FishNet.CodeGenerating.Processing
             }
 
             TypeReference[] typeRefs;
-            //If need to check for serialization.            
+            // If need to check for serialization.            
             if (checkForSerializer)
             {
                 if (serializedDataTypeRef == null)
                 {
-                    base.LogError($"SyncType field {originalFieldDef.Name} in type {originalFieldDef.DeclaringType.FullName} does not indicate which data type it needs to serialize. Review documentation for custom SyncTypes to view how to implement this feature.");
+                    LogError($"SyncType field {originalFieldDef.Name} in type {originalFieldDef.DeclaringType.FullName} does not indicate which data type it needs to serialize. Review documentation for custom SyncTypes to view how to implement this feature.");
                     return false;
                 }
 
-                //If here then check.
+                // If here then check.
                 typeRefs = new TypeReference[]
                 {
-                    serializedDataTypeRef,
+                    serializedDataTypeRef
                 };
                 if (!CanSerialize(originalFieldDef, typeRefs))
                     return false;
@@ -411,7 +404,7 @@ namespace FishNet.CodeGenerating.Processing
             GenericInstanceType tmpGenerinstanceType = originalFieldDef.FieldType as GenericInstanceType;
             TypeReference[] typeRefs = new TypeReference[tmpGenerinstanceType.GenericArguments.Count];
             for (int i = 0; i < typeRefs.Length; i++)
-                typeRefs[i] = base.ImportReference(tmpGenerinstanceType.GenericArguments[i]);
+                typeRefs[i] = ImportReference(tmpGenerinstanceType.GenericArguments[i]);
             if (!CanSerialize(originalFieldDef, typeRefs))
                 return false;
 
@@ -424,51 +417,51 @@ namespace FishNet.CodeGenerating.Processing
         /// <summary>
         /// Checks if type references can be serialized.
         /// </summary>
-        /// <param name="fd">Field definition specifying types. This is only used for debug output.</param>
+        /// <param name = "fd">Field definition specifying types. This is only used for debug output.</param>
         private bool CanSerialize(FieldDefinition fd, TypeReference[] typeRefs)
         {
             if (typeRefs == null)
                 return true;
 
-            GeneralHelper gh = base.GetClass<GeneralHelper>();
+            GeneralHelper gh = GetClass<GeneralHelper>();
             foreach (TypeReference item in typeRefs)
             {
                 bool canSerialize = gh.HasSerializerAndDeserializer(item, true);
                 if (!canSerialize)
                 {
-                    base.LogError($"SyncType name {fd.Name} in type {fd.DeclaringType.FullName} data type {item.FullName} does not support serialization and one could not be created automatically. Use a supported type or create a custom serializer.");
+                    LogError($"SyncType name {fd.Name} in type {fd.DeclaringType.FullName} data type {item.FullName} does not support serialization and one could not be created automatically. Use a supported type or create a custom serializer.");
                     return false;
                 }
             }
 
-            //Fall through/pass.
+            // Fall through/pass.
             return true;
         }
-
 
         /// <summary>
         /// Returns if attribute if a SyncVarAttribute.
         /// </summary>
-        /// <param name="attributeFullName"></param>
+        /// <param name = "attributeFullName"></param>
         /// <returns></returns>
         private bool IsSyncVariableAttribute(string attributeFullName)
         {
-            return (attributeFullName == _syncVarAttribute_FullName);
+            return attributeFullName == _syncVarAttribute_FullName;
         }
+
         /// <summary>
         /// Returns if attribute if a SyncObjectAttribute.
         /// </summary>
-        /// <param name="attributeFullName"></param>
+        /// <param name = "attributeFullName"></param>
         /// <returns></returns>
         private bool IsSyncObjectAttribute(string attributeFullName)
         {
-            return (attributeFullName == _syncObjectAttribute_FullName);
+            return attributeFullName == _syncObjectAttribute_FullName;
         }
 
         /// <summary>
         /// Returns if fieldDef has a SyncType attribute. No error checking is performed.
         /// </summary>
-        /// <param name="fieldDef"></param>
+        /// <param name = "fieldDef"></param>
         /// <returns></returns>
         private bool HasSyncTypeAttributeUnchecked(FieldDefinition fieldDef)
         {
@@ -489,42 +482,40 @@ namespace FishNet.CodeGenerating.Processing
         {
             initializeEarlyMr = null;
             initializeLateMr = null;
-            //Find the SyncBase class.
-            TypeDefinition fieldTd = syncTypeFieldDef.FieldType.CachedResolve(base.Session);
-            TypeDefinition syncBaseTd = fieldTd.GetClassInInheritance(base.Session, typeof(SyncBase).FullName);
-            //If SyncBase isn't found.
+            // Find the SyncBase class.
+            TypeDefinition fieldTd = syncTypeFieldDef.FieldType.CachedResolve(Session);
+            TypeDefinition syncBaseTd = fieldTd.GetClassInInheritance(Session, typeof(SyncBase).FullName);
+            // If SyncBase isn't found.
             if (syncBaseTd == null)
             {
-                base.LogError($"Could not find SyncBase within type {fieldTd.FullName}.");
+                LogError($"Could not find SyncBase within type {fieldTd.FullName}.");
                 return false;
             }
-            else
-            {
-                //Early
-                initializeEarlyMr = syncBaseTd.GetMethodReference(base.Session, INITIALIZEEARLY_METHOD_NAME);
-              //  if (variableTypeRefs != null)
-              //      initializeEarlyMr = initializeEarlyMr.MakeGenericMethod(variableTypeRefs);
-                //Late
-                initializeLateMr = syncBaseTd.GetMethodReference(base.Session, INITIALIZELATE_METHOD_NAME);
-             //   if (variableTypeRefs != null)
-              //      initializeLateMr = initializeLateMr.MakeGenericMethod(variableTypeRefs);
 
-                return true;
-            }
+            // Early
+            initializeEarlyMr = syncBaseTd.GetMethodReference(Session, INITIALIZEEARLY_METHOD_NAME);
+            //  if (variableTypeRefs != null)
+            //      initializeEarlyMr = initializeEarlyMr.MakeGenericMethod(variableTypeRefs);
+            // Late
+            initializeLateMr = syncBaseTd.GetMethodReference(Session, INITIALIZELATE_METHOD_NAME);
+            //   if (variableTypeRefs != null)
+            //      initializeLateMr = initializeLateMr.MakeGenericMethod(variableTypeRefs);
 
+            return true;
         }
+
         /// <summary>
         /// Initializes a SyncType using default settings.
         /// </summary>
         private bool InitializeSyncType(uint hash, FieldDefinition originalFieldDef, TypeReference[] variableTypeRefs, bool isSyncObject)
         {
-            //Set needed methods from syncbase.
+            // Set needed methods from syncbase.
             MethodReference initializeLateMr;
             MethodReference initializeEarlyMr;
             if (!SetSyncBaseInitializeMethods(originalFieldDef, variableTypeRefs, out initializeEarlyMr, out initializeLateMr))
                 return false;
 
-            //Make user field public.
+            // Make user field public.
             originalFieldDef.Attributes &= ~FieldAttributes.Private;
             originalFieldDef.Attributes |= FieldAttributes.Public;
 
@@ -533,33 +524,32 @@ namespace FishNet.CodeGenerating.Processing
             ILProcessor processor;
             MethodDefinition injectionMd;
 
-            //InitializeEarly.
+            // InitializeEarly.
             injectionMd = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_EARLY_INTERNAL_NAME);
             processor = injectionMd.Body.GetILProcessor();
             insts = new()
             {
-                processor.Create(OpCodes.Ldarg_0), //this.
+                processor.Create(OpCodes.Ldarg_0), // this.
                 processor.Create(OpCodes.Ldfld, originalFieldDef),
-                processor.Create(OpCodes.Ldarg_0), //this again for NetworkBehaviour.
+                processor.Create(OpCodes.Ldarg_0), // this again for NetworkBehaviour.
                 processor.Create(OpCodes.Ldc_I4, (int)hash),
                 processor.Create(OpCodes.Ldc_I4, isSyncObject.ToInt()),
-                processor.Create(OpCodes.Call, initializeEarlyMr),
+                processor.Create(OpCodes.Call, initializeEarlyMr)
             };
             processor.InsertFirst(insts);
 
-            //InitializeLate.
+            // InitializeLate.
             injectionMd = typeDef.GetMethod(NetworkBehaviourProcessor.NETWORKINITIALIZE_LATE_INTERNAL_NAME);
             processor = injectionMd.Body.GetILProcessor();
             insts = new()
             {
-                processor.Create(OpCodes.Ldarg_0), //this.
+                processor.Create(OpCodes.Ldarg_0), // this.
                 processor.Create(OpCodes.Ldfld, originalFieldDef),
-                processor.Create(initializeLateMr.GetCallOpCode(base.Session), initializeLateMr),
+                processor.Create(initializeLateMr.GetCallOpCode(Session), initializeLateMr)
             };
             processor.InsertFirst(insts);
 
             return true;
-
         }
     }
 }

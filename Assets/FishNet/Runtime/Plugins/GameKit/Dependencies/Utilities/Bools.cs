@@ -1,4 +1,3 @@
-
 namespace GameKit.Dependencies.Utilities
 {
     public static class Booleans
@@ -8,8 +7,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static int ToInt(this bool b)
         {
-            return (b) ? 1 : 0;
+            return b ? 1 : 0;
         }
     }
-
 }

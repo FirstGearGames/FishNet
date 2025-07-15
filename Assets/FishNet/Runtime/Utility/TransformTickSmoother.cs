@@ -30,7 +30,7 @@ namespace FishNet.Component.Transforming
             /// <summary>
             /// Initialized for non-network use.
             /// </summary>
-            NonNetworked,
+            NonNetworked
         }
 
         [Preserve]
@@ -127,8 +127,8 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Updates the smoothedProperties value.
         /// </summary>
-        /// <param name="value">New value.</param>
-        /// <param name="forSpectator">True if updating values for the spectator, false if updating for owner.</param>
+        /// <param name = "value">New value.</param>
+        /// <param name = "forSpectator">True if updating values for the spectator, false if updating for owner.</param>
         public void SetSmoothedProperties(TransformPropertiesFlag value, bool forSpectator)
         {
             if (forSpectator)
@@ -145,7 +145,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Updates the adaptiveInterpolation value.
         /// </summary>
-        /// <param name="adaptiveInterpolation">New value.</param>
+        /// <param name = "adaptiveInterpolation">New value.</param>
         public void SetAdaptiveInterpolation(AdaptiveInterpolationType adaptiveInterpolation)
         {
             _adaptiveInterpolation = adaptiveInterpolation;
@@ -159,8 +159,8 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets the spectator interpolation value.
         /// </summary>
-        /// <param name="value">New value.</param>
-        /// <param name="disableAdaptiveInterpolation">True to also disable adaptive interpolation to use this new value.</param>
+        /// <param name = "value">New value.</param>
+        /// <param name = "disableAdaptiveInterpolation">True to also disable adaptive interpolation to use this new value.</param>
         public void SetSpectatorInterpolation(byte value, bool disableAdaptiveInterpolation = true)
         {
             _spectatorInterpolation = value;
@@ -219,7 +219,7 @@ namespace FishNet.Component.Transforming
 
         ~TransformTickSmoother()
         {
-            //This is a last resort for if something didnt deinitialize right.
+            // This is a last resort for if something didnt deinitialize right.
             ResetState();
         }
 
@@ -252,7 +252,7 @@ namespace FishNet.Component.Transforming
             _ownerInterpolation = ownerInterpolation;
 
             _ownerSmoothedProperties = ownerSmoothedProperties;
-            _initializeType = (forNetworked) ? InitializeType.Networked : InitializeType.NonNetworked;
+            _initializeType = forNetworked ? InitializeType.Networked : InitializeType.NonNetworked;
         }
 
         /// <summary>
@@ -289,7 +289,7 @@ namespace FishNet.Component.Transforming
             {
                 _interpolation = _ownerInterpolation;
             }
-            //Not using owner interpolation.
+            // Not using owner interpolation.
             else
             {
                 if (_adaptiveInterpolation == AdaptiveInterpolationType.Off)
@@ -302,13 +302,13 @@ namespace FishNet.Component.Transforming
                     TimeManager tm = _networkObject.TimeManager;
                     if (clientStateTick == 0)
                     {
-                        //Not enough data to calculate; guestimate. This should only happen once.
+                        // Not enough data to calculate; guestimate. This should only happen once.
                         float fRtt = (float)tm.RoundTripTime;
-                        interpolation = (fRtt / 10f);
+                        interpolation = fRtt / 10f;
                     }
                     else
                     {
-                        interpolation = (tm.LocalTick - clientStateTick);
+                        interpolation = tm.LocalTick - clientStateTick;
                     }
 
                     interpolation *= GetInterpolationMultiplier();
@@ -331,7 +331,7 @@ namespace FishNet.Component.Transforming
                                 return 1.25f;
                             case AdaptiveInterpolationType.VeryHigh:
                                 return 1.5f;
-                            //Make no changes for maximum.
+                            // Make no changes for maximum.
                             default:
                                 _networkObject.NetworkManager.LogError($"AdaptiveInterpolationType {_adaptiveInterpolation} is unhandled.");
                                 return 1f;
@@ -381,7 +381,7 @@ namespace FishNet.Component.Transforming
                 return;
 
             _preTicked = true;
-            _useOwnerSmoothing = (_networkObject == null || _networkObject.IsOwner);
+            _useOwnerSmoothing = _networkObject == null || _networkObject.IsOwner;
 
             DiscardExcessiveTransformPropertiesQueue();
 
@@ -409,7 +409,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Called when the TimeManager invokes OnPostReplay.
         /// </summary>
-        /// <param name="clientTick">Replay tick for the local client.</param>
+        /// <param name = "clientTick">Replay tick for the local client.</param>
         public void OnPostReplicateReplay(uint clientTick)
         {
             if (_networkObject.IsOwner || _adaptiveInterpolation == AdaptiveInterpolationType.Off)
@@ -429,7 +429,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Called when TimeManager invokes OnPostTick.
         /// </summary>
-        /// <param name="clientTick">Local tick of the client.</param>
+        /// <param name = "clientTick">Local tick of the client.</param>
         public void OnPostTick(uint clientTick)
         {
             if (!CanSmooth())
@@ -487,7 +487,7 @@ namespace FishNet.Component.Transforming
         private void DiscardExcessiveTransformPropertiesQueue()
         {
             int propertiesCount = _transformProperties.Count;
-            int dequeueCount = (propertiesCount - (_interpolation + MAXIMUM_QUEUED_OVER_INTERPOLATION));
+            int dequeueCount = propertiesCount - (_interpolation + MAXIMUM_QUEUED_OVER_INTERPOLATION);
             //If there are entries to dequeue.
             if (dequeueCount > 0)
             {
@@ -519,7 +519,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Modifies a transform property for a tick. This does not error check for empty collections.
         /// </summary>
-        /// <param name="firstTick">First tick in the queue. If 0 this will be looked up.</param>
+        /// <param name = "firstTick">First tick in the queue. If 0 this will be looked up.</param>
         private void ModifyTransformProperties(uint clientTick, uint firstTick)
         {
             uint tick = clientTick;
@@ -591,11 +591,11 @@ namespace FishNet.Component.Transforming
         {
             /* If there's more in queue than interpolation then begin to move faster based on overage.
              * Move 5% faster for every overage. */
-            int overInterpolation = (_transformProperties.Count - _interpolation);
+            int overInterpolation = _transformProperties.Count - _interpolation;
             //If needs to be adjusted.
             if (overInterpolation != 0)
             {
-                _movementMultiplier += (0.015f * overInterpolation);
+                _movementMultiplier += 0.015f * overInterpolation;
             }
             //If does not need to be adjusted.
             else
@@ -621,12 +621,12 @@ namespace FishNet.Component.Transforming
                 return;
             /* If buffer is considerably under goal then halt
              * movement. This will allow the buffer to grow. */
-            if ((tpCount - _interpolation) < -4)
+            if (tpCount - _interpolation < -4)
                 return;
 
             TickTransformProperties ttp = _transformProperties.Peek();
-            TransformPropertiesFlag smoothedProperties = (_useOwnerSmoothing) ? _ownerSmoothedProperties : _spectatorSmoothedProperties;
-            _moveRates.Move(_graphicalObject, ttp.Properties, smoothedProperties, (delta * _movementMultiplier), useWorldSpace: true);
+            TransformPropertiesFlag smoothedProperties = _useOwnerSmoothing ? _ownerSmoothedProperties : _spectatorSmoothedProperties;
+            _moveRates.Move(_graphicalObject, ttp.Properties, smoothedProperties, delta * _movementMultiplier, useWorldSpace: true);
 
             float tRemaining = _moveRates.TimeRemaining;
             //if TimeLeft is <= 0f then transform is at goal. Grab a new goal if possible.

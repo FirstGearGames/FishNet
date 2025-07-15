@@ -1,13 +1,13 @@
-﻿//using FishNet.Connection; //remove on v5
-//using FishNet.Serializing;
-//using FishNet.Transporting;
-//using GameKit.Dependencies.Utilities;
-//using System;
-//using System.Collections.Generic;
-//using System.Diagnostics;
+﻿// using FishNet.Connection; // remove on v5
+// using FishNet.Serializing;
+// using FishNet.Transporting;
+// using GameKit.Dependencies.Utilities;
+// using System;
+// using System.Collections.Generic;
+// using System.Diagnostics;
 
-//namespace FishNet.Broadcast.Helping
-//{
+// namespace FishNet.Broadcast.Helping
+// {
 //    internal static class BroadcastHelper
 //    {
 //        /// <summary>
@@ -100,7 +100,7 @@
 //        {
 //            Action<NetworkConnection, T, Channel> handler = (Action<NetworkConnection, T, Channel>)obj;
 //            int indexOf = _handlers.IndexOf(handler);
-//            //Not registered.
+//            // Not registered.
 //            if (indexOf == -1)
 //                return;
 
@@ -110,7 +110,7 @@
 //            if (base.IteratingIndex >= 0 && (indexOf <= base.IteratingIndex))
 //                base.IteratingIndex--;
 
-//            //Remove entry.
+//            // Remove entry.
 //            _handlers.RemoveAt(indexOf);
 //        }
 
@@ -119,8 +119,6 @@
 //        /// </summary>
 //        public override bool RequireAuthentication => _requireAuthentication;
 //    }
-
-
 
 //    /// <summary>
 //    /// Handles broadcasts received on client, from server.
@@ -174,7 +172,7 @@
 //        {
 //            Action<T, Channel> handler = (Action<T, Channel>)obj;
 //            int indexOf = _handlers.IndexOf(handler);
-//            //Not registered.
+//            // Not registered.
 //            if (indexOf == -1)
 //                return;
 
@@ -194,6 +192,5 @@
 //        public override bool RequireAuthentication => false;
 //    }
 
-
-
 //}
+

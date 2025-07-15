@@ -3,7 +3,6 @@ using FishNet.Transporting;
 
 namespace FishNet.Object
 {
-
     #region Types.
     /// <summary>
     /// Lookup data for a RPC Link.
@@ -36,5 +35,4 @@ namespace FishNet.Object
         }
     }
     #endregion
-
 }

@@ -52,7 +52,7 @@ namespace FishNet.Object.Prediction
             _gfxInitializedLocalValues = graphicalObject.GetLocalProperties();
             _tickDelta = tickDelta;
             _graphicalObject = graphicalObject;
-            _teleportThreshold = (teleportDistance * (float)interpolation);
+            _teleportThreshold = teleportDistance * (float)interpolation;
             _interpolation = interpolation;
         }
 
@@ -66,7 +66,6 @@ namespace FishNet.Object.Prediction
 
             MoveToTarget();
         }
-
 
         /// <summary>
         /// Called when the TimeManager invokes OnPreTick.
@@ -88,13 +87,13 @@ namespace FishNet.Object.Prediction
             if (!CanSmooth())
                 return;
 
-            //If preticked then previous transform values are known.
+            // If preticked then previous transform values are known.
             if (_preTicked)
             {
                 _graphicalObject.SetWorldProperties(_gfxPreSimulateWorldValues);
                 SetMoveRates(_gfxInitializedLocalValues, _graphicalObject);
             }
-            //If did not pretick then the only thing we can do is snap to instantiated values.
+            // If did not pretick then the only thing we can do is snap to instantiated values.
             else
             {
                 _graphicalObject.SetLocalProperties(_gfxInitializedLocalValues);
@@ -118,22 +117,20 @@ namespace FishNet.Object.Prediction
         /// </summary>
         private void SetMoveRates(TransformProperties prevValues, Transform t)
         {
-            float duration = (_tickDelta * (float)_interpolation);
+            float duration = _tickDelta * (float)_interpolation;
             /* If interpolation is 1 then add on a tiny amount
              * of more time to compensate for frame time, so that
              * the smoothing does not complete before the next tick,
              * as this would result in jitter. */
             if (_interpolation == 1)
-                duration += Mathf.Max(Time.deltaTime, (1f / 50f));
+                duration += Mathf.Max(Time.deltaTime, 1f / 50f);
             float teleportT = _teleportThreshold;
             _moveRates = MoveRates.GetLocalMoveRates(prevValues, t, duration, teleportT);
         }
 
-
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        
         private void MoveToTarget()
         {
             _moveRates.Move(_graphicalObject, _gfxInitializedLocalValues, Time.deltaTime, useWorldSpace: false);
@@ -157,6 +154,4 @@ namespace FishNet.Object.Prediction
 
         public void InitializeState() { }
     }
-
-
 }

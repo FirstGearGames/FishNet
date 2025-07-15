@@ -14,14 +14,12 @@ using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
 namespace FishNet.Component.Scenes
 {
-
     /// <summary>
     /// Add to a NetworkManager object to change between Online and Offline scene based on connection states of the server or client.
     /// </summary>
     [AddComponentMenu("FishNet/Component/DefaultScene")]
     public class DefaultScene : MonoBehaviour
     {
-
         #region Serialized.
         [Tooltip("True to load the online scene as global, false to load it as connection.")]
         [SerializeField]
@@ -33,37 +31,43 @@ namespace FishNet.Component.Scenes
         [SerializeField]
         private bool _startInOffline;
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("Scene to load when disconnected. Server and client will load this scene.")]
-        [SerializeField, Scene]
+        [SerializeField]
+        [Scene]
         private string _offlineScene;
+
         /// <summary>
         /// Sets which offline scene to use.
         /// </summary>
-        /// <param name="sceneName">Scene name to use as the offline scene.</param>
+        /// <param name = "sceneName">Scene name to use as the offline scene.</param>
         public void SetOfflineScene(string sceneName) => _offlineScene = sceneName;
+
         /// <summary>
         /// Scene to load when disconnected. Server and client will load this scene.
         /// </summary>
         /// <returns></returns>
         public string GetOfflineScene() => _offlineScene;
+
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("Scene to load when connected. Server and client will load this scene.")]
-        [SerializeField, Scene]
+        [SerializeField]
+        [Scene]
         private string _onlineScene;
+
         /// <summary>
         /// Sets which online scene to use.
         /// </summary>
-        /// <param name="sceneName">Scene name to use as the online scene.</param>
+        /// <param name = "sceneName">Scene name to use as the online scene.</param>
         public void SetOnlineScene(string sceneName) => _onlineScene = sceneName;
+
         /// <summary>
         /// Scene to load when connected. Server and client will load this scene.
         /// </summary>
         /// <returns></returns>
         public string GetOnlineScene() => _onlineScene;
+
         /// <summary>
         /// Which scenes to replace when loading into OnlineScene.
         /// </summary>
@@ -100,12 +104,11 @@ namespace FishNet.Component.Scenes
                 NetworkManagerExtensions.LogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
                 return;
             }
-            //A NetworkManager won't be initialized if it's being destroyed.
+            // A NetworkManager won't be initialized if it's being destroyed.
             if (!_networkManager.Initialized)
                 return;
             if (_onlineScene == string.Empty || _offlineScene == string.Empty)
             {
-
                 NetworkManagerExtensions.LogWarning("Online or Offline scene is not specified. Default scenes will not load.");
                 return;
             }
@@ -144,7 +147,7 @@ namespace FishNet.Component.Scenes
                 }
             }
 
-            //If online scene was loaded then unload offline.
+            // If online scene was loaded then unload offline.
             if (onlineLoaded)
                 UnloadOfflineScene();
         }
@@ -167,7 +170,7 @@ namespace FishNet.Component.Scenes
                 if (!_networkManager.ServerManager.IsOnlyOneServerStarted())
                     return;
 
-                //If here can load scene.
+                // If here can load scene.
                 SceneLoadData sld = new(GetSceneName(_onlineScene));
                 sld.ReplaceScenes = _replaceScenes;
                 if (_enableGlobalScenes)
@@ -175,7 +178,7 @@ namespace FishNet.Component.Scenes
                 else
                     _networkManager.SceneManager.LoadConnectionScenes(sld);
             }
-            //When server stops load offline scene.
+            // When server stops load offline scene.
             else if (obj.ConnectionState == LocalConnectionState.Stopped && !_networkManager.ServerManager.IsAnyServerStarted())
             {
                 LoadOfflineScene();
@@ -189,7 +192,7 @@ namespace FishNet.Component.Scenes
         {
             if (obj.ConnectionState == LocalConnectionState.Stopped)
             {
-                //Only load offline scene if not also server.
+                // Only load offline scene if not also server.
                 if (!_networkManager.IsServerStarted)
                     LoadOfflineScene();
             }
@@ -211,16 +214,15 @@ namespace FishNet.Component.Scenes
             _networkManager.SceneManager.LoadConnectionScenes(arg1, sld);
         }
 
-
         /// <summary>
         /// Loads offlineScene as single.
         /// </summary>
         private void LoadOfflineScene()
         {
-            //Already in offline scene.
+            // Already in offline scene.
             if (UnitySceneManager.GetActiveScene().name == GetSceneName(_offlineScene))
                 return;
-            //Only use scene manager if networking scenes. I may add something in later to do both local and networked.
+            // Only use scene manager if networking scenes. I may add something in later to do both local and networked.
             UnitySceneManager.LoadScene(_offlineScene);
         }
 
@@ -239,12 +241,11 @@ namespace FishNet.Component.Scenes
         /// <summary>
         /// Returns a scene name from fullPath.
         /// </summary>
-        /// <param name="fullPath"></param>
+        /// <param name = "fullPath"></param>
         /// <returns></returns>
         private string GetSceneName(string fullPath)
         {
             return Path.GetFileNameWithoutExtension(fullPath);
         }
     }
-
 }

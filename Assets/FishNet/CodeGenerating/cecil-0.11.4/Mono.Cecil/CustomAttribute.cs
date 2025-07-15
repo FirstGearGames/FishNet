@@ -13,209 +13,197 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public struct CustomAttributeArgument
+    {
+        public TypeReference Type { get; }
+        public object Value { get; }
 
-	public struct CustomAttributeArgument {
+        public CustomAttributeArgument(TypeReference type, object value)
+        {
+            Mixin.CheckType(type);
+            this.Type = type;
+            this.Value = value;
+        }
+    }
 
-		readonly TypeReference type;
-		readonly object value;
+    public struct CustomAttributeNamedArgument
+    {
+        public string Name { get; }
+        public CustomAttributeArgument Argument { get; }
 
-		public TypeReference Type {
-			get { return type; }
-		}
+        public CustomAttributeNamedArgument(string name, CustomAttributeArgument argument)
+        {
+            Mixin.CheckName(name);
+            this.Name = name;
+            this.Argument = argument;
+        }
+    }
 
-		public object Value {
-			get { return value; }
-		}
+    public interface ICustomAttribute
+    {
+        TypeReference AttributeType { get; }
+        bool HasFields { get; }
+        bool HasProperties { get; }
+        bool HasConstructorArguments { get; }
+        Collection<CustomAttributeNamedArgument> Fields { get; }
+        Collection<CustomAttributeNamedArgument> Properties { get; }
+        Collection<CustomAttributeArgument> ConstructorArguments { get; }
+    }
 
-		public CustomAttributeArgument (TypeReference type, object value)
-		{
-			Mixin.CheckType (type);
-			this.type = type;
-			this.value = value;
-		}
-	}
+    [DebuggerDisplay("{AttributeType}")]
+    public sealed class CustomAttribute : ICustomAttribute
+    {
+        internal CustomAttributeValueProjection projection;
+        internal readonly uint signature;
+        internal bool resolved;
+        private byte[] blob;
+        internal Collection<CustomAttributeArgument> arguments;
+        internal Collection<CustomAttributeNamedArgument> fields;
+        internal Collection<CustomAttributeNamedArgument> properties;
+        public MethodReference Constructor { get; set; }
+        public TypeReference AttributeType
+        {
+            get { return Constructor.DeclaringType; }
+        }
+        public bool IsResolved
+        {
+            get { return resolved; }
+        }
+        public bool HasConstructorArguments
+        {
+            get
+            {
+                Resolve();
 
-	public struct CustomAttributeNamedArgument {
+                return !arguments.IsNullOrEmpty();
+            }
+        }
+        public Collection<CustomAttributeArgument> ConstructorArguments
+        {
+            get
+            {
+                Resolve();
 
-		readonly string name;
-		readonly CustomAttributeArgument argument;
+                if (arguments == null)
+                    Interlocked.CompareExchange(ref arguments, new(), null);
 
-		public string Name {
-			get { return name; }
-		}
+                return arguments;
+            }
+        }
+        public bool HasFields
+        {
+            get
+            {
+                Resolve();
 
-		public CustomAttributeArgument Argument {
-			get { return argument; }
-		}
+                return !fields.IsNullOrEmpty();
+            }
+        }
+        public Collection<CustomAttributeNamedArgument> Fields
+        {
+            get
+            {
+                Resolve();
 
-		public CustomAttributeNamedArgument (string name, CustomAttributeArgument argument)
-		{
-			Mixin.CheckName (name);
-			this.name = name;
-			this.argument = argument;
-		}
-	}
+                if (fields == null)
+                    Interlocked.CompareExchange(ref fields, new(), null);
 
-	public interface ICustomAttribute {
+                return fields;
+            }
+        }
+        public bool HasProperties
+        {
+            get
+            {
+                Resolve();
 
-		TypeReference AttributeType { get; }
+                return !properties.IsNullOrEmpty();
+            }
+        }
+        public Collection<CustomAttributeNamedArgument> Properties
+        {
+            get
+            {
+                Resolve();
 
-		bool HasFields { get; }
-		bool HasProperties { get; }
-		bool HasConstructorArguments { get; }
-		Collection<CustomAttributeNamedArgument> Fields { get; }
-		Collection<CustomAttributeNamedArgument> Properties { get; }
-		Collection<CustomAttributeArgument> ConstructorArguments { get; }
-	}
+                if (properties == null)
+                    Interlocked.CompareExchange(ref properties, new(), null);
 
-	[DebuggerDisplay ("{AttributeType}")]
-	public sealed class CustomAttribute : ICustomAttribute {
+                return properties;
+            }
+        }
+        internal bool HasImage
+        {
+            get { return Constructor != null && Constructor.HasImage; }
+        }
+        internal ModuleDefinition Module
+        {
+            get { return Constructor.Module; }
+        }
 
-		internal CustomAttributeValueProjection projection;
-		readonly internal uint signature;
-		internal bool resolved;
-		MethodReference constructor;
-		byte [] blob;
-		internal Collection<CustomAttributeArgument> arguments;
-		internal Collection<CustomAttributeNamedArgument> fields;
-		internal Collection<CustomAttributeNamedArgument> properties;
+        internal CustomAttribute(uint signature, MethodReference constructor)
+        {
+            this.signature = signature;
+            this.Constructor = constructor;
+            resolved = false;
+        }
 
-		public MethodReference Constructor {
-			get { return constructor; }
-			set { constructor = value; }
-		}
+        public CustomAttribute(MethodReference constructor)
+        {
+            this.Constructor = constructor;
+            resolved = true;
+        }
 
-		public TypeReference AttributeType {
-			get { return constructor.DeclaringType; }
-		}
+        public CustomAttribute(MethodReference constructor, byte[] blob)
+        {
+            this.Constructor = constructor;
+            resolved = false;
+            this.blob = blob;
+        }
 
-		public bool IsResolved {
-			get { return resolved; }
-		}
+        public byte[] GetBlob()
+        {
+            if (blob != null)
+                return blob;
 
-		public bool HasConstructorArguments {
-			get {
-				Resolve ();
+            if (!HasImage)
+                throw new NotSupportedException();
 
-				return !arguments.IsNullOrEmpty ();
-			}
-		}
+            return Module.Read(ref blob, this, (attribute, reader) => reader.ReadCustomAttributeBlob(attribute.signature));
+        }
 
-		public Collection<CustomAttributeArgument> ConstructorArguments {
-			get {
-				Resolve ();
+        private void Resolve()
+        {
+            if (resolved || !HasImage)
+                return;
 
-				if (arguments == null)
-					Interlocked.CompareExchange (ref arguments, new Collection<CustomAttributeArgument> (), null);
+            lock (Module.SyncRoot)
+            {
+                if (resolved)
+                    return;
 
-				return arguments;
-			}
-		}
+                Module.Read(this, (attribute, reader) =>
+                {
+                    try
+                    {
+                        reader.ReadCustomAttributeSignature(attribute);
+                        resolved = true;
+                    }
+                    catch (ResolutionException)
+                    {
+                        if (arguments != null)
+                            arguments.Clear();
+                        if (fields != null)
+                            fields.Clear();
+                        if (properties != null)
+                            properties.Clear();
 
-		public bool HasFields {
-			get {
-				Resolve ();
-
-				return !fields.IsNullOrEmpty ();
-			}
-		}
-
-		public Collection<CustomAttributeNamedArgument> Fields {
-			get {
-				Resolve ();
-
-				if (fields == null)
-					Interlocked.CompareExchange (ref fields, new Collection<CustomAttributeNamedArgument> (), null);
-
-				return fields;
-			}
-		}
-
-		public bool HasProperties {
-			get {
-				Resolve ();
-
-				return !properties.IsNullOrEmpty ();
-			}
-		}
-
-		public Collection<CustomAttributeNamedArgument> Properties {
-			get {
-				Resolve ();
-
-				if (properties == null)
-					Interlocked.CompareExchange (ref properties, new Collection<CustomAttributeNamedArgument> (), null);
-
-				return properties;
-			}
-		}
-
-		internal bool HasImage {
-			get { return constructor != null && constructor.HasImage; }
-		}
-
-		internal ModuleDefinition Module {
-			get { return constructor.Module; }
-		}
-
-		internal CustomAttribute (uint signature, MethodReference constructor)
-		{
-			this.signature = signature;
-			this.constructor = constructor;
-			this.resolved = false;
-		}
-
-		public CustomAttribute (MethodReference constructor)
-		{
-			this.constructor = constructor;
-			this.resolved = true;
-		}
-
-		public CustomAttribute (MethodReference constructor, byte [] blob)
-		{
-			this.constructor = constructor;
-			this.resolved = false;
-			this.blob = blob;
-		}
-
-		public byte [] GetBlob ()
-		{
-			if (blob != null)
-				return blob;
-
-			if (!HasImage)
-				throw new NotSupportedException ();
-
-			return Module.Read (ref blob, this, (attribute, reader) => reader.ReadCustomAttributeBlob (attribute.signature));
-		}
-
-		void Resolve ()
-		{
-			if (resolved || !HasImage)
-				return;
-
-			lock (Module.SyncRoot) {
-				if (resolved)
-					return;
-
-				Module.Read (this, (attribute, reader) => {
-					try {
-						reader.ReadCustomAttributeSignature (attribute);
-						resolved = true;
-					}
-					catch (ResolutionException) {
-						if (arguments != null)
-							arguments.Clear ();
-						if (fields != null)
-							fields.Clear ();
-						if (properties != null)
-							properties.Clear ();
-
-						resolved = false;
-					}
-				});
-			}
-		}
-	}
+                        resolved = false;
+                    }
+                });
+            }
+        }
+    }
 }

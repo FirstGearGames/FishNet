@@ -1,5 +1,4 @@
-﻿
-namespace FishNet.Object.Prediction
+﻿namespace FishNet.Object.Prediction
 {
     public interface IReplicateData
     {
@@ -8,11 +7,13 @@ namespace FishNet.Object.Prediction
         /// </summary>
         /// <returns></returns>
         uint GetTick();
+
         /// <summary>
         /// Sets the local tick when data was created.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         void SetTick(uint value);
+
         /// <summary>
         /// Allows for any cleanup when the data is being discarded.
         /// </summary>
@@ -26,15 +27,16 @@ namespace FishNet.Object.Prediction
         /// </summary>
         /// <returns></returns>
         uint GetTick();
+
         /// <summary>
         /// Sets the local tick when data was created.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         void SetTick(uint value);
+
         /// <summary>
         /// Allows for any cleanup when the data is being discarded.
         /// </summary>
         void Dispose();
     }
-
 }

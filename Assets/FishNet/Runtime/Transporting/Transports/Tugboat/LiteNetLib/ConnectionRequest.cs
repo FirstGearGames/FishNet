@@ -16,22 +16,18 @@ namespace LiteNetLib
     {
         private readonly NetManager _listener;
         private int _used;
-
         public NetDataReader Data => InternalPacket.Data;
-
         internal ConnectionRequestResult Result { get; private set; }
         internal NetConnectRequestPacket InternalPacket;
-
         public readonly IPEndPoint RemoteEndPoint;
 
         internal void UpdateRequest(NetConnectRequestPacket connectRequest)
         {
-            //old request
+            // old request
             if (connectRequest.ConnectionTime < InternalPacket.ConnectionTime)
                 return;
 
-            if (connectRequest.ConnectionTime == InternalPacket.ConnectionTime &&
-                connectRequest.ConnectionNumber == InternalPacket.ConnectionNumber)
+            if (connectRequest.ConnectionTime == InternalPacket.ConnectionTime && connectRequest.ConnectionNumber == InternalPacket.ConnectionNumber)
                 return;
 
             InternalPacket = connectRequest;
@@ -94,7 +90,6 @@ namespace LiteNetLib
         {
             Reject(rejectData, start, length, false);
         }
-
 
         public void RejectForce(byte[] rejectData, int start, int length)
         {

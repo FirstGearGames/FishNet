@@ -10,12 +10,13 @@
 
 using System;
 
-namespace MonoFN.Cecil {
-
-	[Flags]
-	public enum ManifestResourceAttributes : uint {
-		VisibilityMask = 0x0007,
-		Public = 0x0001,    // The resource is exported from the Assembly
-		Private = 0x0002     // The resource is private to the Assembly
-	}
+namespace MonoFN.Cecil
+{
+    [Flags]
+    public enum ManifestResourceAttributes : uint
+    {
+        VisibilityMask = 0x0007,
+        Public = 0x0001, // The resource is exported from the Assembly
+        Private = 0x0002 // The resource is private to the Assembly
+    }
 }

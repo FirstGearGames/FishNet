@@ -1,5 +1,4 @@
-﻿
-namespace FishNet.Object.Synchronizing
+﻿namespace FishNet.Object.Synchronizing
 {
     /// <summary>
     /// Custom SyncObjects must inherit from SyncBase and implement this interface.
@@ -14,6 +13,4 @@ namespace FishNet.Object.Synchronizing
         /// <returns></returns>
         object GetSerializedType();
     }
-
-
 }

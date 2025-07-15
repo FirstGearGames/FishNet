@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Managing.Observing.Editing
 {
-
-
     [CustomEditor(typeof(ObserverManager), true)]
     [CanEditMultipleObjects]
     public class ObserverManagerEditor : Editor
@@ -31,7 +29,7 @@ namespace FishNet.Managing.Observing.Editing
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            
+
             EditorGUILayout.PropertyField(_updateHostVisibility);
             if (_maximumTimedObserversDuration.floatValue < 1d)
                 EditorGUILayout.HelpBox("Using low values may reduce server performance while under load.", MessageType.Warning);
@@ -42,7 +40,6 @@ namespace FishNet.Managing.Observing.Editing
 
             serializedObject.ApplyModifiedProperties();
         }
-
     }
 }
 #endif

@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+
 #pragma warning disable CS0618 // Type or member is obsolete
 
 namespace FishNet.Component.Transforming
@@ -14,11 +15,11 @@ namespace FishNet.Component.Transforming
     /// </summary>
     public class MonoTickSmoother : MonoBehaviour
     {
-        //Lazy way to display obsolete message w/o using a custom editor.
+        // Lazy way to display obsolete message w/o using a custom editor.
         [Header("This component will be obsoleted soon.")]
         [Header("Use NetworkTickSmoother or OfflineTickSmoother.")]
         [Header(" ")]
-            
+
         #region Serialized.
         /// <summary>
         /// True to use InstanceFinder to locate the TimeManager. When false specify which TimeManager to use by calling SetTimeManager.
@@ -92,19 +93,18 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets a new PredictionManager to use.
         /// </summary>
-        /// <param name="tm"></param>
+        /// <param name = "tm"></param>
         public void SetTimeManager(TimeManager tm)
         {
             if (tm == _timeManager)
                 return;
 
-            //Unsub from current.
+            // Unsub from current.
             ChangeSubscription(false);
-            //Sub to newest.
+            // Sub to newest.
             _timeManager = tm;
             ChangeSubscription(true);
         }
-
 
         /// <summary>
         /// Changes the subscription to the TimeManager.
@@ -118,7 +118,7 @@ namespace FishNet.Component.Transforming
             {
                 if (_tickSmoother != null)
                 {
-                    float tDistance = (_enableTeleport) ? _teleportThreshold : MoveRates.UNSET_VALUE;
+                    float tDistance = _enableTeleport ? _teleportThreshold : MoveRates.UNSET_VALUE;
                     _tickSmoother.InitializeOnce(_graphicalObject, tDistance, (float)_timeManager.TickDelta, 1);
                 }
                 _timeManager.OnPreTick += _timeManager_OnPreTick;
@@ -130,7 +130,6 @@ namespace FishNet.Component.Transforming
                 _timeManager.OnPostTick -= _timeManager_OnPostTick;
             }
         }
-
 
         /// <summary>
         /// Called before a tick starts.
@@ -147,10 +146,5 @@ namespace FishNet.Component.Transforming
         {
             _tickSmoother.OnPostTick();
         }
-
-
     }
-
-
 }
-

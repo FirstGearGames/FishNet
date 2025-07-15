@@ -6,10 +6,10 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Demo.AdditiveScenes
 {
-
     public class ServerScenePrewarmer : NetworkBehaviour
     {
-        [SerializeField, Scene]
+        [SerializeField]
+        [Scene]
         private string[] _scenes = new string[0];
 
         public override void OnStartServer()
@@ -32,12 +32,11 @@ namespace FishNet.Demo.AdditiveScenes
                     Options = new()
                     {
                         AutomaticallyUnload = false
-                    },
+                    }
                 };
 
-                base.SceneManager.LoadConnectionScenes(sld);
+                SceneManager.LoadConnectionScenes(sld);
             }
         }
     }
-
 }

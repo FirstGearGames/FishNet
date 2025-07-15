@@ -4,24 +4,22 @@ using UnityEngine;
 
 namespace FishNet.Object
 {
-
-    public static class TransformPropertiesExtensions 
+    public static class TransformPropertiesExtensions
     {
         /// <summary>
         /// Creates direction between two TransformProperties.
         /// </summary>
-        /// <param name="divisor">Value to divide results by.</param>
+        /// <param name = "divisor">Value to divide results by.</param>
         /// <returns></returns>
         public static TransformProperties CreateDirections(this TransformProperties prevProperties, TransformProperties nextProperties, uint divisor = 1)
         {
-            //PROSTART
             Vector3 position = (nextProperties.Position - prevProperties.Position) / divisor;
 
             Quaternion rotation = nextProperties.Rotation.Subtract(prevProperties.Rotation);
             //If more than 1 tick span then get a portion of the rotation.
             if (divisor > 1)
             {
-                float percent = (1f / (float)divisor);
+                float percent = 1f / (float)divisor;
                 rotation = Quaternion.Lerp(Quaternion.identity, nextProperties.Rotation, percent);
             }
 
@@ -39,7 +37,7 @@ namespace FishNet.Object
             tp.Rotation = t.rotation;
             tp.LocalScale = t.localScale;
         }
-        
+
         /// <summary>
         /// Sets values of TransformPropertiesCls to a transforms world properties.
         /// </summary>
@@ -49,18 +47,14 @@ namespace FishNet.Object
             tp.Rotation = t.rotation;
             tp.Scale = t.localScale;
         }
-
-
-
     }
 
-    [System.Serializable]
+    [Serializable]
     public class TransformPropertiesCls : IResettable
     {
         public Vector3 Position;
         public Quaternion Rotation;
         public Vector3 LocalScale;
-
         public TransformPropertiesCls() { }
 
         public TransformPropertiesCls(Vector3 position, Quaternion rotation, Vector3 localScale)
@@ -109,7 +103,7 @@ namespace FishNet.Object
         /// </summary>
         public bool ValuesEquals(TransformPropertiesCls properties)
         {
-            return (this.Position == properties.Position && this.Rotation == properties.Rotation && this.LocalScale == properties.LocalScale);
+            return Position == properties.Position && Rotation == properties.Rotation && LocalScale == properties.LocalScale;
         }
 
         /// <summary>
@@ -123,7 +117,7 @@ namespace FishNet.Object
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct TransformProperties
     {
         public Vector3 Position;
@@ -145,10 +139,10 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Creates a TransformProperties with default position and rotation, with Vector3.one scale. 
+        /// Creates a TransformProperties with default position and rotation, with Vector3.one scale.
         /// </summary>
         public static TransformProperties GetTransformDefault() => new(Vector3.zero, Quaternion.identity, Vector3.one);
-        
+
         public override string ToString()
         {
             return $"Position: {Position.ToString()}, Rotation {Rotation.ToString()}, Scale {Scale.ToString()}";
@@ -191,7 +185,7 @@ namespace FishNet.Object
         /// <summary>
         /// Adds another transformProperties onto this.
         /// </summary>
-        /// <param name="tp"></param>
+        /// <param name = "tp"></param>
         public void Add(TransformProperties tp)
         {
             Position += tp.Position;
@@ -202,7 +196,7 @@ namespace FishNet.Object
         /// <summary>
         /// Subtracts another transformProperties from this.
         /// </summary>
-        /// <param name="tp"></param>
+        /// <param name = "tp"></param>
         public void Subtract(TransformProperties tp)
         {
             Position -= tp.Position;
@@ -215,7 +209,7 @@ namespace FishNet.Object
         /// </summary>
         public bool ValuesEquals(TransformProperties properties)
         {
-            return (this.Position == properties.Position && this.Rotation == properties.Rotation && this.Scale == properties.Scale);
+            return Position == properties.Position && Rotation == properties.Rotation && Scale == properties.Scale;
         }
     }
 }

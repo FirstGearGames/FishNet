@@ -15,10 +15,10 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Gets random entries by weight.
         /// </summary>
-        /// <param name="source">Entries to pull from.</param>
-        /// <param name="countRange">Number of entries to get.</param>
-        /// <param name="results">Results of entries. Key is the entry, Value is the number of drops.</param>
-        /// <param name="allowRepeatingDrops">True to allow the same entry to be included within results more than once.</param>
+        /// <param name = "source">Entries to pull from.</param>
+        /// <param name = "countRange">Number of entries to get.</param>
+        /// <param name = "results">Results of entries. Key is the entry, Value is the number of drops.</param>
+        /// <param name = "allowRepeatingDrops">True to allow the same entry to be included within results more than once.</param>
         public static void GetEntries<T>(List<T> source, IntRange countRange, ref Dictionary<T, uint> results, bool allowRepeatingDrops = false) where T : IWeighted
         {
             if (source == null || source.Count == 0)
@@ -28,19 +28,19 @@ namespace GameKit.Dependencies.Utilities
             }
 
             int count = Ints.RandomInclusiveRange(countRange.Minimum, countRange.Maximum);
-            //If to not return any then exit early.
+            // If to not return any then exit early.
             if (count == 0)
                 return;
 
-            //Number of times each item has dropped.
+            // Number of times each item has dropped.
             Dictionary<T, byte> dropCount = CollectionCaches<T, byte>.RetrieveDictionary();
 
-            //Get the total weight.
+            // Get the total weight.
             float totalWeight = 0f;
             for (int i = 0; i < source.Count; i++)
                 totalWeight += source[i].GetWeight();
 
-            //Make a copy of source to not modify source.
+            // Make a copy of source to not modify source.
             List<T> sourceCopy = CollectionCaches<T>.RetrieveList();
             foreach (T item in source)
                 sourceCopy.Add(item);
@@ -52,7 +52,7 @@ namespace GameKit.Dependencies.Utilities
                  * totalWeight will be modified if
                  * a non-repeatable item is pulled. */
                 float tWeightCopy = totalWeight;
-                float rnd = UnityEngine.Random.Range(0f, totalWeight);
+                float rnd = Random.Range(0f, totalWeight);
 
                 for (int i = 0; i < sourceCopy.Count; i++)
                 {
@@ -61,10 +61,10 @@ namespace GameKit.Dependencies.Utilities
 
                     if (rnd <= weight)
                     {
-                        //Try to get current count.
+                        // Try to get current count.
                         results.TryGetValueIL2CPP(item, out uint currentCount);
-                        //Set new vlaue.
-                        results[item] = (currentCount + 1);
+                        // Set new vlaue.
+                        results[item] = currentCount + 1;
                         /* If cannot stay in collection then remove it
                          * from copy and remove its weight
                          * from total. */
@@ -88,8 +88,6 @@ namespace GameKit.Dependencies.Utilities
             }
 
             CollectionCaches<T, byte>.Store(dropCount);
-
         }
     }
-
 }

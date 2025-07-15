@@ -12,6 +12,7 @@ namespace FishNet.Managing.Scened
             Name = s.name;
             Handle = s.handle;
         }
+
         public UnloadedScene(string name, int handle)
         {
             Name = name;

@@ -2,7 +2,6 @@ using FishNet.Object;
 
 namespace FishNet.Managing.Object
 {
-
     /// <summary>
     /// When using dual prefabs, defines which prefab to spawn for server, and which for clients.
     /// </summary>
@@ -12,5 +11,4 @@ namespace FishNet.Managing.Object
         public NetworkObject Server;
         public NetworkObject Client;
     }
-
 }

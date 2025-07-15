@@ -20,7 +20,7 @@ namespace GameKit.Dependencies.Utilities.Types
         {
             #region Public.
             /// <summary>
-            /// Current entry in the enumerator. 
+            /// Current entry in the enumerator.
             /// </summary>
             public T Current { get; private set; }
             #endregion
@@ -45,7 +45,7 @@ namespace GameKit.Dependencies.Utilities.Types
             /// <summary>
             /// True if currently enumerating.
             /// </summary>
-            private bool _enumerating => (_enumeratedRingBuffer != null);
+            private bool _enumerating => _enumeratedRingBuffer != null;
             /// <summary>
             /// Count of the collection during initialization.
             /// </summary>
@@ -54,10 +54,10 @@ namespace GameKit.Dependencies.Utilities.Types
 
             public void Initialize(RingBuffer<T> c)
             {
-                //if none are written then return.
+                // if none are written then return.
                 if (c.Count == 0)
                     return;
-                
+
                 _entriesEnumerated = 0;
                 _startIndex = c.GetRealIndex(0);
                 _enumeratedRingBuffer = c;
@@ -76,7 +76,7 @@ namespace GameKit.Dependencies.Utilities.Types
                 if (written != _initializeCollectionCount)
                 {
                     Debug.LogError($"{_enumeratedRingBuffer.GetType().Name} collection was modified during enumeration.");
-                    //This will force a return/reset.
+                    // This will force a return/reset.
                     _entriesEnumerated = written;
                 }
 
@@ -86,7 +86,7 @@ namespace GameKit.Dependencies.Utilities.Types
                     return false;
                 }
 
-                int index = (_startIndex + _entriesEnumerated);
+                int index = _startIndex + _entriesEnumerated;
                 int capacity = _enumeratedRingBuffer.Capacity;
                 if (index >= capacity)
                     index -= capacity;
@@ -166,7 +166,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Initializes with a set capacity.
         /// </summary>
-        /// <param name="capacity">Size to initialize the collection as. This cannot be changed after initialized.</param>
+        /// <param name = "capacity">Size to initialize the collection as. This cannot be changed after initialized.</param>
         public RingBuffer(int capacity)
         {
             Initialize(capacity);
@@ -175,12 +175,12 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Initializes the collection at length.
         /// </summary>
-        /// <param name="capacity">Size to initialize the collection as. This cannot be changed after initialized.</param>
+        /// <param name = "capacity">Size to initialize the collection as. This cannot be changed after initialized.</param>
         public void Initialize(int capacity)
         {
             if (capacity <= 0)
             {
-                UnityEngine.Debug.LogError($"Collection length must be larger than 0.");
+                Debug.LogError($"Collection length must be larger than 0.");
                 return;
             }
 
@@ -208,12 +208,12 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Initializes with default capacity.
         /// </summary>
-        /// <param name="log">True to log automatic initialization.</param>
+        /// <param name = "log">True to log automatic initialization.</param>
         public void Initialize()
         {
             if (!Initialized)
             {
-                UnityEngine.Debug.Log($"RingBuffer for type {typeof(T).FullName} is being initialized with a default capacity of {DEFAULT_CAPACITY}.");
+                Debug.Log($"RingBuffer for type {typeof(T).FullName} is being initialized with a default capacity of {DEFAULT_CAPACITY}.");
                 Initialize(DEFAULT_CAPACITY);
             }
         }
@@ -234,22 +234,22 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Resets the collection without clearing.
         /// </summary>
-        [Obsolete("This method no longer functions. Use Clear() instead.")] //Remove on V5
+        [Obsolete("This method no longer functions. Use Clear() instead.")] // Remove on V5
         public void Reset() { }
 
         /// <summary>
         /// Inserts an entry into the collection.
         /// This is can be an expensive operation on larger buffers.
         /// </summary>
-        /// <param name="simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
-        /// <param name="data">Data to insert.</param>
+        /// <param name = "simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
+        /// <param name = "data">Data to insert.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Insert(int simulatedIndex, T data)
         {
             Initialize();
 
             int written = _written;
-            //If simulatedIndex is 0 and none are written then add.
+            // If simulatedIndex is 0 and none are written then add.
             if (simulatedIndex == 0 && written == 0)
                 return Add(data);
 
@@ -258,11 +258,11 @@ namespace GameKit.Dependencies.Utilities.Types
                 return default;
 
 
-            //If adding to the end or none written.
-            if (simulatedIndex == (written - 1))
+            // If adding to the end or none written.
+            if (simulatedIndex == written - 1)
                 return Add(data);
 
-            int lastSimulatedIndex = (written == Capacity) ? (written - 1) : written;
+            int lastSimulatedIndex = written == Capacity ? written - 1 : written;
 
             while (lastSimulatedIndex > simulatedIndex)
             {
@@ -274,7 +274,7 @@ namespace GameKit.Dependencies.Utilities.Types
 
             T prev = Collection[realIndex];
             Collection[realIndex] = data;
-            //If written was not maxed out then increase it.
+            // If written was not maxed out then increase it.
             if (written < Capacity)
                 IncreaseWritten();
 
@@ -284,7 +284,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Adds an entry to the collection, returning a replaced entry.
         /// </summary>
-        /// <param name="data">Data to add.</param>
+        /// <param name = "data">Data to add.</param>
         /// <returns>Replaced entry. Value will be default if no entry was replaced.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Add(T data)
@@ -292,14 +292,13 @@ namespace GameKit.Dependencies.Utilities.Types
             Initialize();
 
             T current = Collection[WriteIndex];
-            
+
             Collection[WriteIndex] = data;
             IncreaseWritten();
 
             return current;
         }
-        
-        
+
         /// <summary>
         /// Returns the first entry and removes it from the buffer.
         /// </summary>
@@ -308,14 +307,14 @@ namespace GameKit.Dependencies.Utilities.Types
         {
             if (_written == 0)
                 return default;
-            
+
             int offset = GetRealIndex(0);
             T result = Collection[offset];
 
             RemoveRange(fromStart: true, 1);
             return result;
         }
-        
+
         /// <summary>
         /// Returns if able to dequeue an entry and removes it from the buffer if so.
         /// </summary>
@@ -344,7 +343,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Returns value in actual index as it relates to simulated index.
         /// </summary>
-        /// <param name="simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
+        /// <param name = "simulatedIndex">Simulated index to return. A value of 0 would return the first simulated index in the collection.</param>
         /// <returns></returns>
         public T this[int simulatedIndex]
         {
@@ -387,7 +386,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Returns the real index of the collection using a simulated index.
         /// </summary>
-        /// <param name="allowUnusedBuffer">True to allow an index be returned from an unused portion of the buffer so long as it is within bounds.</param>
+        /// <param name = "allowUnusedBuffer">True to allow an index be returned from an unused portion of the buffer so long as it is within bounds.</param>
         private int GetRealIndex(int simulatedIndex, bool allowUnusedBuffer = false)
         {
             if (simulatedIndex >= Capacity)
@@ -403,7 +402,7 @@ namespace GameKit.Dependencies.Utilities.Types
                     if (!allowUnusedBuffer)
                         return ReturnError();
                 }
-                int offset = (Capacity - written) + simulatedIndex + WriteIndex;
+                int offset = Capacity - written + simulatedIndex + WriteIndex;
                 if (offset >= Capacity)
                     offset -= Capacity;
 
@@ -412,7 +411,7 @@ namespace GameKit.Dependencies.Utilities.Types
 
             int ReturnError()
             {
-                UnityEngine.Debug.LogError($"Index {simulatedIndex} is out of range. Written count is {_written}, Capacity is {Capacity}");
+                Debug.LogError($"Index {simulatedIndex} is out of range. Written count is {_written}, Capacity is {Capacity}");
                 return -1;
             }
         }
@@ -420,15 +419,15 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Removes values from the simulated start of the collection.
         /// </summary>
-        /// <param name="fromStart">True to remove from the start, false to remove from the end.</param>
-        /// <param name="length">Number of entries to remove.</param>
+        /// <param name = "fromStart">True to remove from the start, false to remove from the end.</param>
+        /// <param name = "length">Number of entries to remove.</param>
         public void RemoveRange(bool fromStart, int length)
         {
             if (length == 0)
                 return;
             if (length < 0)
             {
-                UnityEngine.Debug.LogError($"Negative values cannot be removed.");
+                Debug.LogError($"Negative values cannot be removed.");
                 return;
             }
             //Full reset if value is at or more than written.
@@ -462,7 +461,7 @@ namespace GameKit.Dependencies.Utilities.Types
             return _enumerator;
         }
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator(); 
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

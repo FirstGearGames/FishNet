@@ -11,34 +11,28 @@
 using MonoFN.Collections.Generic;
 using System.Threading;
 
-namespace MonoFN.Cecil {
+namespace MonoFN.Cecil
+{
+    public interface ICustomAttributeProvider : IMetadataTokenProvider
+    {
+        Collection<CustomAttribute> CustomAttributes { get; }
+        bool HasCustomAttributes { get; }
+    }
 
-	public interface ICustomAttributeProvider : IMetadataTokenProvider {
+    internal static partial class Mixin
+    {
+        public static bool GetHasCustomAttributes(this ICustomAttributeProvider self, ModuleDefinition module)
+        {
+            return module.HasImage() && module.Read(self, (provider, reader) => reader.HasCustomAttributes(provider));
+        }
 
-		Collection<CustomAttribute> CustomAttributes { get; }
+        public static Collection<CustomAttribute> GetCustomAttributes(this ICustomAttributeProvider self, ref Collection<CustomAttribute> variable, ModuleDefinition module)
+        {
+            if (module.HasImage())
+                return module.Read(ref variable, self, (provider, reader) => reader.ReadCustomAttributes(provider));
 
-		bool HasCustomAttributes { get; }
-	}
-
-	static partial class Mixin {
-
-		public static bool GetHasCustomAttributes (
-			this ICustomAttributeProvider self,
-			ModuleDefinition module)
-		{
-			return module.HasImage () && module.Read (self, (provider, reader) => reader.HasCustomAttributes (provider));
-		}
-
-		public static Collection<CustomAttribute> GetCustomAttributes (
-			this ICustomAttributeProvider self,
-			ref Collection<CustomAttribute> variable,
-			ModuleDefinition module)
-		{
-			if (module.HasImage ())
-				return module.Read (ref variable, self, (provider, reader) => reader.ReadCustomAttributes (provider));
-
-			Interlocked.CompareExchange (ref variable, new Collection<CustomAttribute> (), null);
-			return variable;
-		}
-	}
+            Interlocked.CompareExchange(ref variable, new(), null);
+            return variable;
+        }
+    }
 }

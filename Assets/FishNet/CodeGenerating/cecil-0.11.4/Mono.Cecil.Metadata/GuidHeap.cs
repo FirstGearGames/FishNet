@@ -10,27 +10,24 @@
 
 using System;
 
-namespace MonoFN.Cecil.Metadata {
+namespace MonoFN.Cecil.Metadata
+{
+    internal sealed class GuidHeap : Heap
+    {
+        public GuidHeap(byte[] data) : base(data) { }
 
-	sealed class GuidHeap : Heap {
+        public Guid Read(uint index)
+        {
+            const int guid_size = 16;
 
-		public GuidHeap (byte [] data)
-			: base (data)
-		{
-		}
+            if (index == 0 || index - 1 + guid_size > data.Length)
+                return new();
 
-		public Guid Read (uint index)
-		{
-			const int guid_size = 16;
+            var buffer = new byte [guid_size];
 
-			if (index == 0 || ((index - 1) + guid_size) > data.Length)
-				return new Guid ();
+            Buffer.BlockCopy(data, (int)((index - 1) * guid_size), buffer, 0, guid_size);
 
-			var buffer = new byte [guid_size];
-
-			Buffer.BlockCopy (this.data, (int)((index - 1) * guid_size), buffer, 0, guid_size);
-
-			return new Guid (buffer);
-		}
-	}
+            return new(buffer);
+        }
+    }
 }

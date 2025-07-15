@@ -1,11 +1,10 @@
-﻿
-//using FishNet.Managing.Scened.Data;
-//using System;
-//using UnityEngine;
-//using UnityEngine.SceneManagement;
+﻿// using FishNet.Managing.Scened.Data;
+// using System;
+// using UnityEngine;
+// using UnityEngine.SceneManagement;
 
-//namespace FishNet.Managing.Scened
-//{
+// namespace FishNet.Managing.Scened
+// {
 
 //    public static class SceneSpawner
 //    {
@@ -80,9 +79,6 @@
 //        }
 //        #endregion
 
-
-
-
 //        #region Prefab, Parent, WorldSpace
 //        /// <summary>
 //        /// Instantiates a prefab and moves it to a scene.
@@ -152,9 +148,6 @@
 //            return Instantiate<T>(scene, prefab, prefab.transform.position, prefab.transform.rotation, parent, instantiateInWorldSpace);
 //        }
 //        #endregion
-
-
-
 
 //        #region Prefab, Position, Rotation.
 //        /// <summary>
@@ -226,9 +219,6 @@
 //        }
 //        #endregion
 
-
-
-
 //        #region Prefab, Position, Rotation, Parent.
 //        /// <summary>
 //        /// Instantiates a prefab and moves it to a scene.
@@ -299,7 +289,6 @@
 //        }
 //        #endregion
 
-
 //        #region Instantiator.
 //        /// <summary>
 //        /// Instantiates a prefab and moves it to a scene.
@@ -316,14 +305,14 @@
 //            GameObject result = MonoBehaviour.Instantiate(prefab, position, rotation);
 //            if (result != null)
 //            {
-//                //Move to new scene first.
+//                // Move to new scene first.
 //                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(result, scene);
 
-//                //Set parent and spaces.
+//                // Set parent and spaces.
 //                if (parent != null)
 //                {
 //                    result.transform.SetParent(parent);
-//                    //If to not instantiate in world space then update pos/rot to localspace.
+//                    // If to not instantiate in world space then update pos/rot to localspace.
 //                    if (!instantiateInWorldSpace)
 //                    {
 //                        result.transform.localPosition = position;
@@ -331,14 +320,14 @@
 //                    }
 //                }
 
-//                //If was a gameobject then return as GO.
+//                // If was a gameobject then return as GO.
 //                if (typeof(T) == typeof(GameObject))
 //                    return (T)Convert.ChangeType(result, typeof(GameObject));
-//                //Otherwise use getcomponent on the type.
+//                // Otherwise use getcomponent on the type.
 //                else
 //                    return result.GetComponent<T>();
 //            }
-//            //Couldn't be instantiated, return default of T.
+//            // Couldn't be instantiated, return default of T.
 //            else
 //            {
 //                return default(T);
@@ -347,10 +336,7 @@
 //        }
 //        #endregion
 
-
 //    }
 
+// }
 
-
-
-//}

@@ -29,8 +29,6 @@
         /// <summary>
         /// Visual disturbances caused by desynchronization are extremely unlikely. Graphics are using a generous amount interpolation.
         /// </summary>
-        VeryHigh = 6,
+        VeryHigh = 6
     }
-
-
 }

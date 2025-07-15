@@ -1,4 +1,7 @@
-﻿using FishNet.Connection;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.Connection;
 using FishNet.Managing.Object;
 using FishNet.Managing.Timing;
 using FishNet.Object;
@@ -50,10 +53,10 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void UpdateTimedObservers()
         {
-            if (!base.NetworkManager.IsServerStarted)
+            if (!NetworkManager.IsServerStarted)
                 return;
-            //No point in updating if the timemanager isn't going to tick this frame.
-            if (!base.NetworkManager.TimeManager.FrameTicked)
+            // No point in updating if the timemanager isn't going to tick this frame.
+            if (!NetworkManager.TimeManager.FrameTicked)
                 return;
             int networkObserversCount = _timedNetworkObservers.Count;
             if (networkObserversCount == 0)
@@ -61,10 +64,10 @@ namespace FishNet.Managing.Server
 
             /* Try to iterate all timed observers every half a second.
              * This value will increase as there's more observers or timed conditions. */
-            float timeMultiplier = 1f + ((base.NetworkManager.ServerManager.Clients.Count * 0.005f) + (_timedNetworkObservers.Count * 0.0005f));
-            //Check cap this way for readability.
-            float completionTime = Mathf.Min((0.5f * timeMultiplier), base.NetworkManager.ObserverManager.MaximumTimedObserversDuration);
-            uint completionTicks = base.NetworkManager.TimeManager.TimeToTicks(completionTime, TickRounding.RoundUp);
+            float timeMultiplier = 1f + (NetworkManager.ServerManager.Clients.Count * 0.005f + _timedNetworkObservers.Count * 0.0005f);
+            // Check cap this way for readability.
+            float completionTime = Mathf.Min(0.5f * timeMultiplier, NetworkManager.ObserverManager.MaximumTimedObserversDuration);
+            uint completionTicks = NetworkManager.TimeManager.TimeToTicks(completionTime, TickRounding.RoundUp);
             /* Iterations will be the number of objects
              * to iterate to be have completed all objects by
              * the end of completionTicks. */
@@ -73,7 +76,7 @@ namespace FishNet.Managing.Server
                 iterations = _timedNetworkObservers.Count;
 
             List<NetworkConnection> connCache = RetrieveAuthenticatedConnections();
-            //Build nob cache.
+            // Build nob cache.
             List<NetworkObject> nobCache = CollectionCaches<NetworkObject>.RetrieveList();
             for (int i = 0; i < iterations; i++)
             {
@@ -94,7 +97,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Indicates that a networkObserver component should be updated regularly. This is done automatically.
         /// </summary>
-        /// <param name="networkObject">NetworkObject to be updated.</param>
+        /// <param name = "networkObject">NetworkObject to be updated.</param>
         public void AddTimedNetworkObserver(NetworkObject networkObject)
         {
             if (_emptiedTimedIndexes.TryDequeue(out int index))
@@ -106,7 +109,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Indicates that a networkObserver component no longer needs to be updated regularly. This is done automatically.
         /// </summary>
-        /// <param name="networkObject">NetworkObject to be updated.</param>
+        /// <param name = "networkObject">NetworkObject to be updated.</param>
         public void RemoveTimedNetworkObserver(NetworkObject networkObject)
         {
             int index = _timedNetworkObservers.IndexOf(networkObject);
@@ -116,7 +119,7 @@ namespace FishNet.Managing.Server
             _emptiedTimedIndexes.Enqueue(index);
             _timedNetworkObservers[index] = null;
 
-            //If there's a decent amount missing then rebuild the collection.
+            // If there's a decent amount missing then rebuild the collection.
             if (_emptiedTimedIndexes.Count > 20)
             {
                 List<NetworkObject> newLst = CollectionCaches<NetworkObject>.RetrieveList();
@@ -172,8 +175,7 @@ namespace FishNet.Managing.Server
         /// <returns></returns>
         private List<NetworkObject> GetSpawnedNetworkObjects()
         {
-            List<NetworkObject> cache = CollectionCaches<NetworkObject>.RetrieveList();
-            Spawned.ValuesToList(ref cache);
+            List<NetworkObject> cache = Spawned.ValuesToList(useCache: true);
 
             return cache;
         }
@@ -186,7 +188,7 @@ namespace FishNet.Managing.Server
         {
             List<NetworkObject> sortedRootCache = CollectionCaches<NetworkObject>.RetrieveList();
 
-            //First order root objects.
+            // First order root objects.
             foreach (NetworkObject item in nobs)
             {
                 if (item.IsNested)
@@ -200,21 +202,24 @@ namespace FishNet.Managing.Server
              * of each root then insert after the root.
              * This must be performed after all roots are ordered. */
 
-            //This holds the results of all values.
+            // This holds the results of all values.
             List<NetworkObject> sortedRootAndNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
 
-            //Cache for sorting nested.
+            // Cache for sorting nested.
             List<NetworkObject> sortedNestedCache = CollectionCaches<NetworkObject>.RetrieveList();
 
             foreach (NetworkObject item in sortedRootCache)
             {
-                /* Remove recursive and only check Initialized and Runtime. Once iterated 
+                /* Remove recursive and only check Initialized and Runtime. Once iterated
                  * check each added entry again using Initialized and Recursive. */
                 List<NetworkObject> nested = item.GetNetworkObjects(GetNetworkObjectOption.AllNestedRecursive);
+
                 foreach (NetworkObject nestedItem in nested)
                 {
+                    /* If entry has a runtime nested that differs from initialized nested
+                     * then it k*/
                     if (sortedNestedCache.Contains(nestedItem))
-                        Debug.LogError("Already contains " + nestedItem.name);
+                        Debug.LogError($"Nested cache already contains item [{nestedItem.name}]. Source [{item.name}]. Please report this error.");
                     else
                         sortedNestedCache.AddOrdered(nestedItem);
                 }
@@ -226,11 +231,11 @@ namespace FishNet.Managing.Server
                 sortedRootAndNestedCache.Add(item);
                 sortedRootAndNestedCache.AddRange(sortedNestedCache);
 
-                //Reset cache.
+                // Reset cache.
                 sortedNestedCache.Clear();
             }
 
-            //Store temp caches.
+            // Store temp caches.
             CollectionCaches<NetworkObject>.Store(sortedRootCache);
             CollectionCaches<NetworkObject>.Store(sortedNestedCache);
 
@@ -240,7 +245,7 @@ namespace FishNet.Managing.Server
         /// <summary>
         /// Removes a connection from observers without synchronizing changes.
         /// </summary>
-        /// <param name="connection"></param>
+        /// <param name = "connection"></param>
         private void RemoveFromObserversWithoutSynchronization(NetworkConnection connection)
         {
             List<NetworkObject> observerChangedObjectsCache = _observerChangedObjectsCache;
@@ -250,7 +255,7 @@ namespace FishNet.Managing.Server
                     observerChangedObjectsCache.Add(nob);
             }
 
-            //Invoke despawn callbacks on nobs.
+            // Invoke despawn callbacks on nobs.
             for (int i = 0; i < observerChangedObjectsCache.Count; i++)
                 observerChangedObjectsCache[i].InvokeOnServerDespawn(connection);
             observerChangedObjectsCache.Clear();
@@ -364,10 +369,17 @@ namespace FishNet.Managing.Server
                 for (int z = 0; z < nobsCount; z++)
                     RebuildObservers(nobs[z], nc, nobCache, timedOnly);
 
-                //Send if change.
+                // Send if change.
                 if (_writer.Length > 0)
                 {
                     NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, _writer.GetArraySegment(), nc);
+
+
+#if DEVELOPMENT && !UNITY_SERVER
+                    if (NetworkTrafficStatistics != null)
+                        NetworkTrafficStatistics.AddOutboundPacketIdData(PacketId.BulkSpawnOrDespawn, string.Empty, _writer.Length, gameObject: null, asServer: true);
+#endif
+
                     _writer.Clear();
 
                     foreach (NetworkObject n in nobCache)
@@ -387,22 +399,36 @@ namespace FishNet.Managing.Server
                 return;
             _writer.Clear();
 
+#if DEVELOPMENT && !UNITY_SERVER
+            PacketId trafficPacketId;
+#endif
             conn.UpdateHashGridPositions(!timedOnly);
-            //If observer state changed then write changes.
+            // If observer state changed then write changes.
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
             {
                 WriteSpawn(nob, _writer, conn);
+#if DEVELOPMENT && !UNITY_SERVER
+                trafficPacketId = PacketId.ObjectSpawn;
+#endif
             }
             else if (osc == ObserverStateChange.Removed)
             {
                 nob.InvokeOnServerDespawn(conn);
                 WriteDespawn(nob, nob.GetDefaultDespawnType(), _writer);
+#if DEVELOPMENT && !UNITY_SERVER
+                trafficPacketId = PacketId.ObjectDespawn;
+#endif
             }
             else
             {
                 return;
             }
+
+#if DEVELOPMENT && !UNITY_SERVER
+            if (NetworkTrafficStatistics != null)
+                NetworkTrafficStatistics.AddOutboundPacketIdData(trafficPacketId, string.Empty, _writer.Length, gameObject: null, asServer: true);
+#endif
 
             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, _writer.GetArraySegment(), conn);
 
@@ -431,7 +457,7 @@ namespace FishNet.Managing.Server
              * hashgrid data rebuilt immediately. */
             conn.UpdateHashGridPositions(!timedOnly);
 
-            //If observer state changed then write changes.
+            // If observer state changed then write changes.
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
             {

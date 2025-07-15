@@ -10,7 +10,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 {
     internal class Attributes : CodegenBase
     {
-        
         /// <summary>
         /// Returns if methodDef has any Rpc attribute.
         /// </summary>
@@ -18,12 +17,12 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         {
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
-                RpcType rt = base.Session.GetClass<AttributeHelper>().GetRpcAttributeType(customAttribute);
+                RpcType rt = Session.GetClass<AttributeHelper>().GetRpcAttributeType(customAttribute);
                 if (rt != RpcType.None)
                     return true;
             }
 
-            //Fall through, nothing found.
+            // Fall through, nothing found.
             return false;
         }
 
@@ -38,29 +37,29 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             foreach (CustomAttribute customAttribute in methodDef.CustomAttributes)
             {
-                RpcType rt = base.Session.GetClass<AttributeHelper>().GetRpcAttributeType(customAttribute);
+                RpcType rt = Session.GetClass<AttributeHelper>().GetRpcAttributeType(customAttribute);
                 if (rt != RpcType.None)
                 {
                     results.Add(new(customAttribute, rt));
                 }
-                //Not a rpc attribute.
+                // Not a rpc attribute.
                 else
                 {
-                    //Check if async.
+                    // Check if async.
                     if (customAttribute.Is(asyncAttributeFullName))
                         isAsync = true;
                 }
             }
 
-            //Nothing found, exit early.
+            // Nothing found, exit early.
             if (results.Count == 0)
             {
                 return results;
             }
-            //If has at least one RPC attrivbute and is an async method.
+            // If has at least one RPC attrivbute and is an async method.
             else if (isAsync)
             {
-                base.Session.LogError($"{methodDef.Name} is an async RPC. This feature is not currently supported. You may instead run an async method from this RPC.");
+                Session.LogError($"{methodDef.Name} is an async RPC. This feature is not currently supported. You may instead run an async method from this RPC.");
                 return new();
             }
             //If more than one attribute make sure the combination is allowed.
@@ -69,7 +68,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 RpcType allRpcTypes = results.GetCombinedRpcType();
                 if (allRpcTypes != (RpcType.Observers | RpcType.Target))
                 {
-                    base.Session.LogError($"{methodDef.Name} contains multiple RPC attributes. Only ObserversRpc and TargetRpc attributes may be combined.");
+                    Session.LogError($"{methodDef.Name} contains multiple RPC attributes. Only ObserversRpc and TargetRpc attributes may be combined.");
                     return new();
                 }
             }
@@ -93,42 +92,39 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             //Static method.
             if (methodDef.IsStatic)
             {
-                base.Session.LogError($"{methodDef.Name} RPC method cannot be static.");
+                Session.LogError($"{methodDef.Name} RPC method cannot be static.");
                 return false;
             }
             //Is generic type.
             else if (methodDef.HasGenericParameters)
             {
-                base.Session.LogError($"{methodDef.Name} RPC method cannot contain generic parameters.");
+                Session.LogError($"{methodDef.Name} RPC method cannot contain generic parameters.");
                 return false;
             }
             //Abstract method.
             else if (methodDef.IsAbstract)
             {
-                base.Session.LogError($"{methodDef.Name} RPC method cannot be abstract.");
+                Session.LogError($"{methodDef.Name} RPC method cannot be abstract.");
                 return false;
             }
             //Non void return.
             else if (methodDef.ReturnType != methodDef.Module.TypeSystem.Void)
             {
-                base.Session.LogError($"{methodDef.Name} RPC method must return void.");
+                Session.LogError($"{methodDef.Name} RPC method must return void.");
                 return false;
             }
             //Misc failing conditions.
             else
             {
                 //Check for async attribute.
-                foreach (CustomAttribute ca in methodDef.CustomAttributes)
-                {
-
-                }
+                foreach (CustomAttribute ca in methodDef.CustomAttributes) { }
             }
             //TargetRpc but missing correct parameters.
             if (rpcType == RpcType.Target)
             {
                 if (methodDef.Parameters.Count == 0 || !methodDef.Parameters[0].Is(typeof(NetworkConnection)))
                 {
-                    base.Session.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
+                    Session.LogError($"Target RPC {methodDef.Name} must have a NetworkConnection as the first parameter.");
                     return false;
                 }
             }
@@ -139,28 +135,26 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                 ParameterDefinition parameterDef = methodDef.Parameters[i];
 
                 //If NetworkConnection, TargetRpc, and first parameter.
-                if ((i == 0) && (rpcType == RpcType.Target) && parameterDef.Is(typeof(NetworkConnection)))
+                if (i == 0 && rpcType == RpcType.Target && parameterDef.Is(typeof(NetworkConnection)))
                     continue;
 
                 if (parameterDef.ParameterType.IsGenericParameter)
                 {
-                    base.Session.LogError($"RPC method{methodDef.Name} contains a generic parameter. This is currently not supported.");
+                    Session.LogError($"RPC method{methodDef.Name} contains a generic parameter. This is currently not supported.");
                     return false;
                 }
 
                 //Can be serialized/deserialized.
-                bool canSerialize = base.GetClass<GeneralHelper>().HasSerializerAndDeserializer(parameterDef.ParameterType, true);
+                bool canSerialize = GetClass<GeneralHelper>().HasSerializerAndDeserializer(parameterDef.ParameterType, true);
                 if (!canSerialize)
                 {
-                    base.Session.LogError($"RPC method {methodDef.Name} parameter type {parameterDef.ParameterType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
+                    Session.LogError($"RPC method {methodDef.Name} parameter type {parameterDef.ParameterType.FullName} does not support serialization. Use a supported type or create a custom serializer.");
                     return false;
                 }
-
             }
 
             //Fall through, success.
             return true;
         }
-
     }
 }

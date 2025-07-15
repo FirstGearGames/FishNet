@@ -1,18 +1,16 @@
-﻿
-using GameKit.Dependencies.Utilities.Types;
+﻿using GameKit.Dependencies.Utilities.Types;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Objects
     {
         /// <summary>
         /// Returns if an object has been destroyed from memory.
         /// </summary>
-        /// <param name="gameObject"></param>
+        /// <param name = "gameObject"></param>
         /// <returns></returns>
         public static bool IsDestroyed(this GameObject gameObject)
         {
@@ -20,14 +18,14 @@ namespace GameKit.Dependencies.Utilities
             // and returns null when the object has been destroyed, but 
             // actually the object is still there but has not been cleaned up yet
             // if we test both we can determine if the object has been destroyed.
-            return (gameObject == null && !ReferenceEquals(gameObject, null));
+            return gameObject == null && !ReferenceEquals(gameObject, null);
         }
 
         /// <summary>
         /// Finds all objects in the scene of type. This method is very expensive.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="requireSceneLoaded">True if the scene must be fully loaded before trying to seek objects.</param>
+        /// <typeparam name = "T"></typeparam>
+        /// <param name = "requireSceneLoaded">True if the scene must be fully loaded before trying to seek objects.</param>
         /// <returns></returns>
         public static List<T> FindAllObjectsOfType<T>(bool activeSceneOnly = true, bool requireSceneLoaded = false, bool includeDDOL = true, bool includeInactive = true)
         {
@@ -35,13 +33,13 @@ namespace GameKit.Dependencies.Utilities
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene scene = SceneManager.GetSceneAt(i);
-                //If to include only current scene.
+                // If to include only current scene.
                 if (activeSceneOnly)
                 {
                     if (SceneManager.GetActiveScene() != scene)
                         continue;
                 }
-                //If the scene must be fully loaded to seek objects within.
+                // If the scene must be fully loaded to seek objects within.
                 if (!scene.isLoaded && requireSceneLoaded)
                     continue;
 
@@ -52,7 +50,7 @@ namespace GameKit.Dependencies.Utilities
                 }
             }
 
-            //If to also include DDOL.
+            // If to also include DDOL.
             if (includeDDOL)
             {
                 GameObject ddolGo = DDOL.GetDDOL().gameObject;
@@ -62,6 +60,4 @@ namespace GameKit.Dependencies.Utilities
             return results;
         }
     }
-
-
 }

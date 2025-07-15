@@ -9,46 +9,33 @@ namespace LiteNetLib.Utils
         protected byte[] _data;
         protected int _position;
         protected int _dataSize;
-        private int _offset;
-
         public byte[] RawData
         {
-            
             get => _data;
         }
         public int RawDataSize
         {
-            
             get => _dataSize;
         }
-        public int UserDataOffset
-        {
-            
-            get => _offset;
-        }
+        public int UserDataOffset { get; private set; }
         public int UserDataSize
         {
-            
-            get => _dataSize - _offset;
+            get => _dataSize - UserDataOffset;
         }
         public bool IsNull
         {
-            
             get => _data == null;
         }
         public int Position
         {
-            
             get => _position;
         }
         public bool EndOfData
         {
-            
             get => _position == _dataSize;
         }
         public int AvailableBytes
         {
-            
             get => _dataSize - _position;
         }
 
@@ -66,7 +53,7 @@ namespace LiteNetLib.Utils
         {
             _data = dataWriter.Data;
             _position = 0;
-            _offset = 0;
+            UserDataOffset = 0;
             _dataSize = dataWriter.Length;
         }
 
@@ -74,7 +61,7 @@ namespace LiteNetLib.Utils
         {
             _data = source;
             _position = 0;
-            _offset = 0;
+            UserDataOffset = 0;
             _dataSize = source.Length;
         }
 
@@ -82,14 +69,11 @@ namespace LiteNetLib.Utils
         {
             _data = source;
             _position = offset;
-            _offset = offset;
+            UserDataOffset = offset;
             _dataSize = maxSize;
         }
 
-        public NetDataReader()
-        {
-
-        }
+        public NetDataReader() { }
 
         public NetDataReader(NetDataWriter writer)
         {
@@ -107,10 +91,9 @@ namespace LiteNetLib.Utils
         }
 
         #region GetMethods
-
         public void Get<T>(out T result) where T : struct, INetSerializable
         {
-            result = default(T);
+            result = default;
             result.Deserialize(this);
         }
 
@@ -238,7 +221,7 @@ namespace LiteNetLib.Utils
             }
             return result;
         }
-        
+
         public bool[] GetBoolArray()
         {
             return GetArray<bool>(1);
@@ -396,9 +379,7 @@ namespace LiteNetLib.Utils
 
             ArraySegment<byte> data = GetBytesSegment(actualSize);
 
-            return (maxLength > 0 && NetDataWriter.uTF8Encoding.Value.GetCharCount(data.Array, data.Offset, data.Count) > maxLength) ?
-                string.Empty :
-                NetDataWriter.uTF8Encoding.Value.GetString(data.Array, data.Offset, data.Count);
+            return maxLength > 0 && NetDataWriter.uTF8Encoding.Value.GetCharCount(data.Array, data.Offset, data.Count) > maxLength ? string.Empty : NetDataWriter.uTF8Encoding.Value.GetString(data.Array, data.Offset, data.Count);
         }
 
         public string GetString()
@@ -449,10 +430,9 @@ namespace LiteNetLib.Utils
         }
 
 #if LITENETLIB_SPANS || NETCOREAPP2_1_OR_GREATER || NETSTANDARD2_1_OR_GREATER || NETCOREAPP2_1 || NETCOREAPP3_1 || NET5_0 || NETSTANDARD2_1
-        
         public ReadOnlySpan<byte> GetRemainingBytesSpan()
         {
-            return new ReadOnlySpan<byte>(_data, _position, _dataSize - _position);
+            return new(_data, _position, _dataSize - _position);
         }
 #endif
 
@@ -488,7 +468,6 @@ namespace LiteNetLib.Utils
         #endregion
 
         #region PeekMethods
-
         public byte PeekByte()
         {
             return _data[_position];
@@ -566,9 +545,7 @@ namespace LiteNetLib.Utils
                 return null;
             }
 
-            return (maxLength > 0 && NetDataWriter.uTF8Encoding.Value.GetCharCount(_data, _position + 2, actualSize) > maxLength) ?
-                string.Empty :
-                NetDataWriter.uTF8Encoding.Value.GetString(_data, _position + 2, actualSize);
+            return maxLength > 0 && NetDataWriter.uTF8Encoding.Value.GetCharCount(_data, _position + 2, actualSize) > maxLength ? string.Empty : NetDataWriter.uTF8Encoding.Value.GetString(_data, _position + 2, actualSize);
         }
 
         public string PeekString()
@@ -739,7 +716,8 @@ namespace LiteNetLib.Utils
 
         public bool TryGetStringArray(out string[] result)
         {
-            if (!TryGetUShort(out ushort strArrayLength)) {
+            if (!TryGetUShort(out ushort strArrayLength))
+            {
                 result = null;
                 return false;
             }

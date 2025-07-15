@@ -1,7 +1,5 @@
 ﻿namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     [System.Serializable]
     public struct IntRange
     {
@@ -10,6 +8,7 @@
             Minimum = minimum;
             Maximum = maximum;
         }
+
         /// <summary>
         /// Minimum range.
         /// </summary>
@@ -27,6 +26,7 @@
         {
             return Ints.RandomExclusiveRange(Minimum, Maximum);
         }
+
         /// <summary>
         /// Returns an inclusive random value between Minimum and Maximum.
         /// </summary>
@@ -39,7 +39,7 @@
         /// <summary>
         /// Returns value clamped within minimum and maximum.
         /// </summary>
-        /// <param name="value"></param>
+        /// <param name = "value"></param>
         /// <returns></returns>
         public int Clamp(int value)
         {
@@ -50,6 +50,4 @@
             return value;
         }
     }
-
-
 }

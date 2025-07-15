@@ -8,7 +8,6 @@ namespace LiteNetLib
         protected readonly NetPeer Peer;
         protected readonly Queue<NetPacket> OutgoingQueue = new(NetConstants.DefaultWindowSize);
         private int _isAddedToPeerChannelSendQueue;
-
         public int PacketsInQueue => OutgoingQueue.Count;
 
         protected BaseChannel(NetPeer peer)

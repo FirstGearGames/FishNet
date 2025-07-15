@@ -35,12 +35,12 @@ namespace FishNet.Example.Authenticating
         {
             base.InitializeOnce(networkManager);
 
-            //Listen for connection state change as client.
-            base.NetworkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
-            //Listen for broadcast from client. Be sure to set requireAuthentication to false.
-            base.NetworkManager.ServerManager.RegisterBroadcast<PasswordBroadcast>(OnPasswordBroadcast, false);
-            //Listen to response from server.
-            base.NetworkManager.ClientManager.RegisterBroadcast<ResponseBroadcast>(OnResponseBroadcast);
+            // Listen for connection state change as client.
+            NetworkManager.ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+            // Listen for broadcast from client. Be sure to set requireAuthentication to false.
+            NetworkManager.ServerManager.RegisterBroadcast<PasswordBroadcast>(OnPasswordBroadcast, false);
+            // Listen to response from server.
+            NetworkManager.ClientManager.RegisterBroadcast<ResponseBroadcast>(OnResponseBroadcast);
         }
 
         /// <summary>
@@ -50,12 +50,12 @@ namespace FishNet.Example.Authenticating
         {
             /* If anything but the started state then exit early.
              * Only try to authenticate on started state. The server
-            * doesn't have to send an authentication request before client
-            * can authenticate, that is entirely optional and up to you. In this
-            * example the client tries to authenticate soon as they connect. */
+             * doesn't have to send an authentication request before client
+             * can authenticate, that is entirely optional and up to you. In this
+             * example the client tries to authenticate soon as they connect. */
             if (args.ConnectionState != LocalConnectionState.Started)
                 return;
-            //Authentication was sent as host, no need to authenticate normally.
+            // Authentication was sent as host, no need to authenticate normally.
             if (AuthenticateAsHost())
                 return;
 
@@ -64,15 +64,14 @@ namespace FishNet.Example.Authenticating
                 Password = _password
             };
 
-            base.NetworkManager.ClientManager.Broadcast(pb);
+            NetworkManager.ClientManager.Broadcast(pb);
         }
-
 
         /// <summary>
         /// Received on server when a client sends the password broadcast message.
         /// </summary>
-        /// <param name="conn">Connection sending broadcast.</param>
-        /// <param name="pb"></param>
+        /// <param name = "conn">Connection sending broadcast.</param>
+        /// <param name = "pb"></param>
         private void OnPasswordBroadcast(NetworkConnection conn, PasswordBroadcast pb, Channel channel)
         {
             /* If client is already authenticated this could be an attack. Connections
@@ -84,7 +83,7 @@ namespace FishNet.Example.Authenticating
                 return;
             }
 
-            bool correctPassword = (pb.Password == _password);
+            bool correctPassword = pb.Password == _password;
             SendAuthenticationResponse(conn, correctPassword);
             /* Invoke result. This is handled internally to complete the connection or kick client.
              * It's important to call this after sending the broadcast so that the broadcast
@@ -95,10 +94,10 @@ namespace FishNet.Example.Authenticating
         /// <summary>
         /// Received on client after server sends an authentication response.
         /// </summary>
-        /// <param name="rb"></param>
+        /// <param name = "rb"></param>
         private void OnResponseBroadcast(ResponseBroadcast rb, Channel channel)
         {
-            string result = (rb.Passed) ? "Authentication complete." : "Authenitcation failed.";
+            string result = rb.Passed ? "Authentication complete." : "Authenitcation failed.";
             NetworkManager.Log(result);
         }
 
@@ -108,25 +107,24 @@ namespace FishNet.Example.Authenticating
         private void SendAuthenticationResponse(NetworkConnection conn, bool authenticated)
         {
             /* Tell client if they authenticated or not. This is
-            * entirely optional but does demonstrate that you can send
-            * broadcasts to client on pass or fail. */
+             * entirely optional but does demonstrate that you can send
+             * broadcasts to client on pass or fail. */
             ResponseBroadcast rb = new()
             {
                 Passed = authenticated
             };
-            base.NetworkManager.ServerManager.Broadcast(conn, rb, false);
+            NetworkManager.ServerManager.Broadcast(conn, rb, false);
         }
+
         /// <summary>
         /// Called after handling a host authentication result.
         /// </summary>
-        /// <param name="conn">Connection authenticating.</param>
-        /// <param name="authenticated">True if authentication passed.</param>
+        /// <param name = "conn">Connection authenticating.</param>
+        /// <param name = "authenticated">True if authentication passed.</param>
         protected override void OnHostAuthenticationResult(NetworkConnection conn, bool authenticated)
         {
             SendAuthenticationResponse(conn, authenticated);
             OnAuthenticationResult?.Invoke(conn, authenticated);
         }
     }
-
-
 }

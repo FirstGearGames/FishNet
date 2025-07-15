@@ -6,7 +6,7 @@ using FishNet.Utility.Template;
 using UnityEngine;
 
 /* Note: the graphical object for this predicted NetworkObject is unset.
-* This is because currently the NetworkObject only allows setting of one
+ * This is because currently the NetworkObject only allows setting of one
  * graphical object, but there are three things that move independently.
  *
  * In version 4.5.8 there will be an option to support multiple graphical objects
@@ -36,14 +36,11 @@ namespace FishNet.Demo.Prediction.Rigidbodies
             /// True to fire.
             /// </summary>
             public bool Fire;
-
             /// <summary>
             /// Tick is set at runtime. There is no need to manually assign this value.
             /// </summary>
             private uint _tick;
-
             public void Dispose() { }
-
             public uint GetTick() => _tick;
             public void SetTick(uint value) => _tick = value;
         }
@@ -76,7 +73,6 @@ namespace FishNet.Demo.Prediction.Rigidbodies
             /// Tick which the boost started.
             /// </summary>
             public uint BoostStartTick;
-
             /// <summary>
             /// Tick is set at runtime. There is no need to manually assign this value.
             /// </summary>
@@ -94,17 +90,14 @@ namespace FishNet.Demo.Prediction.Rigidbodies
         private Rigidbody _frontWheelRigidbody;
         [SerializeField]
         private Rigidbody _rearWheelRigidbody;
-
         [SerializeField]
         private float _boostDuration = 1f;
         [SerializeField]
         private float _boostForce = 20f;
-
         [SerializeField]
         private float _moveRate = 4f;
         [SerializeField]
         private float _turnRate = 4f;
-
         /// <summary>
         /// Root of the vehicle.
         /// </summary>
@@ -117,7 +110,6 @@ namespace FishNet.Demo.Prediction.Rigidbodies
         /// Drives acceleration (rear wheels).
         /// </summary>
         private PredictionRigidbody _rearWheel = new();
-
         /// <summary>
         /// Tick which the boost started.
         /// </summary>
@@ -140,8 +132,8 @@ namespace FishNet.Demo.Prediction.Rigidbodies
 
         public override void OnStartNetwork()
         {
-            //Rigidbodies need tick and postTick.
-            base.SetTickCallbacks(TickCallback.Tick | TickCallback.PostTick);
+            // Rigidbodies need tick and postTick.
+            SetTickCallbacks(TickCallback.Tick | TickCallback.PostTick);
         }
 
         protected override void TimeManager_OnTick()
@@ -158,13 +150,14 @@ namespace FishNet.Demo.Prediction.Rigidbodies
             /* Only the controller needs to build move data.
              * This could be the server if the server if no owner, for example
              * such as AI, or the owner of the object. */
-            if (!base.IsOwner) return default;
+            if (!IsOwner)
+                return default;
 
             float horizontal = Input.GetAxisRaw("Horizontal");
             float vertical = Input.GetAxisRaw("Vertical");
-            //To keep things simple firing is done by holding left shift.
+            // To keep things simple firing is done by holding left shift.
             bool fire = Input.GetKey(KeyCode.LeftShift);
-            
+
             ReplicateData md = new(new(horizontal, vertical), fire);
 
             return md;
@@ -194,11 +187,11 @@ namespace FishNet.Demo.Prediction.Rigidbodies
              * test this behavior. */
             // if (base.IsServerStarted)
             // {
-            //     //Exit early if 10 ticks have not passed.
+            //     // Exit early if 10 ticks have not passed.
             //     if (base.TimeManager.LocalTick % 10 != 0) return;
             // }
 
-            //Build the data using current information and call the reconcile method.
+            // Build the data using current information and call the reconcile method.
             ReconcileData rd = new(_root, _frontWheel, _rearWheel, _boostStartTick);
             PerformReconcile(rd);
         }
@@ -226,27 +219,27 @@ namespace FishNet.Demo.Prediction.Rigidbodies
              * we don't want to boost during a replay before the boost started. */
             if (_boostStartTick != TimeManager.UNSET_TICK && rdTick >= _boostStartTick)
             {
-                //Add boost to forward force.                
+                // Add boost to forward force.                
                 forwardForce += new Vector3(0f, 0f, _boostForce);
 
-                uint boostTimeToTicks = base.TimeManager.TimeToTicks(_boostDuration, TickRounding.RoundUp);
-                //This is when boost will end.
-                uint endTick = (_boostStartTick + boostTimeToTicks);
+                uint boostTimeToTicks = TimeManager.TimeToTicks(_boostDuration, TickRounding.RoundUp);
+                // This is when boost will end.
+                uint endTick = _boostStartTick + boostTimeToTicks;
 
-                //Unset boost if tick is met.
+                // Unset boost if tick is met.
                 if (rdTick >= endTick)
                     _boostStartTick = TimeManager.UNSET_TICK;
             }
-            
+
             //Convert forwards based on root forward.
             Transform rootTransform = _root.Rigidbody.transform;
             turningForce = rootTransform.TransformDirection(turningForce);
             forwardForce = rootTransform.TransformDirection(forwardForce);
-            
+
             //Flip turning if vehicle is also flipped.
             if (rootTransform.up.y <= -0.1f)
                 turningForce *= -1f;
-            
+
             /* Add turning and forward force.
              *
              * Notice that forces are NOT multiplied by

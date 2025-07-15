@@ -31,7 +31,7 @@ namespace FishNet.Component.Spawning
         /// <summary>
         /// Sets the PlayerPrefab to use.
         /// </summary>
-        /// <param name="nob"></param>
+        /// <param name = "nob"></param>
         public void SetPlayerPrefab(NetworkObject nob) => _playerPrefab = nob;
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace FishNet.Component.Spawning
             _networkManager = GetComponentInParent<NetworkManager>();
             if (_networkManager == null)
                 _networkManager = InstanceFinder.NetworkManager;
-            
+
             if (_networkManager == null)
             {
                 NetworkManagerExtensions.LogWarning($"PlayerSpawner on {gameObject.name} cannot work as NetworkManager wasn't found on this object or within parent objects.");
@@ -107,7 +107,7 @@ namespace FishNet.Component.Spawning
             NetworkObject nob = _networkManager.GetPooledInstantiated(_playerPrefab, position, rotation, true);
             _networkManager.ServerManager.Spawn(nob, conn);
 
-            //If there are no global scenes 
+            // If there are no global scenes 
             if (_addToDefaultScene)
                 _networkManager.SceneManager.AddOwnerToDefaultScene(nob);
 
@@ -117,11 +117,11 @@ namespace FishNet.Component.Spawning
         /// <summary>
         /// Sets a spawn position and rotation.
         /// </summary>
-        /// <param name="pos"></param>
-        /// <param name="rot"></param>
+        /// <param name = "pos"></param>
+        /// <param name = "rot"></param>
         private void SetSpawn(Transform prefab, out Vector3 pos, out Quaternion rot)
         {
-            //No spawns specified.
+            // No spawns specified.
             if (Spawns.Length == 0)
             {
                 SetSpawnUsingPrefab(prefab, out pos, out rot);
@@ -139,7 +139,7 @@ namespace FishNet.Component.Spawning
                 rot = result.rotation;
             }
 
-            //Increase next spawn and reset if needed.
+            // Increase next spawn and reset if needed.
             _nextSpawn++;
             if (_nextSpawn >= Spawns.Length)
                 _nextSpawn = 0;
@@ -148,9 +148,9 @@ namespace FishNet.Component.Spawning
         /// <summary>
         /// Sets spawn using values from prefab.
         /// </summary>
-        /// <param name="prefab"></param>
-        /// <param name="pos"></param>
-        /// <param name="rot"></param>
+        /// <param name = "prefab"></param>
+        /// <param name = "pos"></param>
+        /// <param name = "rot"></param>
         private void SetSpawnUsingPrefab(Transform prefab, out Vector3 pos, out Quaternion rot)
         {
             pos = prefab.position;

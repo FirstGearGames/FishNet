@@ -2,8 +2,6 @@
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     [System.Serializable]
     public struct ByteRange
     {
@@ -12,6 +10,7 @@ namespace GameKit.Dependencies.Utilities.Types
             Minimum = minimum;
             Maximum = maximum;
         }
+
         /// <summary>
         /// Minimum range.
         /// </summary>
@@ -26,6 +25,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// </summary>
         /// <returns></returns>
         public byte RandomExclusive() => Bytes.RandomExclusiveRange(Minimum, Maximum);
+
         /// <summary>
         /// Returns an inclusive random value between Minimum and Maximum.
         /// </summary>
@@ -40,9 +40,6 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// True if value is within range of Minimum and Maximum.
         /// </summary>
-        public bool InRange(byte value) => (value >= Minimum) && (value <= Maximum);
-
+        public bool InRange(byte value) => value >= Minimum && value <= Maximum;
     }
-
-
 }

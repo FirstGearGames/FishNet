@@ -6,10 +6,9 @@ namespace FishNet.Demo.AdditiveScenes
 {
     public class LevelLoader : NetworkBehaviour
     {
-
         private void OnTriggerEnter(Collider other)
         {
-            if (!base.IsServerStarted)
+            if (!IsServerStarted)
                 return;
 
             Player player = GetPlayerOwnedObject(other);
@@ -29,21 +28,21 @@ namespace FishNet.Demo.AdditiveScenes
                 {
                     AutomaticallyUnload = false
                 },
-                /* Also move the client object to the new scene. 
-                * This step is not required but may be desirable. */
+                /* Also move the client object to the new scene.
+                 * This step is not required but may be desirable. */
                 MovedNetworkObjects = new NetworkObject[] { player.NetworkObject },
-                //Load scenes as additive.
+                // Load scenes as additive.
                 ReplaceScenes = ReplaceOption.None,
-                //Set the preferred active scene so the client changes active scenes.
-                PreferredActiveScene = new(lookupData),
+                // Set the preferred active scene so the client changes active scenes.
+                PreferredActiveScene = new(lookupData)
             };
 
-            base.SceneManager.LoadConnectionScenes(player.Owner, sld);
+            SceneManager.LoadConnectionScenes(player.Owner, sld);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (!base.IsServerStarted)
+            if (!IsServerStarted)
                 return;
 
             Player player = GetPlayerOwnedObject(other);
@@ -55,7 +54,7 @@ namespace FishNet.Demo.AdditiveScenes
              * for the clients. */
             SceneLookupData lookupData = new(gameObject.scene);
             /* Tell server to keep unused when unloading. This will keep
-             * the scene even if there are no connections. 
+             * the scene even if there are no connections.
              * This varies from AutomaticallyUnload slightly;
              * automatically unload will remove the scene on the server
              * if there are no more connections, such as if players
@@ -70,27 +69,26 @@ namespace FishNet.Demo.AdditiveScenes
                 }
             };
 
-            base.SceneManager.UnloadConnectionScenes(player.Owner, sud);
+            SceneManager.UnloadConnectionScenes(player.Owner, sud);
         }
 
         /// <summary>
         /// Returns a Player script if the object is a player.
         /// </summary>
-        /// <param name="other"></param>
+        /// <param name = "other"></param>
         /// <returns></returns>
         private Player GetPlayerOwnedObject(Collider other)
         {
             /* When an object exits this trigger unload the level for the client. */
             Player player = other.GetComponent<Player>();
-            //Not the player object.
+            // Not the player object.
             if (player == null)
                 return null;
-            //No owner??
+            // No owner??
             if (!player.Owner.IsActive)
                 return null;
 
             return player;
         }
     }
-
 }

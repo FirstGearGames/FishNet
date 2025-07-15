@@ -32,20 +32,20 @@ namespace LiteNetLib
 
         private void Application_focusChanged(bool focused)
         {
-            //If coming back into focus see if a reconnect is needed.
+            // If coming back into focus see if a reconnect is needed.
             if (focused)
             {
-                //try reconnect
+                // try reconnect
                 if (!_initialized)
                     return;
-                //Was intentionally disconnected at some point.
+                // Was intentionally disconnected at some point.
                 if (!_netManager.IsRunning)
                     return;
-                //Socket is in working state.
+                // Socket is in working state.
                 if (_netManager.NotConnected == false)
                     return;
 
-                //Socket isn't running but should be. Try to start again.
+                // Socket isn't running but should be. Try to start again.
                 if (!_netManager.Start(_ipv4, _ipv6, _port, _manualMode))
                 {
                     NetDebug.WriteError($"[S] Cannot restore connection. Ipv4 {_ipv4}, Ipv6 {_ipv6}, Port {_port}, ManualMode {_manualMode}");

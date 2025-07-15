@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
     /// <summary>
     /// Gameplay canvases register to this manager.
     /// </summary>
@@ -34,7 +33,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Delegate for resizing RectTransforms.
         /// </summary>
-        /// <param name="complete">True if the resize iterations are complete. Typically show your visuals when true.</param>
+        /// <param name = "complete">True if the resize iterations are complete. Typically show your visuals when true.</param>
         public delegate void ResizeDelegate(bool complete);
         #endregion
 
@@ -68,8 +67,8 @@ namespace GameKit.Dependencies.Utilities.Types
             for (int i = 0; i < _resizeDatas.Count; i++)
             {
                 _resizeDatas[i].Remaining--;
-                bool complete = (_resizeDatas[i].Remaining == 0);
-                _resizeDatas[i].Delegate?.Invoke(complete);                
+                bool complete = _resizeDatas[i].Remaining == 0;
+                _resizeDatas[i].Delegate?.Invoke(complete);
                 if (complete)
                 {
                     ResettableObjectCaches<ResizeData>.Store(_resizeDatas[i]);
@@ -77,19 +76,17 @@ namespace GameKit.Dependencies.Utilities.Types
                     i--;
                 }
             }
-
         }
-
 
         /// <summary>
         /// Used to call a delegate twice, over two frames.
         /// This is an easy way to resize RectTransforms multiple times as they will often fail after the first resize due to Unity limitations.
         /// Note: this work-around may not be required for newer Unity versions.
         /// </summary>
-        /// <param name="del">Delegate to invoke when resizing completes.</param>
+        /// <param name = "del">Delegate to invoke when resizing completes.</param>
         public static void Resize(ResizeDelegate del)
         {
-            //Check to make a singleton instance.
+            // Check to make a singleton instance.
             if (_instance == null)
             {
                 GameObject go = new(typeof(RectTransformResizer).Name);
@@ -99,13 +96,12 @@ namespace GameKit.Dependencies.Utilities.Types
 
             _instance.Resize_Internal(del);
         }
-        private  void Resize_Internal(ResizeDelegate del)
+
+        private void Resize_Internal(ResizeDelegate del)
         {
             ResizeData rd = ResettableObjectCaches<ResizeData>.Retrieve();
             rd.Delegate = del;
             _instance._resizeDatas.Add(rd);
         }
     }
-
-
 }

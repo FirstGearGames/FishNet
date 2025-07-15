@@ -7,11 +7,10 @@ namespace FishNet.CodeGenerating.ILCore
 {
     internal static class ILCoreHelper
     {
-
         /// <summary>
         /// Returns AssembleDefinition for compiledAssembly.
         /// </summary>
-        /// <param name="compiledAssembly"></param>
+        /// <param name = "compiledAssembly"></param>
         /// <returns></returns>
         internal static AssemblyDefinition GetAssemblyDefinition(ICompiledAssembly compiledAssembly)
         {
@@ -26,13 +25,10 @@ namespace FishNet.CodeGenerating.ILCore
             };
 
             AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(new MemoryStream(compiledAssembly.InMemoryAssembly.PeData), readerParameters);
-            //Allows us to resolve inside FishNet assembly, such as for components.
+            // Allows us to resolve inside FishNet assembly, such as for components.
             assemblyResolver.AddAssemblyDefinitionBeingOperatedOn(assemblyDefinition);
 
             return assemblyDefinition;
         }
-
-
     }
-
 }

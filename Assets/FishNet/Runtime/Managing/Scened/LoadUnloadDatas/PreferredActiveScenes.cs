@@ -1,5 +1,4 @@
-﻿
-namespace FishNet.Managing.Scened
+﻿namespace FishNet.Managing.Scened
 {
     public struct PreferredScene
     {
@@ -24,13 +23,11 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Sets the same preferred scene for client and server.
         /// </summary>
-        /// <param name="sld"></param>
+        /// <param name = "sld"></param>
         public PreferredScene(SceneLookupData sld)
         {
             Client = sld;
             Server = sld;
         }
     }
-
-
 }

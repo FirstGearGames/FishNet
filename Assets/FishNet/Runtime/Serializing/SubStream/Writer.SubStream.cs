@@ -1,12 +1,11 @@
 namespace FishNet.Serializing
 {
-
     public partial class Writer
     {
         /// <summary>
         /// Writes a SubStream.
         /// </summary>
-        /// <param name="value">Substream</param>
+        /// <param name = "value">Substream</param>
         public void WriteSubStream(SubStream value)
         {
             // Uninitialized substream, write Length as -1
@@ -24,5 +23,4 @@ namespace FishNet.Serializing
             }
         }
     }
-
 }

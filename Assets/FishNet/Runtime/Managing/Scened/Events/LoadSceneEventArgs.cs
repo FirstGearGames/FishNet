@@ -19,7 +19,6 @@ namespace FishNet.Managing.Scened
         }
     }
 
-
     /// <summary>
     /// Data container about a scene load percent change.
     /// </summary>
@@ -40,7 +39,6 @@ namespace FishNet.Managing.Scened
             Percent = percent;
         }
     }
-
 
     /// <summary>
     /// Data container about a scene load end.
@@ -71,8 +69,5 @@ namespace FishNet.Managing.Scened
             LoadedScenes = loaded;
             UnloadedSceneNames = unloadedSceneNames;
         }
-
-
     }
-
 }

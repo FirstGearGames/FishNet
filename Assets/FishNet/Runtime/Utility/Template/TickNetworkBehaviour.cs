@@ -16,12 +16,12 @@ namespace FishNet.Utility.Template
         public enum TickCallback : uint
         {
             None = 0,
-            PreTick = (1 << 0),
-            Tick = (1 << 1),
-            PostTick = (1 << 2),
-            Update = (1 << 3),
-            LateUpdate = (1 << 4),
-            Everything = Enums.SHIFT_EVERYTHING_UINT,
+            PreTick = 1 << 0,
+            Tick = 1 << 1,
+            PostTick = 1 << 2,
+            Update = 1 << 3,
+            LateUpdate = 1 << 4,
+            Everything = Enums.SHIFT_EVERYTHING_UINT
         }
         #endregion
 
@@ -30,8 +30,7 @@ namespace FishNet.Utility.Template
         /// </summary>
         [Tooltip("Tick callbacks to use.")]
         [SerializeField]
-        private TickCallback _tickCallbacks = (TickCallback.Tick | TickCallback.PostTick);
-
+        private TickCallback _tickCallbacks = TickCallback.Tick | TickCallback.PostTick;
         /// <summary>
         /// Last subscription state.
         /// </summary>
@@ -43,23 +42,23 @@ namespace FishNet.Utility.Template
 
         internal override void OnStartNetwork_Internal()
         {
-            _timeManager = base.TimeManager;
+            _timeManager = TimeManager;
             ChangeSubscriptions(subscribe: true);
-            
+
             base.OnStartNetwork_Internal();
         }
 
         internal override void OnStopNetwork_Internal()
         {
             ChangeSubscriptions(subscribe: false);
-            
+
             base.OnStopNetwork_Internal();
         }
 
         /// <summary>
         /// Updates callbacks to use and changes subscriptions accordingly.
         /// </summary>
-        /// <param name="value">Next value.</param>
+        /// <param name = "value">Next value.</param>
         public void SetTickCallbacks(TickCallback value)
         {
             ChangeSubscriptions(subscribe: false);
@@ -71,7 +70,7 @@ namespace FishNet.Utility.Template
         private void ChangeSubscriptions(bool subscribe)
         {
             TimeManager tm = _timeManager;
-            
+
             if (tm == null)
                 return;
             if (subscribe == _subscribed)
@@ -111,7 +110,6 @@ namespace FishNet.Utility.Template
         protected virtual void TimeManager_OnPostTick() { }
         protected virtual void TimeManager_OnUpdate() { }
         protected virtual void TimeManager_OnLateUpdate() { }
-
-        private bool TickCallbackFastContains(TickCallback whole, TickCallback part) => ((whole & part) == part);
+        private bool TickCallbackFastContains(TickCallback whole, TickCallback part) => (whole & part) == part;
     }
 }

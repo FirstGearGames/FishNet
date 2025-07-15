@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace FishNet.Managing.Object
 {
-    //document
+    // document
     [APIExclude]
     public abstract class PrefabObjects : ScriptableObject
     {
@@ -13,6 +13,7 @@ namespace FishNet.Managing.Object
         /// CollectionId for this PrefabObjects.
         /// </summary>
         public ushort CollectionId { get; private set; }
+
         /// <summary>
         /// Sets CollectionIdValue.
         /// </summary>
@@ -29,8 +30,5 @@ namespace FishNet.Managing.Object
         public abstract void AddObjects(List<DualPrefab> dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void AddObjects(DualPrefab[] dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true);
         public abstract void InitializePrefabRange(int startIndex);
-
-
-
     }
 }

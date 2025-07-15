@@ -53,7 +53,7 @@ namespace FishNet.Editing
             HashSet<string> definesHs = new();
             string[] currentArr = currentDefines.Split(';');
 
-            //Add any define which doesn't contain MIRROR.
+            // Add any define which doesn't contain MIRROR.
             foreach (string item in currentArr)
                 definesHs.Add(item);
 
@@ -64,7 +64,7 @@ namespace FishNet.Editing
             else
                 definesHs.Add(define);
 
-            bool modified = (definesHs.Count != startingCount);
+            bool modified = definesHs.Count != startingCount;
             if (modified)
             {
                 string changedDefines = string.Join(";", definesHs);
@@ -94,7 +94,6 @@ namespace FishNet.Editing
             Generator.GenerateFull(null, true);
         }
     }
-
 }
 
 #endif

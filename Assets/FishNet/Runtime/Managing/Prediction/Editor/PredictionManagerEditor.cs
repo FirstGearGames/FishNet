@@ -48,7 +48,7 @@ namespace FishNet.Managing.Predicting.Editing
             else if (_stateOrder.intValue == (int)ReplicateStateOrder.Inserted && interpolationValue < PredictionManager.MINIMUM_INSERTED_INTERPOLATION_RECOMMENDATION)
                 EditorGUILayout.HelpBox(PredictionManager.LESS_THAN_MINIMUM_INSERTED_MESSAGE, MessageType.Warning);
             EditorGUILayout.PropertyField(_stateInterpolation);
-            
+
             EditorGUILayout.PropertyField(_stateOrder);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();

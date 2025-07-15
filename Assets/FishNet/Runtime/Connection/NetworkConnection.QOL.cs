@@ -16,11 +16,11 @@ namespace FishNet.Connection
         /// <summary>
         /// Returns true if this connection is a clientHost.
         /// </summary>
-        public bool IsHost => (NetworkManager == null) ? false : (NetworkManager.IsServerStarted && (this == NetworkManager.ClientManager.Connection));
+        public bool IsHost => NetworkManager == null ? false : NetworkManager.IsServerStarted && this == NetworkManager.ClientManager.Connection;
         /// <summary>
         /// Returns if this connection is for the local client.
         /// </summary>
-        public bool IsLocalClient => (NetworkManager == null) ? false : (NetworkManager.ClientManager.Connection == this);
+        public bool IsLocalClient => NetworkManager == null ? false : NetworkManager.ClientManager.Connection == this;
         #endregion
 
         /// <summary>
@@ -40,9 +40,9 @@ namespace FishNet.Connection
         /// <summary>
         /// Kicks a connection immediately while invoking OnClientKick.
         /// </summary>
-        /// <param name="kickReason">Reason client is being kicked.</param>
-        /// <param name="loggingType">How to print logging as.</param>
-        /// <param name="log">Optional message to be debug logged.</param>
+        /// <param name = "kickReason">Reason client is being kicked.</param>
+        /// <param name = "loggingType">How to print logging as.</param>
+        /// <param name = "log">Optional message to be debug logged.</param>
         public void Kick(KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             if (CanKick())
@@ -52,10 +52,10 @@ namespace FishNet.Connection
         /// <summary>
         /// Kicks a connection immediately while invoking OnClientKick.
         /// </summary>
-        /// <param name="reader">Reader to clear before kicking.</param>
-        /// <param name="kickReason">Reason client is being kicked.</param>
-        /// <param name="loggingType">How to print logging as.</param>
-        /// <param name="log">Optional message to be debug logged.</param>
+        /// <param name = "reader">Reader to clear before kicking.</param>
+        /// <param name = "kickReason">Reason client is being kicked.</param>
+        /// <param name = "loggingType">How to print logging as.</param>
+        /// <param name = "log">Optional message to be debug logged.</param>
         public void Kick(Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             if (CanKick())
@@ -64,15 +64,15 @@ namespace FishNet.Connection
 
         private bool CanKick()
         {
-            //Connection isn't valid, calling kick on an empty connection.
+            // Connection isn't valid, calling kick on an empty connection.
             if (!IsValid)
                 return false;
 
-            //Should never happen.
+            // Should never happen.
             if (NetworkManager == null)
             {
                 NetworkManager = InstanceFinder.NetworkManager;
-                NetworkManager.LogError($"NetworkManager was not set for connection {this.ToString()}. InstanceFinder has been used.");
+                NetworkManager.LogError($"NetworkManager was not set for connection {ToString()}. InstanceFinder has been used.");
             }
 
             return true;

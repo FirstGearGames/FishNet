@@ -1,12 +1,11 @@
-﻿
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace FishNet.Serializing.Helping
 {
     /// <summary>
-    /// Credit to https://github.com/viliwonka
-    /// https://github.com/FirstGearGames/FishNet/pull/23
+    /// Credit to https:// github.com/viliwonka
+    /// https:// github.com/FirstGearGames/FishNet/pull/23
     /// </summary>
     public static class Quaternion64Compression
     {
@@ -95,7 +94,7 @@ namespace FishNet.Serializing.Helping
             ulong integerB = ScaleToUint_H(b);
             ulong integerC = ScaleToUint_L(c);
 
-            return (((ulong)largestComponent) << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
+            return ((ulong)largestComponent << LargestComponentShift) | (integerA << AShift) | (integerB << BShift) | integerC;
         }
 
         private static ulong ScaleToUint_H(float v)
@@ -147,46 +146,35 @@ namespace FishNet.Serializing.Helping
                     rotation.y = a;
                     rotation.z = b;
                     rotation.w = c;
-                    rotation.x = Mathf.Sqrt(1 - rotation.y * rotation.y
-                                               - rotation.z * rotation.z
-                                               - rotation.w * rotation.w);
+                    rotation.x = Mathf.Sqrt(1 - rotation.y * rotation.y - rotation.z * rotation.z - rotation.w * rotation.w);
                     break;
                 case ComponentType.Y:
                     // x (?) z w
                     rotation.x = a;
                     rotation.z = b;
                     rotation.w = c;
-                    rotation.y = Mathf.Sqrt(1 - rotation.x * rotation.x
-                                               - rotation.z * rotation.z
-                                               - rotation.w * rotation.w);
+                    rotation.y = Mathf.Sqrt(1 - rotation.x * rotation.x - rotation.z * rotation.z - rotation.w * rotation.w);
                     break;
                 case ComponentType.Z:
                     // x y (?) w
                     rotation.x = a;
                     rotation.y = b;
                     rotation.w = c;
-                    rotation.z = Mathf.Sqrt(1 - rotation.x * rotation.x
-                                               - rotation.y * rotation.y
-                                               - rotation.w * rotation.w);
+                    rotation.z = Mathf.Sqrt(1 - rotation.x * rotation.x - rotation.y * rotation.y - rotation.w * rotation.w);
                     break;
                 case ComponentType.W:
                     // x y z (?)
                     rotation.x = a;
                     rotation.y = b;
                     rotation.z = c;
-                    rotation.w = Mathf.Sqrt(1 - rotation.x * rotation.x
-                                               - rotation.y * rotation.y
-                                               - rotation.z * rotation.z);
+                    rotation.w = Mathf.Sqrt(1 - rotation.x * rotation.x - rotation.y * rotation.y - rotation.z * rotation.z);
                     break;
                 default:
                     // Should never happen!
-                    throw new ArgumentOutOfRangeException("Unknown rotation component type: " +
-                                                          largestComponentType);
+                    throw new ArgumentOutOfRangeException("Unknown rotation component type: " + largestComponentType);
             }
 
             return rotation;
         }
-
-
     }
 }

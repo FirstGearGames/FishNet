@@ -15,5 +15,4 @@
         /// </summary>
         public byte[] ClientParams = new byte[0];
     }
-
 }

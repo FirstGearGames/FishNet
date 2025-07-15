@@ -1,4 +1,3 @@
-
 namespace FishNet.Managing.Predicting
 {
     public enum ReplicateStateOrder
@@ -14,6 +13,6 @@ namespace FishNet.Managing.Predicting
         /// This causes states to initially run out of tick alignment, while correcting during reconciles.
         /// However, due to states no longer depending on reconciles to be run reconciles may be sent less, and clients may run reconciles less, resulting in high performance gain especially among physics-based games.
         /// </summary>
-        Appended,
+        Appended
     }
 }

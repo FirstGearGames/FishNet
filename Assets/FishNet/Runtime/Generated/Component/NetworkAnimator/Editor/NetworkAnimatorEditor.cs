@@ -8,7 +8,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Animating.Editing
 {
-
     [CustomEditor(typeof(NetworkAnimator), true)]
     [CanEditMultipleObjects]
     public class NetworkAnimatorEditor : Editor
@@ -42,12 +41,11 @@ namespace FishNet.Component.Animating.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(na), typeof(NetworkAnimator), false);
             GUI.enabled = true;
 
-            
-#pragma warning disable CS0162 // Unreachable code detected
+            #pragma warning disable CS0162 // Unreachable code detected
                 EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_LOCKED_TEXT, MessageType.Warning);
 #pragma warning restore CS0162 // Unreachable code detected
 
-            //Animator
+            // Animator
             EditorGUILayout.LabelField("Animator", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_animator);
@@ -55,7 +53,7 @@ namespace FishNet.Component.Animating.Editing
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
-            //Synchronization Processing.
+            // Synchronization Processing.
             EditorGUILayout.LabelField("Synchronization Processing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_interpolation);
@@ -63,7 +61,7 @@ namespace FishNet.Component.Animating.Editing
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
-            //Authority.
+            // Authority.
             EditorGUILayout.LabelField("Authority", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_clientAuthoritative);
@@ -81,7 +79,6 @@ namespace FishNet.Component.Animating.Editing
             serializedObject.ApplyModifiedProperties();
         }
 
-
         private void DrawParameters(NetworkAnimator na)
         {
             EditorGUILayout.LabelField("* Synchronized Parameters", EditorStyles.boldLabel);
@@ -98,14 +95,14 @@ namespace FishNet.Component.Animating.Editing
             if (animator == null)
                 return;
 
-            RuntimeAnimatorController runtimeController = (animator.runtimeAnimatorController is AnimatorOverrideController aoc) ? aoc.runtimeAnimatorController : animator.runtimeAnimatorController;
+            RuntimeAnimatorController runtimeController = animator.runtimeAnimatorController is AnimatorOverrideController aoc ? aoc.runtimeAnimatorController : animator.runtimeAnimatorController;
             if (runtimeController == null)
             {
                 na.IgnoredParameters.Clear();
                 return;
             }
 
-            /* If runtime controller changed 
+            /* If runtime controller changed
              * or editor controller is null
              * then get new editor controller. */
             if (runtimeController != _lastRuntimeAnimatorController || _lastAnimatorController == null)
@@ -115,19 +112,19 @@ namespace FishNet.Component.Animating.Editing
             Color defaultColor = GUI.backgroundColor;
             float width = Screen.width;
             float spacePerEntry = 125f;
-            //Buttons seem to be longer than spacePerEntry. Why, because who knows...
+            // Buttons seem to be longer than spacePerEntry. Why, because who knows...
             float extraSpaceJustBecause = 60;
             float spacer = 20f;
             width -= spacer;
             int entriesPerWidth = Mathf.Max(1, Mathf.FloorToInt(width / (spacePerEntry + extraSpaceJustBecause)));
 
             List<AnimatorControllerParameter> aps = new();
-            //Create a parameter detail for each parameter that can be synchronized.
+            // Create a parameter detail for each parameter that can be synchronized.
             int count = 0;
             foreach (AnimatorControllerParameter item in _lastAnimatorController.parameters)
             {
                 count++;
-                //Over 240 parameters; who would do this!?
+                // Over 240 parameters; who would do this!?
                 if (count >= 240)
                     continue;
 
@@ -141,9 +138,9 @@ namespace FishNet.Component.Animating.Editing
                 {
                     GUILayout.Space(spacer);
                     int z = 0;
-                    while (z < entriesPerWidth && (z + i < apsCount))
+                    while (z < entriesPerWidth && z + i < apsCount)
                     {
-                        //If this z+i would exceed entries then break.
+                        // If this z+i would exceed entries then break.
                         if (z + i >= apsCount)
                             break;
 
@@ -151,7 +148,7 @@ namespace FishNet.Component.Animating.Editing
                         string parameterName = item.name;
                         bool ignored = na.IgnoredParameters.Contains(parameterName);
 
-                        Color c = (ignored) ? Color.gray : Color.green;
+                        Color c = ignored ? Color.gray : Color.green;
                         GUI.backgroundColor = c;
                         if (GUILayout.Button(item.name, GUILayout.Width(spacePerEntry)))
                         {
@@ -166,24 +163,19 @@ namespace FishNet.Component.Animating.Editing
                                 else
                                     na.IgnoredParameters.Add(parameterName);
                             }
-                            UnityEditor.EditorUtility.SetDirty(target);
+                            EditorUtility.SetDirty(target);
                         }
 
                         z++;
                     }
 
-                    i += (z - 1);
+                    i += z - 1;
                 }
 
                 GUI.backgroundColor = defaultColor;
             }
         }
-
-
-
     }
-
 }
-
 
 #endif

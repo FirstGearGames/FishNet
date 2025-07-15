@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-
 namespace GameKit.Dependencies.Utilities
 {
     /// <summary>
@@ -10,18 +9,17 @@ namespace GameKit.Dependencies.Utilities
     {
         Unchanged = 0,
         DoNotBlock = 1,
-        Block = 2,
+        Block = 2
     }
 
     public static class CanvaseGroups
     {
-
         public static void SetBlockingType(this CanvasGroup group, CanvasGroupBlockingType blockingType)
         {
             if (blockingType == CanvasGroupBlockingType.Unchanged)
                 return;
 
-            bool block = (blockingType == CanvasGroupBlockingType.Block);
+            bool block = blockingType == CanvasGroupBlockingType.Block;
             group.blocksRaycasts = block;
             group.interactable = block;
         }
@@ -29,8 +27,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Sets a CanvasGroup blocking type and alpha.
         /// </summary>
-        /// <param name="blockingType">How to handle interactions.</param>
-        /// <param name="alpha">Alpha for CanvasGroup.</param>
+        /// <param name = "blockingType">How to handle interactions.</param>
+        /// <param name = "alpha">Alpha for CanvasGroup.</param>
         public static void SetActive(this CanvasGroup group, CanvasGroupBlockingType blockingType, float alpha)
         {
             group.SetBlockingType(blockingType);
@@ -89,5 +87,4 @@ namespace GameKit.Dependencies.Utilities
             group.blocksRaycasts = active;
         }
     }
-
 }

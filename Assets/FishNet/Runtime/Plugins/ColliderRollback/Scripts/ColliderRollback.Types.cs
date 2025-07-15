@@ -16,9 +16,8 @@ namespace FishNet.Component.ColliderRollback
             /// <summary>
             /// Manually specify the dimensions of a bounding box.
             /// </summary>
-            Manual,
+            Manual
         }
 
-        
-    }
+        }
 }

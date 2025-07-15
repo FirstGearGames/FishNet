@@ -11,7 +11,5 @@ namespace FishNet.Example.ColliderRollbacks
         {
             Destroy(gameObject, _delay);
         }
-
     }
-
 }

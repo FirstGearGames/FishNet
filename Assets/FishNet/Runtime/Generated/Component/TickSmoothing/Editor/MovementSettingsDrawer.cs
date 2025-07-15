@@ -17,7 +17,7 @@ namespace FishNet.Component.Transforming.Beta.Editing
 
             _propertyDrawer = new(position);
 
-            //_propertyDrawer.DrawLabel(label, FontStyle.Bold); 
+            // _propertyDrawer.DrawLabel(label, FontStyle.Bold); 
 
             EditorGUI.indentLevel++;
 

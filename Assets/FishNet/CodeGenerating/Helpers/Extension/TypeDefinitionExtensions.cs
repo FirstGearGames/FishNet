@@ -9,11 +9,8 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-
-
     internal static class TypeDefinitionExtensionsOld
     {
-
         /// <summary>
         /// Creates a GenericInstanceType and adds parameters.
         /// </summary>
@@ -29,12 +26,10 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Finds public fields in type and base type
         /// </summary>
-        /// <param name="variable"></param>
+        /// <param name = "variable"></param>
         /// <returns></returns>
-        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeDefinition typeDef, CodegenSession session
-            , System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<FieldDefinition> FindAllPublicFields(this TypeDefinition typeDef, CodegenSession session, Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
-
             GeneralHelper gh = session.GetClass<GeneralHelper>();
             while (typeDef != null)
             {
@@ -55,18 +50,23 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     yield return fd;
                 }
 
-                try { typeDef = typeDef.BaseType?.CachedResolve(session); }
-                catch { break; }
+                try
+                {
+                    typeDef = typeDef.BaseType?.CachedResolve(session);
+                }
+                catch
+                {
+                    break;
+                }
             }
         }
 
         /// <summary>
         /// Finds public properties on typeDef and all base types which have a public get/set accessor.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
-        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, CodegenSession session
-            , System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        public static IEnumerable<PropertyDefinition> FindAllPublicProperties(this TypeDefinition typeDef, CodegenSession session, Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             GeneralHelper gh = session.GetClass<GeneralHelper>();
             while (typeDef != null)
@@ -76,7 +76,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
 
                 foreach (PropertyDefinition pd in typeDef.Properties)
                 {
-                    //Missing get or set method.
+                    // Missing get or set method.
                     if (pd.GetMethod == null || pd.SetMethod == null)
                         continue;
                     if (gh.HasExcludeSerializationAttribute(pd))
@@ -91,22 +91,28 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     yield return pd;
                 }
 
-                try { typeDef = typeDef.BaseType?.CachedResolve(session); }
-                catch { break; }
+                try
+                {
+                    typeDef = typeDef.BaseType?.CachedResolve(session);
+                }
+                catch
+                {
+                    break;
+                }
             }
         }
 
         /// <summary>
         /// Returns if typeDef is excluded.
         /// </summary>
-        private static bool IsExcluded(TypeDefinition typeDef, System.Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
+        private static bool IsExcluded(TypeDefinition typeDef, Type[] excludedBaseTypes = null, string[] excludedAssemblyPrefixes = null)
         {
             if (typeDef.FullName == typeof(LoadSceneParameters).FullName)
                 return false;
-            
+
             if (excludedBaseTypes != null)
             {
-                foreach (System.Type t in excludedBaseTypes)
+                foreach (Type t in excludedBaseTypes)
                 {
                     if (typeDef.FullName == t.FullName)
                         return true;
@@ -123,30 +129,28 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 }
             }
 
-            //Fall through, not excluded.
+            // Fall through, not excluded.
             return false;
         }
-
 
         /// <summary>
         /// Returns if typeDef is excluded.
         /// </summary>
         public static bool IsExcluded(this TypeDefinition typeDef, string excludedAssemblyPrefix)
         {
-
             int len = excludedAssemblyPrefix.Length;
             string tdAsmName = typeDef.Module.Assembly.FullName;
             if (tdAsmName.Length >= len && tdAsmName.Substring(0, len).ToLower() == excludedAssemblyPrefix.ToLower())
                 return true;
 
-            //Fall through, not excluded.
+            // Fall through, not excluded.
             return false;
         }
 
         /// <summary>
         /// Returns if typeDef or any of it's parents inherit from NetworkBehaviour.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal static bool InheritsNetworkBehaviour(this TypeDefinition typeDef, CodegenSession session)
         {
@@ -161,7 +165,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 copyTd = copyTd.GetNextBaseTypeDefinition(session);
             }
 
-            //Fall through, network behaviour not found.
+            // Fall through, network behaviour not found.
             return false;
         }
 
@@ -182,16 +186,17 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal static bool CanProcessBaseType(this TypeDefinition typeDef, CodegenSession session)
         {
-            return (typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != session.GetClass<NetworkBehaviourHelper>().FullName);
+            return typeDef != null && typeDef.BaseType != null && typeDef.BaseType.FullName != session.GetClass<NetworkBehaviourHelper>().FullName;
         }
+
         /// <summary>
         /// Returns if the BaseType for TypeDef exist and is not NetworkBehaviour,
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal static TypeDefinition GetNextBaseClassToProcess(this TypeDefinition typeDef, CodegenSession session)
         {
@@ -225,10 +230,9 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     copyTd = copyTd.BaseType.CachedResolve(session);
                 else
                     copyTd = null;
-
             } while (copyTd != null);
 
-            //Not found.
+            // Not found.
             return null;
         }
 
@@ -250,28 +254,25 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     copyTd = copyTd.BaseType.CachedResolve(session);
                 else
                     copyTd = null;
-
             } while (copyTd != null);
 
-            //Not found.
+            // Not found.
             return null;
         }
-
-
 
         /// <summary>
         /// Returns if typeDef is static (abstract, sealed).
         /// </summary>
         internal static bool IsStatic(this TypeDefinition typeDef)
         {
-            //Combining flags in a single check some reason doesn't work right with HasFlag.
-            return (typeDef.Attributes.HasFlag(TypeAttributes.Abstract) && typeDef.Attributes.HasFlag(TypeAttributes.Sealed));
+            // Combining flags in a single check some reason doesn't work right with HasFlag.
+            return typeDef.Attributes.HasFlag(TypeAttributes.Abstract) && typeDef.Attributes.HasFlag(TypeAttributes.Sealed);
         }
 
         /// <summary>
         /// Gets an enum underlying type for typeDef.
         /// </summary>
-        /// <param name="typeDef"></param>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal static TypeReference GetEnumUnderlyingTypeReference(this TypeDefinition typeDef)
         {
@@ -286,8 +287,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if typeDef is derived from type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="typeDef"></param>
+        /// <typeparam name = "T"></typeparam>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         internal static bool InheritsFrom<T>(this TypeDefinition typeDef, CodegenSession session)
         {
@@ -297,8 +298,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if typeDef is derived from type.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="type"></param>
+        /// <param name = "typeDef"></param>
+        /// <param name = "type"></param>
         /// <returns></returns>
         internal static bool InheritsFrom(this TypeDefinition typeDef, CodegenSession session, Type type)
         {
@@ -314,28 +315,29 @@ namespace FishNet.CodeGenerating.Helping.Extension
                 copyTd = copyTd.GetNextBaseTypeDefinition(session);
             }
 
-            //Fall through.
+            // Fall through.
             return false;
         }
 
         /// <summary>
         /// Adds a method to typeDef.
         /// </summary>
-        /// <param name="typDef"></param>
-        /// <param name="methodName"></param>
-        /// <param name="attributes"></param>
+        /// <param name = "typDef"></param>
+        /// <param name = "methodName"></param>
+        /// <param name = "attributes"></param>
         /// <returns></returns>
         internal static MethodDefinition AddMethod(this TypeDefinition typDef, string methodName, MethodAttributes attributes)
         {
             return AddMethod(typDef, methodName, attributes, typDef.Module.ImportReference(typeof(void)));
         }
+
         /// <summary>
         /// Adds a method to typeDef.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="methodName"></param>
-        /// <param name="attributes"></param>
-        /// <param name="typeReference"></param>
+        /// <param name = "typeDef"></param>
+        /// <param name = "methodName"></param>
+        /// <param name = "attributes"></param>
+        /// <param name = "typeReference"></param>
         /// <returns></returns>
         internal static MethodDefinition AddMethod(this TypeDefinition typeDef, string methodName, MethodAttributes attributes, TypeReference typeReference)
         {
@@ -347,12 +349,13 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if a type is a subclass of another.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="ClassTypeFullName"></param>
+        /// <param name = "typeDef"></param>
+        /// <param name = "ClassTypeFullName"></param>
         /// <returns></returns>
-        internal static bool IsSubclassOf(this TypeDefinition typeDef,CodegenSession session, string ClassTypeFullName)
+        internal static bool IsSubclassOf(this TypeDefinition typeDef, CodegenSession session, string ClassTypeFullName)
         {
-            if (!typeDef.IsClass) return false;
+            if (!typeDef.IsClass)
+                return false;
 
             TypeReference baseTypeRef = typeDef.BaseType;
             while (baseTypeRef != null)
@@ -378,8 +381,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Gets a field reference by name.
         /// </summary>
-        /// <param name="typeDef"></param>
-        /// <param name="fieldName"></param>
+        /// <param name = "typeDef"></param>
+        /// <param name = "fieldName"></param>
         /// <returns></returns>
         public static FieldReference GetFieldReference(this TypeDefinition typeDef, string fieldName, CodegenSession session)
         {
@@ -395,12 +398,11 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return null;
         }
 
-
         /// <summary>
         /// Returns if the TypeDefinition implements TInterface.
         /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <param name="typeDef"></param>
+        /// <typeparam name = "TInterface"></typeparam>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         public static bool ImplementsInterface<TInterface>(this TypeDefinition typeDef)
         {
@@ -418,8 +420,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if the TypeDefinition implements TInterface.
         /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <param name="typeDef"></param>
+        /// <typeparam name = "TInterface"></typeparam>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         public static bool ImplementsInterface(this TypeDefinition typeDef, string interfaceName)
         {
@@ -432,14 +434,11 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return false;
         }
 
-
-
-
         /// <summary>
         /// Returns if the TypeDefinition implements TInterface.
         /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <param name="typeDef"></param>
+        /// <typeparam name = "TInterface"></typeparam>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         public static bool ImplementsInterfaceRecursive<T>(this TypeDefinition typeDef, CodegenSession session)
         {
@@ -457,7 +456,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     else
                         climbTypeDef = null;
                 }
-                //Could not resolve assembly; can happen for assemblies being checked outside FishNet/csharp.
+                // Could not resolve assembly; can happen for assemblies being checked outside FishNet/csharp.
                 catch (AssemblyResolutionException)
                 {
                     break;
@@ -470,8 +469,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <summary>
         /// Returns if the TypeDefinition implements TInterface.
         /// </summary>
-        /// <typeparam name="TInterface"></typeparam>
-        /// <param name="typeDef"></param>
+        /// <typeparam name = "TInterface"></typeparam>
+        /// <param name = "typeDef"></param>
         /// <returns></returns>
         public static bool ImplementsInterfaceRecursive(this TypeDefinition typeDef, CodegenSession session, string interfaceName)
         {
@@ -489,7 +488,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
                     else
                         climbTypeDef = null;
                 }
-                //Could not resolve assembly; can happen for assemblies being checked outside FishNet/csharp.
+                // Could not resolve assembly; can happen for assemblies being checked outside FishNet/csharp.
                 catch (AssemblyResolutionException)
                 {
                     break;
@@ -499,6 +498,4 @@ namespace FishNet.CodeGenerating.Helping.Extension
             return false;
         }
     }
-
-
 }

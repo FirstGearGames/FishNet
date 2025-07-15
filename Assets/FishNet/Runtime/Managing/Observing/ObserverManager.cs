@@ -29,11 +29,9 @@ namespace FishNet.Managing.Observing
             get => _updateHostVisibility;
             private set => _updateHostVisibility = value;
         }
-
         [Tooltip("True to update visibility for clientHost based on if they are an observer or not.")]
         [SerializeField]
         private bool _updateHostVisibility = true;
-
         /// <summary>
         /// Maximum duration the server will take to update timed observer conditions as server load increases. Lower values will result in timed conditions being checked quicker at the cost of performance..
         /// </summary>
@@ -42,7 +40,6 @@ namespace FishNet.Managing.Observing
             get => _maximumTimedObserversDuration;
             private set => _maximumTimedObserversDuration = value;
         }
-
         [Tooltip("Maximum duration the server will take to update timed observer conditions as server load increases. Lower values will result in timed conditions being checked quicker at the cost of performance.")]
         [SerializeField]
         [Range(MINIMUM_TIMED_OBSERVERS_DURATION, MAXIMUM_TIMED_OBSERVERS_DURATION)]
@@ -51,20 +48,17 @@ namespace FishNet.Managing.Observing
         /// <summary>
         /// Sets the MaximumTimedObserversDuration value.
         /// </summary>
-        /// <param name="value">New maximum duration to update timed observers over.</param>
+        /// <param name = "value">New maximum duration to update timed observers over.</param>
         public void SetMaximumTimedObserversDuration(float value) => MaximumTimedObserversDuration = System.Math.Clamp(value, MINIMUM_TIMED_OBSERVERS_DURATION, MAXIMUM_TIMED_OBSERVERS_DURATION);
 
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("Default observer conditions for networked objects.")]
         [SerializeField]
         private List<ObserverCondition> _defaultConditions = new();
-
         #endregion
 
         #region Private.
-
         /// <summary>
         /// NetworkManager on object.
         /// </summary>
@@ -85,22 +79,22 @@ namespace FishNet.Managing.Observing
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
-        /// <param name="manager"></param>
+        /// <param name = "manager"></param>
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
             _networkManager = manager;
-            //Update the current value to itself so it becomes clamped. This is just to protect against the user manually setting it outside clamp somehow.
+            // Update the current value to itself so it becomes clamped. This is just to protect against the user manually setting it outside clamp somehow.
             SetMaximumTimedObserversDuration(MaximumTimedObserversDuration);
         }
 
         /// <summary>
         /// Sets a new value for UpdateHostVisibility.
         /// </summary>
-        /// <param name="value">New value.</param>
-        /// <param name="updateType">Which objects to update.</param>
+        /// <param name = "value">New value.</param>
+        /// <param name = "updateType">Which objects to update.</param>
         public void SetUpdateHostVisibility(bool value, HostVisibilityUpdateTypes updateType)
         {
-            //Unchanged.
+            // Unchanged.
             if (value == UpdateHostVisibility)
                 return;
 
@@ -119,7 +113,7 @@ namespace FishNet.Managing.Observing
                 {
                     n.NetworkObserver.SetUpdateHostVisibility(value);
 
-                    //Only check to update renderers if clientHost. If not client then clientConn won't be active.
+                    // Only check to update renderers if clientHost. If not client then clientConn won't be active.
                     if (clientConn.IsActive)
                         n.SetRenderersVisible(n.Observers.Contains(clientConn), true);
                 }
@@ -136,7 +130,7 @@ namespace FishNet.Managing.Observing
         /// </summary>
         internal NetworkObserver AddDefaultConditions(NetworkObject nob)
         {
-            bool isGlobal = (nob.IsGlobal && !nob.IsSceneObject);
+            bool isGlobal = nob.IsGlobal && !nob.IsSceneObject;
             bool obsAdded;
 
             NetworkObserver result;
@@ -147,7 +141,7 @@ namespace FishNet.Managing.Observing
             }
             else
             {
-                //If already setup by this manager then return.
+                // If already setup by this manager then return.
                 if (result.ConditionsSetByObserverManager)
                     return result;
 
@@ -160,7 +154,7 @@ namespace FishNet.Managing.Observing
             if (!obsAdded && _defaultConditions.Count == 0)
                 return result;
 
-            //If the NetworkObserver component was just added.
+            // If the NetworkObserver component was just added.
             if (obsAdded)
             {
                 /* Global nobs do not need a NetworkObserver.
@@ -168,7 +162,7 @@ namespace FishNet.Managing.Observing
                  * any conditions. */
                 if (isGlobal)
                     return result;
-                //If there are no conditions then there's nothing to add.
+                // If there are no conditions then there's nothing to add.
                 if (_defaultConditions.Count == 0)
                     return result;
                 /* If here then there not a global networkobject and there are conditions to use.
@@ -176,10 +170,10 @@ namespace FishNet.Managing.Observing
                  * so that the NetworkObserver is populated with the manager conditions. */
                 result.OverrideType = NetworkObserver.ConditionOverrideType.UseManager;
             }
-            //NetworkObject has a NetworkObserver already on it.
+            // NetworkObject has a NetworkObserver already on it.
             else
             {
-                //If global the NetworkObserver has to be cleared and set to ignore manager.
+                // If global the NetworkObserver has to be cleared and set to ignore manager.
                 if (isGlobal)
                 {
                     result.ObserverConditionsInternal.Clear();
@@ -187,18 +181,18 @@ namespace FishNet.Managing.Observing
                 }
             }
 
-            //If ignoring manager then use whatever is already configured.
+            // If ignoring manager then use whatever is already configured.
             if (result.OverrideType == NetworkObserver.ConditionOverrideType.IgnoreManager)
             {
-                //Do nothing.
+                // Do nothing.
             }
-            //If using manager then replace all with conditions.
+            // If using manager then replace all with conditions.
             else if (result.OverrideType == NetworkObserver.ConditionOverrideType.UseManager)
             {
                 result.ObserverConditionsInternal.Clear();
                 AddMissing(result);
             }
-            //Adding only new.
+            // Adding only new.
             else if (result.OverrideType == NetworkObserver.ConditionOverrideType.AddMissing)
             {
                 AddMissing(result);
@@ -216,10 +210,8 @@ namespace FishNet.Managing.Observing
             }
 
             result.ConditionsSetByObserverManager = true;
-            
+
             return result;
         }
-
-
     }
 }

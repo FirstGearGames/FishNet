@@ -9,5 +9,4 @@
         Replicate = 8,
         Reconcile = 16
     }
-
 }

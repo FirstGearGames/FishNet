@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Connection
 {
-
     /// <summary>
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
@@ -57,7 +56,7 @@ namespace FishNet.Connection
                 return;
 
             float unscaledTime = Time.unscaledTime;
-            //Not enough time has passed to update.
+            // Not enough time has passed to update.
             if (!force && unscaledTime < _nextHashGridUpdateTime)
                 return;
 
@@ -77,7 +76,7 @@ namespace FishNet.Connection
                     _hashGridPosition = newPosition;
                     HashGridEntry = _hashGrid.GetGridEntry(newPosition);
                 }
-            }            
+            }
         }
 
         /// <summary>
@@ -89,10 +88,5 @@ namespace FishNet.Connection
             _hashGridPosition = HashGrid.UnsetGridPosition;
             _nextHashGridUpdateTime = 0f;
         }
-
-
-
     }
-
-
 }

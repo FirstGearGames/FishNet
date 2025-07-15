@@ -19,7 +19,6 @@ namespace FishNet.Managing.Server
         public List<int> Values;
     }
 
-    
     internal static class ConnectedClientsBroadcastSerializers
     {
         public static void WriteConnectedClientsBroadcast(this Writer writer, ConnectedClientsBroadcast value)
@@ -36,7 +35,5 @@ namespace FishNet.Managing.Server
                 Values = cache
             };
         }
-
     }
 }
-

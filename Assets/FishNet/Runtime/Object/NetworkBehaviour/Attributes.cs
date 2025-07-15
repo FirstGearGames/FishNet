@@ -16,7 +16,7 @@ namespace FishNet.Object
         /// Data will be attached to the end of the packet.
         /// RPCs can be sent after all SyncTypes by using this value. Multiple RPCs with this order type will send last, in the order they were called.
         /// </summary>
-        Last = 1,
+        Last = 1
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
@@ -83,7 +83,7 @@ namespace FishNet.Object
     /// TargetRpc methods will send messages to a single client.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class TargetRpcAttribute : RpcAttribute 
+    public class TargetRpcAttribute : RpcAttribute
     {
         /// <summary>
         /// True to prevent the connection from receiving this Rpc if they are also server.
@@ -138,10 +138,8 @@ namespace FishNet.Object
     }
 }
 
-
 namespace FishNet.Object.Synchronizing
 {
-
     /// <summary>
     /// Synchronizes collections or objects from the server to clients. Can be used with custom SyncObjects.
     /// Value must be changed on server.
@@ -193,10 +191,9 @@ namespace FishNet.Object.Synchronizing
         /// Channel to use. Unreliable SyncVars will use eventual consistency.
         /// </summary>
         public Channel Channel;
-        ///<summary>
+        /// <summary>
         /// Method which will be called on the server and clients when the value changes.
-        ///</summary>
+        /// </summary>
         public string OnChange;
     }
-
 }

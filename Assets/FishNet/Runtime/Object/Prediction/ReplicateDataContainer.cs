@@ -17,7 +17,7 @@ namespace FishNet.Object.Prediction
             Unset,
             ValueType,
             IResettableReferenceType,
-            ReferenceType,
+            ReferenceType
         }
         #endregion
 
@@ -37,14 +37,11 @@ namespace FishNet.Object.Prediction
         /// True if populated.
         /// </summary>
         public bool IsValid { get; private set; }
-
         /// <summary>
         /// How data should be cached and retrieved when not set.
         /// </summary>
         private static DataCachingType _dataCachingType = DataCachingType.Unset;
-
         public ReplicateDataContainer(T data, Channel channel) : this(data, channel, tick: 0, isCreated: false) { }
-
         public ReplicateDataContainer(T data, Channel channel, bool isCreated) : this(data, channel, tick: 0, isCreated) { }
 
         public ReplicateDataContainer(T data, Channel channel, uint tick, bool isCreated = false)
@@ -69,10 +66,10 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets data to new() if is nullable type, and is null.
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name = "data"></param>
         private void SetDataIfNull(ref T data)
         {
-            //Only figure out data caching type once to save perf.
+            // Only figure out data caching type once to save perf.
             if (_dataCachingType == DataCachingType.Unset)
             {
                 if (typeof(T).IsValueType)
@@ -95,8 +92,7 @@ namespace FishNet.Object.Prediction
             IsValid = false;
         }
 
-        public static ReplicateDataContainer<T> GetDefault(uint tick) => new(default(T), Channel.Unreliable, tick);
-
+        public static ReplicateDataContainer<T> GetDefault(uint tick) => new(default, Channel.Unreliable, tick);
         public static ReplicateDataContainer<T> GetDefault() => GetDefault(tick: 0);
     }
 }

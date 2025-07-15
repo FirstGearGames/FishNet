@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace GameKit.Dependencies.Utilities.ObjectPooling
 {
-
     public class PoolData
     {
         public PoolData(GameObject prefab, float expirationDuration)
@@ -34,7 +32,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns if the pool has expired due to inactivity.
         /// </summary>
-        /// <param name="expirationDuration"></param>
+        /// <param name = "expirationDuration"></param>
         /// <returns></returns>
         public bool PoolExpired()
         {
@@ -47,7 +45,7 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
         /// <summary>
         /// Returns a list of GameObjects which were culled from the stack using the default expiration duration.
         /// </summary>
-        /// <param name="threshold"></param>
+        /// <param name = "threshold"></param>
         /// <returns></returns>
         public List<GameObject> Cull()
         {
@@ -57,6 +55,4 @@ namespace GameKit.Dependencies.Utilities.ObjectPooling
             return Objects.Cull(_expirationDuration);
         }
     }
-
-
 }

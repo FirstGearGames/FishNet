@@ -14,156 +14,145 @@ using System;
 using System.IO;
 using RVA = System.UInt32;
 
-namespace MonoFN.Cecil.PE {
+namespace MonoFN.Cecil.PE
+{
+    internal sealed class Image : IDisposable
+    {
+        public Disposable<Stream> Stream;
+        public string FileName;
+        public ModuleKind Kind;
+        public uint Characteristics;
+        public string RuntimeVersion;
+        public TargetArchitecture Architecture;
+        public ModuleCharacteristics DllCharacteristics;
+        public ushort LinkerVersion;
+        public ushort SubSystemMajor;
+        public ushort SubSystemMinor;
+        public ImageDebugHeader DebugHeader;
+        public Section[] Sections;
+        public Section MetadataSection;
+        public uint EntryPointToken;
+        public uint Timestamp;
+        public ModuleAttributes Attributes;
+        public DataDirectory Win32Resources;
+        public DataDirectory Debug;
+        public DataDirectory Resources;
+        public DataDirectory StrongName;
+        public StringHeap StringHeap;
+        public BlobHeap BlobHeap;
+        public UserStringHeap UserStringHeap;
+        public GuidHeap GuidHeap;
+        public TableHeap TableHeap;
+        public PdbHeap PdbHeap;
+        private readonly int[] coded_index_sizes = new int [14];
+        private readonly Func<Table, int> counter;
 
-	sealed class Image : IDisposable {
+        public Image()
+        {
+            counter = GetTableLength;
+        }
 
-		public Disposable<Stream> Stream;
-		public string FileName;
+        public bool HasTable(Table table)
+        {
+            return GetTableLength(table) > 0;
+        }
 
-		public ModuleKind Kind;
-		public uint Characteristics;
-		public string RuntimeVersion;
-		public TargetArchitecture Architecture;
-		public ModuleCharacteristics DllCharacteristics;
-		public ushort LinkerVersion;
-		public ushort SubSystemMajor;
-		public ushort SubSystemMinor;
+        public int GetTableLength(Table table)
+        {
+            return (int)TableHeap[table].Length;
+        }
 
-		public ImageDebugHeader DebugHeader;
+        public int GetTableIndexSize(Table table)
+        {
+            return GetTableLength(table) < 65536 ? 2 : 4;
+        }
 
-		public Section [] Sections;
+        public int GetCodedIndexSize(CodedIndex coded_index)
+        {
+            var index = (int)coded_index;
+            var size = coded_index_sizes[index];
+            if (size != 0)
+                return size;
 
-		public Section MetadataSection;
+            return coded_index_sizes[index] = coded_index.GetSize(counter);
+        }
 
-		public uint EntryPointToken;
-		public uint Timestamp;
-		public ModuleAttributes Attributes;
+        public uint ResolveVirtualAddress(RVA rva)
+        {
+            var section = GetSectionAtVirtualAddress(rva);
+            if (section == null)
+                throw new ArgumentOutOfRangeException();
 
-		public DataDirectory Win32Resources;
-		public DataDirectory Debug;
-		public DataDirectory Resources;
-		public DataDirectory StrongName;
+            return ResolveVirtualAddressInSection(rva, section);
+        }
 
-		public StringHeap StringHeap;
-		public BlobHeap BlobHeap;
-		public UserStringHeap UserStringHeap;
-		public GuidHeap GuidHeap;
-		public TableHeap TableHeap;
-		public PdbHeap PdbHeap;
+        public uint ResolveVirtualAddressInSection(RVA rva, Section section)
+        {
+            return rva + section.PointerToRawData - section.VirtualAddress;
+        }
 
-		readonly int [] coded_index_sizes = new int [14];
+        public Section GetSection(string name)
+        {
+            var sections = Sections;
+            for (int i = 0; i < sections.Length; i++)
+            {
+                var section = sections[i];
+                if (section.Name == name)
+                    return section;
+            }
 
-		readonly Func<Table, int> counter;
+            return null;
+        }
 
-		public Image ()
-		{
-			counter = GetTableLength;
-		}
+        public Section GetSectionAtVirtualAddress(RVA rva)
+        {
+            var sections = Sections;
+            for (int i = 0; i < sections.Length; i++)
+            {
+                var section = sections[i];
+                if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.SizeOfRawData)
+                    return section;
+            }
 
-		public bool HasTable (Table table)
-		{
-			return GetTableLength (table) > 0;
-		}
+            return null;
+        }
 
-		public int GetTableLength (Table table)
-		{
-			return (int)TableHeap [table].Length;
-		}
+        private BinaryStreamReader GetReaderAt(RVA rva)
+        {
+            var section = GetSectionAtVirtualAddress(rva);
+            if (section == null)
+                return null;
 
-		public int GetTableIndexSize (Table table)
-		{
-			return GetTableLength (table) < 65536 ? 2 : 4;
-		}
+            var reader = new BinaryStreamReader(Stream.value);
+            reader.MoveTo(ResolveVirtualAddressInSection(rva, section));
+            return reader;
+        }
 
-		public int GetCodedIndexSize (CodedIndex coded_index)
-		{
-			var index = (int)coded_index;
-			var size = coded_index_sizes [index];
-			if (size != 0)
-				return size;
+        public TRet GetReaderAt<TItem, TRet>(RVA rva, TItem item, Func<TItem, BinaryStreamReader, TRet> read) where TRet : class
+        {
+            var position = Stream.value.Position;
+            try
+            {
+                var reader = GetReaderAt(rva);
+                if (reader == null)
+                    return null;
 
-			return coded_index_sizes [index] = coded_index.GetSize (counter);
-		}
+                return read(item, reader);
+            }
+            finally
+            {
+                Stream.value.Position = position;
+            }
+        }
 
-		public uint ResolveVirtualAddress (RVA rva)
-		{
-			var section = GetSectionAtVirtualAddress (rva);
-			if (section == null)
-				throw new ArgumentOutOfRangeException ();
+        public bool HasDebugTables()
+        {
+            return HasTable(Table.Document) || HasTable(Table.MethodDebugInformation) || HasTable(Table.LocalScope) || HasTable(Table.LocalVariable) || HasTable(Table.LocalConstant) || HasTable(Table.StateMachineMethod) || HasTable(Table.CustomDebugInformation);
+        }
 
-			return ResolveVirtualAddressInSection (rva, section);
-		}
-
-		public uint ResolveVirtualAddressInSection (RVA rva, Section section)
-		{
-			return rva + section.PointerToRawData - section.VirtualAddress;
-		}
-
-		public Section GetSection (string name)
-		{
-			var sections = this.Sections;
-			for (int i = 0; i < sections.Length; i++) {
-				var section = sections [i];
-				if (section.Name == name)
-					return section;
-			}
-
-			return null;
-		}
-
-		public Section GetSectionAtVirtualAddress (RVA rva)
-		{
-			var sections = this.Sections;
-			for (int i = 0; i < sections.Length; i++) {
-				var section = sections [i];
-				if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.SizeOfRawData)
-					return section;
-			}
-
-			return null;
-		}
-
-		BinaryStreamReader GetReaderAt (RVA rva)
-		{
-			var section = GetSectionAtVirtualAddress (rva);
-			if (section == null)
-				return null;
-
-			var reader = new BinaryStreamReader (Stream.value);
-			reader.MoveTo (ResolveVirtualAddressInSection (rva, section));
-			return reader;
-		}
-
-		public TRet GetReaderAt<TItem, TRet> (RVA rva, TItem item, Func<TItem, BinaryStreamReader, TRet> read) where TRet : class
-		{
-			var position = Stream.value.Position;
-			try {
-				var reader = GetReaderAt (rva);
-				if (reader == null)
-					return null;
-
-				return read (item, reader);
-			}
-			finally {
-				Stream.value.Position = position;
-			}
-		}
-
-		public bool HasDebugTables ()
-		{
-			return HasTable (Table.Document)
-				|| HasTable (Table.MethodDebugInformation)
-				|| HasTable (Table.LocalScope)
-				|| HasTable (Table.LocalVariable)
-				|| HasTable (Table.LocalConstant)
-				|| HasTable (Table.StateMachineMethod)
-				|| HasTable (Table.CustomDebugInformation);
-		}
-
-		public void Dispose ()
-		{
-			Stream.Dispose ();
-		}
-	}
+        public void Dispose()
+        {
+            Stream.Dispose();
+        }
+    }
 }

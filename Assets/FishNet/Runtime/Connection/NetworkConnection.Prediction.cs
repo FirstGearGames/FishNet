@@ -12,7 +12,6 @@ using System.Runtime.CompilerServices;
 
 namespace FishNet.Connection
 {
-
     /// <summary>
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
@@ -27,28 +26,26 @@ namespace FishNet.Connection
         /// Writers for states.
         /// </summary>
         internal List<PooledWriter> PredictionStateWriters = new();
-
         internal void Prediction_Initialize(NetworkManager manager, bool asServer) { }
-
 
         /// <summary>
         /// Writes a prediction state.
         /// </summary>
-        /// <param name="data"></param>
+        /// <param name = "data"></param>
         internal void WriteState(PooledWriter data)
         {
 #if !DEVELOPMENT
-            //Do not send states to clientHost.
+            // Do not send states to clientHost.
             if (IsLocalClient)
                 return;
 #endif
 
             TimeManager timeManager = NetworkManager.TimeManager;
             TransportManager transportManager = NetworkManager.TransportManager;
-            uint ticksBehind = (IsLocalClient) ? 0 : PacketTick.LocalTickDifference(timeManager);
+            uint ticksBehind = IsLocalClient ? 0 : PacketTick.LocalTickDifference(timeManager);
             /* If it's been a really long while the client could just be setting up
              * or dropping. Only send if they've communicated within 5 seconds. */
-            if (ticksBehind > (timeManager.TickRate * 5))
+            if (ticksBehind > timeManager.TickRate * 5)
                 return;
 
             int mtu = transportManager.GetLowestMTU((byte)Channel.Unreliable);
@@ -59,9 +56,9 @@ namespace FishNet.Connection
              * - data length + currentWriter length > mtu */
             Channel channel = Channel.Unreliable;
             if (writerCount > 0)
-                transportManager.CheckSetReliableChannel((data.Length + PredictionStateWriters[writerCount - 1].Length), ref channel);
+                transportManager.CheckSetReliableChannel(data.Length + PredictionStateWriters[writerCount - 1].Length, ref channel);
             /* If no writers or if channel would be forced reliable.
-             * 
+             *
              * By checking if channel would be reliable this is
              * essentially asking if (current written + new data) would
              * exceed mtu. When it would get a new writer to try
@@ -96,27 +93,22 @@ namespace FishNet.Connection
             PredictionStateWriters.Clear();
         }
 
-
         /// <summary>
         /// Sets the last tick a NetworkBehaviour replicated with.
         /// </summary>
-        /// <param name="setUnordered">True to set unordered value, false to set ordered.</param>
+        /// <param name = "setUnordered">True to set unordered value, false to set ordered.</param>
         internal void SetReplicateTick(uint value, EstimatedTick.OldTickOption oldTickOption = EstimatedTick.OldTickOption.Discard)
         {
             ReplicateTick.Update(value, oldTickOption);
         }
 
-
         /// <summary>
         /// Resets NetworkConnection.
         /// </summary>
-        
         private void Prediction_Reset()
         {
             StorePredictionStateWriters();
             ReplicateTick.Reset();
         }
     }
-
-
 }

@@ -11,9 +11,8 @@ namespace FishNet.Demo.Prediction.CharacterControllers
     {
         [SerializeField]
         private Image _staminaBar;
-        
         private CharacterControllerPrediction _character;
-        
+
         private void Awake()
         {
             CharacterControllerPrediction.OnOwner += CCP_OnOwner;
@@ -26,9 +25,10 @@ namespace FishNet.Demo.Prediction.CharacterControllers
 
         private void Update()
         {
-            if (_character == null) return;
+            if (_character == null)
+                return;
 
-            float fillAmount = (_character.Stamina / CharacterControllerPrediction.Maximum_Stamina);
+            float fillAmount = _character.Stamina / CharacterControllerPrediction.Maximum_Stamina;
             _staminaBar.fillAmount = fillAmount;
         }
 

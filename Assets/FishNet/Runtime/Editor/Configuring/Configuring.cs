@@ -12,7 +12,6 @@ namespace FishNet.Configuring
     public class Configuration
     {
         /// <summary>
-        /// 
         /// </summary>
         private static ConfigurationData _configurations;
         /// <summary>
@@ -30,36 +29,19 @@ namespace FishNet.Configuring
             }
             private set { _configurations = value; }
         }
-
         /// <summary>
         /// File name for configuration disk data.
         /// </summary>
         public const string CONFIG_FILE_NAME = "FishNet.Config.XML";
 
-        /// <summary>
-        /// Returns true if this editor is a multiplayer clone.
-        /// </summary>
-        /// <returns></returns>
-        public static bool IsMultiplayerClone()
-        {
-#if UNITY_EDITOR
-            if (Application.dataPath.ToLower().Contains("library/vp/"))
-                return true;
-
-#if PARRELSYNC
-            return ParrelSync.ClonesManager.IsClone();
-#endif
-#endif
-            return false;
-        }
-
+    
         /// <summary>
         /// Returns the path for the configuration file.
         /// </summary>
         /// <returns></returns>
         internal static string GetAssetsPath(string additional = "")
         {
-            string a = Path.Combine(System.IO.Directory.GetCurrentDirectory(), "Assets");
+            string a = Path.Combine(Directory.GetCurrentDirectory(), "Assets");
             if (additional != "")
                 a = Path.Combine(a, additional);
             return a;
@@ -71,12 +53,12 @@ namespace FishNet.Configuring
         /// <returns></returns>
         internal static ConfigurationData LoadConfigurationData()
         {
-            //return new ConfigurationData();
+            // return new ConfigurationData();
             if (_configurations == null || !_configurations.Loaded)
             {
                 string configPath = GetAssetsPath(CONFIG_FILE_NAME);
-                //string configPath = string.Empty;
-                //File is on disk.
+                // string configPath = string.Empty;
+                // File is on disk.
                 if (File.Exists(configPath))
                 {
                     FileStream fs = null;
@@ -94,11 +76,11 @@ namespace FishNet.Configuring
                 }
                 else
                 {
-                    //If null then make a new instance.
+                    // If null then make a new instance.
                     if (_configurations == null)
                         _configurations = new();
-                    //Don't unset loaded, if its true then it should have proper info.
-                    //_configurationData.Loaded = false;
+                    // Don't unset loaded, if its true then it should have proper info.
+                    // _configurationData.Loaded = false;
                 }
             }
 
@@ -106,5 +88,4 @@ namespace FishNet.Configuring
         }
     }
 }
-
 #endif

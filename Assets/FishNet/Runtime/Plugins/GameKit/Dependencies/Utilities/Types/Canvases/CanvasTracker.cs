@@ -20,11 +20,13 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// True if any blocking canvas is open.
         /// </summary>
-        public static bool IsInputBlockingCanvasOpen => (_inputBlockingCanvases.Count > 0);
+        public static bool IsInputBlockingCanvasOpen => _inputBlockingCanvases.Count > 0;
+
         /// <summary>
         /// Returns true if is the last canvas opened or if no canvases are set as opened.
         /// </summary>
         public static bool IsLastOpenCanvas(object canvas) => IsEmptyCollectionOrLastEntry(canvas, _openCanvases);
+
         /// <summary>
         /// Returns true if is the last canvas blocking input or if no input blocking canvases are set as opened.
         /// </summary>
@@ -40,7 +42,7 @@ namespace GameKit.Dependencies.Utilities.Types
             if (count == 0)
                 return true;
 
-            return (collection[count - 1] == canvas);
+            return collection[count - 1] == canvas;
         }
 
         /// <summary>
@@ -82,6 +84,7 @@ namespace GameKit.Dependencies.Utilities.Types
         {
             return _openCanvases.Contains(canvas);
         }
+
         /// <summary>
         /// Returns if the canvas is an input blocking canvas.
         /// </summary>
@@ -93,7 +96,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// <summary>
         /// Adds a canvas to OpenCanvases if not already added.
         /// </summary>
-        /// <param name="addToBlocking">True to also add as an input blocking canvas.</param>
+        /// <param name = "addToBlocking">True to also add as an input blocking canvas.</param>
         /// <returns>True if the canvas was added, false if already added.</returns>
         public static bool AddOpenCanvas(object canvas, bool addToBlocking)
         {
@@ -113,9 +116,5 @@ namespace GameKit.Dependencies.Utilities.Types
             _inputBlockingCanvases.Remove(canvas);
             return _openCanvases.Remove(canvas);
         }
-
-
     }
-
-
 }

@@ -10,45 +10,43 @@
 
 using System;
 
-namespace MonoFN.Cecil.Metadata {
+namespace MonoFN.Cecil.Metadata
+{
+    internal sealed class BlobHeap : Heap
+    {
+        public BlobHeap(byte[] data) : base(data) { }
 
-	sealed class BlobHeap : Heap {
+        public byte[] Read(uint index)
+        {
+            if (index == 0 || index > data.Length - 1)
+                return Empty<byte>.Array;
 
-		public BlobHeap (byte [] data)
-			: base (data)
-		{
-		}
+            int position = (int)index;
+            int length = (int)data.ReadCompressedUInt32(ref position);
 
-		public byte [] Read (uint index)
-		{
-			if (index == 0 || index > this.data.Length - 1)
-				return Empty<byte>.Array;
+            if (length > data.Length - position)
+                return Empty<byte>.Array;
 
-			int position = (int)index;
-			int length = (int)data.ReadCompressedUInt32 (ref position);
+            var buffer = new byte [length];
 
-			if (length > data.Length - position)
-				return Empty<byte>.Array;
+            Buffer.BlockCopy(data, position, buffer, 0, length);
 
-			var buffer = new byte [length];
+            return buffer;
+        }
 
-			Buffer.BlockCopy (data, position, buffer, 0, length);
+        public void GetView(uint signature, out byte[] buffer, out int index, out int length)
+        {
+            if (signature == 0 || signature > data.Length - 1)
+            {
+                buffer = null;
+                index = length = 0;
+                return;
+            }
 
-			return buffer;
-		}
+            buffer = data;
 
-		public void GetView (uint signature, out byte [] buffer, out int index, out int length)
-		{
-			if (signature == 0 || signature > data.Length - 1) {
-				buffer = null;
-				index = length = 0;
-				return;
-			}
-
-			buffer = data;
-
-			index = (int)signature;
-			length = (int)buffer.ReadCompressedUInt32 (ref index);
-		}
-	}
+            index = (int)signature;
+            length = (int)buffer.ReadCompressedUInt32(ref index);
+        }
+    }
 }

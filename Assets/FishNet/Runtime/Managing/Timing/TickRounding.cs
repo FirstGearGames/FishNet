@@ -18,6 +18,4 @@
         /// </summary>
         RoundNearest
     }
-
-
 }

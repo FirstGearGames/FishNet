@@ -2,13 +2,12 @@
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class Particles
     {
         /// <summary>
         /// Issues stop on the specified particle systems.
         /// </summary>
-        /// <param name="systems"></param>
+        /// <param name = "systems"></param>
         public static float StopParticleSystem(ParticleSystem[] systems, bool stopLoopingOnly)
         {
             return StopParticleSystem(systems, stopLoopingOnly, ParticleSystemStopBehavior.StopEmitting);
@@ -17,7 +16,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Issues stop on the specified particle systems while returning the time required to play out.
         /// </summary>
-        /// <param name="systems"></param>
+        /// <param name = "systems"></param>
         public static float StopParticleSystem(ParticleSystem[] systems, ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting)
         {
             return StopParticleSystem(systems, false, stopBehavior);
@@ -26,7 +25,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Issues stop on the specified particle systems while returning the time required to play out.
         /// </summary>
-        /// <param name="systems"></param>
+        /// <param name = "systems"></param>
         public static float StopParticleSystem(ParticleSystem[] systems, bool stopLoopingOnly, ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting)
         {
             if (systems == null)
@@ -42,7 +41,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Issues stop on the specified particle systems.
         /// </summary>
-        /// <param name="systems"></param>
+        /// <param name = "systems"></param>
         public static float StopParticleSystem(ParticleSystem system, bool stopLoopingOnly, bool stopChildren = false)
         {
             return StopParticleSystem(system, stopLoopingOnly, ParticleSystemStopBehavior.StopEmitting, stopChildren);
@@ -51,11 +50,12 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Issues stop on the specified particle systems while returning the time required to play out.
         /// </summary>
-        /// <param name="systems"></param>
+        /// <param name = "systems"></param>
         public static float StopParticleSystem(ParticleSystem system, ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting, bool stopChildren = false)
         {
             return StopParticleSystem(system, false, stopBehavior, stopChildren);
         }
+
         /// <summary>
         /// Issues stop on the specified particle system while returning the time required to play out.
         /// </summary>
@@ -89,7 +89,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Returns the longest time required for all systems to stop.
         /// </summary>
-        /// <param name="systems"></param>
+        /// <param name = "systems"></param>
         /// <returns></returns>
         public static float ReturnLongestCycle(ParticleSystem[] systems)
         {
@@ -102,8 +102,5 @@ namespace GameKit.Dependencies.Utilities
 
             return longestPlayTime;
         }
-
     }
-
-
 }

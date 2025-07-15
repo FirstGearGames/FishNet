@@ -11,10 +11,8 @@ using static FishNet.Managing.Timing.EstimatedTick;
 
 namespace FishNet.Connection
 {
-
     public static class NetworkConnectionExtensions
     {
-
         /// <summary>
         /// True if this connection is valid. An invalid connection indicates no client is set for this reference.
         /// Null references can be used with this method.
@@ -27,12 +25,12 @@ namespace FishNet.Connection
                 return c.IsValid;
         }
     }
+
     /// <summary>
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
     public partial class NetworkConnection : IResettable, IEquatable<NetworkConnection>
     {
-
         #region Internal.
         /// <summary>
         /// Tick when Disconnecting was set.
@@ -69,12 +67,13 @@ namespace FishNet.Connection
         /// NetworkManager managing this class.
         /// </summary>
         public NetworkManager NetworkManager { get; private set; }
+
         /// <summary>
         /// True if connection has loaded start scenes. Available to this connection and server.
         /// </summary>
-        public bool LoadedStartScenes() => (_loadedStartScenesAsServer || _loadedStartScenesAsClient);
+        public bool LoadedStartScenes() => _loadedStartScenesAsServer || _loadedStartScenesAsClient;
+
         /// <summary>
-        /// 
         /// </summary>
         public bool LoadedStartScenes(bool asServer)
         {
@@ -83,6 +82,7 @@ namespace FishNet.Connection
             else
                 return _loadedStartScenesAsClient;
         }
+
         /// <summary>
         /// TransportIndex this connection is on.
         /// For security reasons this value will be unset on clients if this is not their connection.
@@ -93,7 +93,7 @@ namespace FishNet.Connection
         /// True if this connection is authenticated. Only available to server.
         /// </summary>
         public bool IsAuthenticated { get; private set; }
-        [Obsolete("Use IsAuthenticated.")] //Remove in V5
+        [Obsolete("Use IsAuthenticated.")] // Remove in V5
         public bool Authenticated
         {
             get => IsAuthenticated;
@@ -102,11 +102,11 @@ namespace FishNet.Connection
         /// <summary>
         /// True if this connection IsValid and not Disconnecting.
         /// </summary>
-        public bool IsActive => (ClientId >= 0 && !Disconnecting);
+        public bool IsActive => ClientId >= 0 && !Disconnecting;
         /// <summary>
         /// True if this connection is valid. An invalid connection indicates no client is set for this reference.
         /// </summary>
-        public bool IsValid => (ClientId >= 0);
+        public bool IsValid => ClientId >= 0;
         /// <summary>
         /// Unique Id for this connection.
         /// </summary>
@@ -119,13 +119,14 @@ namespace FishNet.Connection
         /// The first object within Objects.
         /// </summary>
         public NetworkObject FirstObject { get; private set; }
+
         /// <summary>
         /// Sets a custom FirstObject. This connection must be owner of the specified object.
         /// </summary>
-        /// <param name="nob"></param>
+        /// <param name = "nob"></param>
         public void SetFirstObject(NetworkObject nob)
         {
-            //Invalid object.
+            // Invalid object.
             if (!Objects.Contains(nob))
             {
                 string errMessage = $"FirstObject for {ClientId} cannot be set to {nob.name} as it's not within Objects for this connection.";
@@ -135,6 +136,7 @@ namespace FishNet.Connection
 
             FirstObject = nob;
         }
+
         /// <summary>
         /// Scenes this connection is in. Available to this connection and server.
         /// </summary>
@@ -183,7 +185,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Maximum value a ClientId can be excluding simulated value.
         /// </summary>
-        public const int MAXIMUM_CLIENTID_WITHOUT_SIMULATED_VALUE = (int.MaxValue - 1);
+        public const int MAXIMUM_CLIENTID_WITHOUT_SIMULATED_VALUE = int.MaxValue - 1;
         /// <summary>
         /// Value to use as a ClientId when simulating a local client without actually using a socket.
         /// </summary>
@@ -198,27 +200,30 @@ namespace FishNet.Connection
         public override bool Equals(object obj)
         {
             if (obj is NetworkConnection nc)
-                return (nc.ClientId == this.ClientId);
+                return nc.ClientId == ClientId;
             else
                 return false;
         }
+
         public bool Equals(NetworkConnection nc)
         {
             if (nc is null)
                 return false;
-            //If either is -1 Id.
-            if (this.ClientId == NetworkConnection.UNSET_CLIENTID_VALUE || nc.ClientId == NetworkConnection.UNSET_CLIENTID_VALUE)
+            // If either is -1 Id.
+            if (ClientId == UNSET_CLIENTID_VALUE || nc.ClientId == UNSET_CLIENTID_VALUE)
                 return false;
-            //Same object.
-            if (System.Object.ReferenceEquals(this, nc))
+            // Same object.
+            if (ReferenceEquals(this, nc))
                 return true;
 
-            return (this.ClientId == nc.ClientId);
+            return ClientId == nc.ClientId;
         }
+
         public override int GetHashCode()
         {
             return ClientId;
         }
+
         public static bool operator ==(NetworkConnection a, NetworkConnection b)
         {
             if (a is null && b is null)
@@ -226,8 +231,9 @@ namespace FishNet.Connection
             if (a is null && !(b is null))
                 return false;
 
-            return (b == null) ? a.Equals(b) : b.Equals(a);
+            return b == null ? a.Equals(b) : b.Equals(a);
         }
+
         public static bool operator !=(NetworkConnection a, NetworkConnection b)
         {
             return !(a == b);
@@ -236,6 +242,7 @@ namespace FishNet.Connection
 
         [APIExclude]
         public NetworkConnection() { }
+
         [APIExclude]
         public NetworkConnection(NetworkManager manager, int clientId, int transportIndex, bool asServer)
         {
@@ -249,14 +256,13 @@ namespace FishNet.Connection
         public override string ToString()
         {
             int clientId = ClientId;
-            string ip = (NetworkManager != null) ? NetworkManager.TransportManager.Transport.GetConnectionAddress(clientId) : "Unset";
+            string ip = NetworkManager != null ? NetworkManager.TransportManager.Transport.GetConnectionAddress(clientId) : "Unset";
             return $"Id [{ClientId}] Address [{ip}]";
         }
 
         /// <summary>
         /// Initializes this for use.
         /// </summary>
-        
         private void Initialize(NetworkManager nm, int clientId, int transportIndex, bool asServer)
         {
             NetworkManager = nm;
@@ -267,12 +273,12 @@ namespace FishNet.Connection
             TransportIndex = transportIndex;
             ClientId = clientId;
             /* Set PacketTick to current values so
-            * that timeouts and other things around
-           * first packet do not occur due to an unset value. */
+             * that timeouts and other things around
+             * first packet do not occur due to an unset value. */
             PacketTick.Update(nm.TimeManager, 0, OldTickOption.SetLastRemoteTick);
             Observers_Initialize(nm);
             Prediction_Initialize(nm, asServer);
-            //Only the server uses the ping and buffer.
+            // Only the server uses the ping and buffer.
             if (asServer)
             {
                 InitializeBuffer();
@@ -293,7 +299,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Disconnects this connection.
         /// </summary>
-        /// <param name="immediately">True to disconnect immediately. False to send any pending data first.</param>
+        /// <param name = "immediately">True to disconnect immediately. False to send any pending data first.</param>
         public void Disconnect(bool immediately)
         {
             if (!IsValid)
@@ -308,10 +314,10 @@ namespace FishNet.Connection
             }
 
             SetDisconnecting(true);
-            //If immediately then force disconnect through transport.
+            // If immediately then force disconnect through transport.
             if (immediately)
                 NetworkManager.TransportManager.Transport.StopConnection(ClientId, true);
-            //Otherwise mark dirty so server will push out any pending information, and then disconnect.
+            // Otherwise mark dirty so server will push out any pending information, and then disconnect.
             else
                 ServerDirty();
         }
@@ -322,8 +328,8 @@ namespace FishNet.Connection
         /// <returns></returns>
         internal bool SetLoadedStartScenes(bool asServer)
         {
-            bool loadedToCheck = (asServer) ? _loadedStartScenesAsServer : _loadedStartScenesAsClient;
-            //Result becomes true if not yet loaded start scenes.
+            bool loadedToCheck = asServer ? _loadedStartScenesAsServer : _loadedStartScenesAsClient;
+            // Result becomes true if not yet loaded start scenes.
             bool result = !loadedToCheck;
             if (asServer)
                 _loadedStartScenesAsServer = true;
@@ -346,15 +352,14 @@ namespace FishNet.Connection
         /// <summary>
         /// Adds to Objects owned by this connection.
         /// </summary>
-        /// <param name="nob"></param>
-        
+        /// <param name = "nob"></param>
         internal void AddObject(NetworkObject nob)
         {
             if (!IsValid)
                 return;
 
             Objects.Add(nob);
-            //If adding the first object then set new FirstObject.
+            // If adding the first object then set new FirstObject.
             if (Objects.Count == 1)
                 SetFirstObject();
 
@@ -364,8 +369,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Removes from Objects owned by this connection.
         /// </summary>
-        /// <param name="nob"></param>
-        
+        /// <param name = "nob"></param>
         internal void RemoveObject(NetworkObject nob)
         {
             if (!IsValid)
@@ -375,7 +379,7 @@ namespace FishNet.Connection
             }
 
             Objects.Remove(nob);
-            //If removing the first object then set a new one.
+            // If removing the first object then set a new one.
             if (nob == FirstObject)
                 SetFirstObject();
 
@@ -414,7 +418,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Adds a scene to this connections Scenes.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name = "scene"></param>
         /// <returns></returns>
         internal bool AddToScene(Scene scene)
         {
@@ -424,7 +428,7 @@ namespace FishNet.Connection
         /// <summary>
         /// Removes a scene to this connections Scenes.
         /// </summary>
-        /// <param name="scene"></param>
+        /// <param name = "scene"></param>
         /// <returns></returns>
         internal bool RemoveFromScene(Scene scene)
         {
@@ -434,7 +438,6 @@ namespace FishNet.Connection
         /// <summary>
         /// Resets all states for re-use.
         /// </summary>
-        
         public void ResetState()
         {
             MatchCondition.RemoveFromMatchesWithoutRebuild(this, NetworkManager);
@@ -463,8 +466,5 @@ namespace FishNet.Connection
         }
 
         public void InitializeState() { }
-    
     }
-
-
 }

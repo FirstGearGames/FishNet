@@ -1,4 +1,7 @@
-﻿using FishNet.CodeGenerating;
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#define DEVELOPMENT
+#endif
+using FishNet.CodeGenerating;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Managing.Transporting;
@@ -39,7 +42,7 @@ namespace FishNet.Object
                 for (int i = 0; i < Writers.Count; i++)
                     Writers[i].Clear();
             }
-            
+
             public void Initialize()
             {
                 Writers = CollectionCaches<PooledWriter>.RetrieveList();
@@ -85,8 +88,8 @@ namespace FishNet.Object
         /// <summary>
         /// Registers a SyncType.
         /// </summary>
-        /// <param name="sb"></param>
-        /// <param name="index"></param>
+        /// <param name = "sb"></param>
+        /// <param name = "index"></param>
         internal void RegisterSyncType(SyncBase sb, uint index)
         {
             if (_syncTypes == null)
@@ -127,7 +130,7 @@ namespace FishNet.Object
             if (_networkObjectCache.DoubleLogic(asServer))
                 return;
 
-            //This only runs once since SyncTypeWriters are static.
+            // This only runs once since SyncTypeWriters are static.
             if (_syncTypeWriters.Count == 0)
             {
                 List<ReadPermission> readPermissions = new();
@@ -150,13 +153,12 @@ namespace FishNet.Object
                 sb.PreInitialize(_networkObjectCache.NetworkManager, asServer);
         }
 
-
         /// <summary>
         /// Reads a SyncType.
         /// </summary>
-        internal void ReadSyncType(PooledReader reader, int writtenLength, bool asServer = false)
+        internal void ReadSyncType(int readerPositionAfterDebug, PooledReader reader, int writtenLength, bool asServer = false)
         {
-            int endPosition = (reader.Position + writtenLength);
+            int endPosition = reader.Position + writtenLength;
             while (reader.Position < endPosition)
             {
                 byte syncTypeId = reader.ReadUInt8Unpacked();
@@ -169,9 +171,14 @@ namespace FishNet.Object
             if (reader.Position > endPosition)
             {
                 NetworkManager.LogError($"Remaining bytes in SyncType reader are less than expected. Something did not serialize or deserialize properly which will likely result in a SyncType being incorrect.");
-                //Fix position.
+                // Fix position.
                 reader.Position = endPosition;
             }
+
+#if DEVELOPMENT && !UNITY_SERVER
+            if (_networkTrafficStatistics != null)
+                _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.SyncType, _typeName, reader.Position - readerPositionAfterDebug, gameObject, asServer: false);
+#endif
         }
 
         /// <summary>
@@ -197,7 +204,7 @@ namespace FishNet.Object
             //     ResetState_SyncTypes(asServer: true);
             //     return true;
             // }
-            
+
             /* IsSpawned Can occur when a synctype is queued after
              * the object is marked for destruction. This should not
              * happen under most conditions since synctypes will be
@@ -212,23 +219,23 @@ namespace FishNet.Object
              * above. Resets should place priority as this method was called
              * when it should not have been, such as during a despawn. */
 
-            //None dirty or no synctypes.
+            // None dirty or no synctypes.
             if (!SyncTypeDirty || _syncTypes.Count == 0)
                 return true;
 
-            //Number of syncTypes which are/were dirty.
+            // Number of syncTypes which are/were dirty.
             int dirtyCount = 0;
-            //Number of syncTypes which were written.
+            // Number of syncTypes which were written.
             int writtenCount = 0;
 
-            //Flags as boolean.
+            // Flags as boolean.
             bool ignoreInterval = flags.FastContains(SyncTypeWriteFlag.IgnoreInterval);
             bool forceReliable = flags.FastContains(SyncTypeWriteFlag.ForceReliable);
 
             uint tick = _networkObjectCache.NetworkManager.TimeManager.Tick;
             bool ownerIsActive = _networkObjectCache.Owner.IsActive;
 
-            //Reset syncTypeWriters.
+            // Reset syncTypeWriters.
             foreach (SyncTypeWriter stw in _syncTypeWriters.Values)
                 stw.Reset();
 
@@ -236,7 +243,7 @@ namespace FishNet.Object
 
             foreach (SyncBase sb in _syncTypes.Values)
             {
-                //This entry is not dirty.
+                // This entry is not dirty.
                 if (!sb.IsDirty)
                     continue;
 
@@ -245,11 +252,11 @@ namespace FishNet.Object
                  * as there are still blocks to bypass. */
                 dirtyCount++;
 
-                //Interval not yet met.
+                // Interval not yet met.
                 if (!ignoreInterval && !sb.IsNextSyncTimeMet(tick))
                     continue;
 
-                //Unset that SyncType is dirty as it will be written now.
+                // Unset that SyncType is dirty as it will be written now.
                 sb.ResetDirty();
 
                 /* SyncType is for owner only but the owner is not valid, therefor
@@ -257,23 +264,23 @@ namespace FishNet.Object
                  * and owner only, with no owner, if the owner dropped after the syncType
                  * was dirtied. */
                 ReadPermission rp = sb.Settings.ReadPermission;
-                //If ReadPermission is owner but no owner skip this syncType write.
+                // If ReadPermission is owner but no owner skip this syncType write.
                 if (!ownerIsActive && rp == ReadPermission.OwnerOnly)
                     continue;
-                
+
                 writtenCount++;
 
                 if (forceReliable)
                     sb.SetCurrentChannel(Channel.Reliable);
 
-                //Get channel
+                // Get channel
                 byte channel = (byte)sb.Channel;
 
                 /* Writer can be obtained quickly by using the readPermission byte value.
                  * Byte values are in order starting at 0. */
 
 
-                //Find writer to use. Should never fail.
+                // Find writer to use. Should never fail.
                 if (!_syncTypeWriters.TryGetValueIL2CPP(rp, out SyncTypeWriter stw))
                     continue;
 
@@ -287,42 +294,47 @@ namespace FishNet.Object
                 sb.WriteDelta(stw.Writers[channel]);
             }
 
-            //If no dirty were found.
+            // If no dirty were found.
             if (dirtyCount == 0)
             {
                 SyncTypeDirty = false;
                 CollectionCaches<ReadPermission>.Store(writtenReadPermissions);
                 return true;
             }
-            //Nothing was written, but some are still dirty.
-            else if (writtenReadPermissions.Count == 0)
+
+            // Nothing was written, but some are still dirty.
+            if (writtenReadPermissions.Count == 0)
             {
                 CollectionCaches<ReadPermission>.Store(writtenReadPermissions);
                 return false;
             }
-            
+
             /* If here something was written. */
 
             PooledWriter fullWriter = WriterPool.Retrieve();
             TransportManager tm = _networkObjectCache.NetworkManager.TransportManager;
 
+#if DEVELOPMENT && !UNITY_SERVER
+            int totalBytesWritten = 0;
+#endif
+
             foreach (ReadPermission rp in writtenReadPermissions)
             {
-                //Find writer to use. Should never fail.
+                // Find writer to use. Should never fail.
                 if (!_syncTypeWriters.TryGetValueIL2CPP(rp, out SyncTypeWriter stw))
                     continue;
 
                 for (int i = 0; i < stw.Writers.Count; i++)
                 {
                     PooledWriter writer = stw.Writers[i];
-                    //None written for this channel.
+                    // None written for this channel.
                     if (writer.Length == 0)
                         continue;
-                    
+
                     CompleteSyncTypePacket(fullWriter, writer);
                     writer.Clear();
-                    
-                    //Should not be the case but check for safety.
+
+                    // Should not be the case but check for safety.
                     if (fullWriter.Length == 0)
                         continue;
 
@@ -330,32 +342,40 @@ namespace FishNet.Object
 
                     switch (rp)
                     {
-                        //Send to everyone or excludeOwner.
+                        // Send to everyone or excludeOwner.
                         case ReadPermission.Observers:
                             tm.SendToClients(channel, fullWriter.GetArraySegment(), _networkObjectCache.Observers);
                             break;
-                        //Everyone but owner.
+                        // Everyone but owner.
                         case ReadPermission.ExcludeOwner:
                             _networkConnectionCache.Clear();
                             if (ownerIsActive)
                                 _networkConnectionCache.Add(_networkObjectCache.Owner);
                             tm.SendToClients(channel, fullWriter.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache);
                             break;
-                        //Owner only. Owner will always be valid if here.
+                        // Owner only. Owner will always be valid if here.
                         case ReadPermission.OwnerOnly:
                             tm.SendToClient(channel, fullWriter.GetArraySegment(), _networkObjectCache.Owner);
                             break;
                     }
 
+#if DEVELOPMENT && !UNITY_SERVER
+                    totalBytesWritten += fullWriter.Length;
+#endif
+
                     fullWriter.Clear();
                 }
             }
 
+#if DEVELOPMENT && !UNITY_SERVER
+            if (_networkTrafficStatistics != null)
+                _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.SyncType, _typeName, totalBytesWritten, gameObject, asServer: true);
+#endif
             fullWriter.Store();
             CollectionCaches<ReadPermission>.Store(writtenReadPermissions);
 
-            //Return if all dirty were written.
-            bool allDirtyWritten = (dirtyCount == writtenCount);
+            // Return if all dirty were written.
+            bool allDirtyWritten = dirtyCount == writtenCount;
             if (allDirtyWritten)
                 SyncTypeDirty = false;
 
@@ -365,18 +385,17 @@ namespace FishNet.Object
         /// <summary>
         /// Writes all SyncTypes for a connection if readPermissions match.
         /// </summary>
-        
         internal void WriteSyncTypesForConnection(NetworkConnection conn, ReadPermission readPermissions)
         {
-            //There are no syncTypes.
+            // There are no syncTypes.
             if (_syncTypes.Count == 0)
                 return;
 
-            //It will always exist but we need to out anyway.
+            // It will always exist but we need to out anyway.
             if (!_syncTypeWriters.TryGetValueIL2CPP(readPermissions, out SyncTypeWriter stw))
                 return;
 
-            //Reset syncTypeWriters.
+            // Reset syncTypeWriters.
             stw.Reset();
 
             PooledWriter fullWriter = WriterPool.Retrieve();
@@ -390,6 +409,10 @@ namespace FishNet.Object
                 sb.WriteFull(writer);
             }
 
+#if DEVELOPMENT && !UNITY_SERVER
+            int totalBytesWritten = 0;
+#endif
+
             for (int i = 0; i < stw.Writers.Count; i++)
             {
                 PooledWriter writer = stw.Writers[i];
@@ -400,6 +423,11 @@ namespace FishNet.Object
                 _networkObjectCache.NetworkManager.TransportManager.SendToClient(channel, fullWriter.GetArraySegment(), conn);
             }
 
+#if DEVELOPMENT && !UNITY_SERVER
+            if (_networkTrafficStatistics != null)
+                _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.SyncType, _typeName, totalBytesWritten, gameObject, asServer: true);
+#endif
+
             fullWriter.Store();
         }
 
@@ -408,7 +436,7 @@ namespace FishNet.Object
         /// </summary>
         private void CompleteSyncTypePacket(PooledWriter fullWriter, PooledWriter syncTypeWriter)
         {
-            //None written for this writer.
+            // None written for this writer.
             if (syncTypeWriter.Length == 0)
                 return;
 
@@ -418,9 +446,9 @@ namespace FishNet.Object
 
             ReservedLengthWriter reservedWriter = ReservedWritersExtensions.Retrieve();
             reservedWriter.Initialize(fullWriter, SYNCTYPE_RESERVE_BYTES);
-            
+
             fullWriter.WriteArraySegment(syncTypeWriter.GetArraySegment());
-            
+
             reservedWriter.WriteLength();
             reservedWriter.Store();
         }
@@ -428,17 +456,17 @@ namespace FishNet.Object
         /// <summary>
         /// Writes syncTypes for a spawn message.
         /// </summary>
-        /// <param name="conn">Connection SyncTypes are being written for.</param>
+        /// <param name = "conn">Connection SyncTypes are being written for.</param>
         internal void WriteSyncTypesForSpawn(PooledWriter writer, NetworkConnection conn)
         {
-            //There are no syncTypes.
+            // There are no syncTypes.
             if (_syncTypes.Count == 0)
                 return;
 
-            //True if connection passed in is the owner of this object.
-            bool connIsOwner = (conn == _networkObjectCache.Owner);
+            // True if connection passed in is the owner of this object.
+            bool connIsOwner = conn == _networkObjectCache.Owner;
 
-            //Reserved bytes for componentIndex and amount written.
+            // Reserved bytes for componentIndex and amount written.
             const byte reservedBytes = 2;
             writer.Skip(reservedBytes);
             int positionAfterReserve = writer.Position;
@@ -448,9 +476,7 @@ namespace FishNet.Object
             foreach (SyncBase sb in _syncTypes.Values)
             {
                 ReadPermission rp = sb.Settings.ReadPermission;
-                bool canWrite = (rp == ReadPermission.Observers) ||
-                                (rp == ReadPermission.ExcludeOwner && !connIsOwner) ||
-                                (rp == ReadPermission.OwnerOnly && connIsOwner);
+                bool canWrite = rp == ReadPermission.Observers || (rp == ReadPermission.ExcludeOwner && !connIsOwner) || (rp == ReadPermission.OwnerOnly && connIsOwner);
 
                 if (!canWrite)
                     continue;
@@ -461,10 +487,10 @@ namespace FishNet.Object
                     written++;
             }
 
-            //If any where written.
+            // If any where written.
             if (positionAfterReserve != writer.Position)
             {
-                int insertPosition = (positionAfterReserve - reservedBytes);
+                int insertPosition = positionAfterReserve - reservedBytes;
                 writer.InsertUInt8Unpacked(ComponentIndex, insertPosition++);
                 writer.InsertUInt8Unpacked(written, insertPosition);
             }
@@ -473,7 +499,6 @@ namespace FishNet.Object
                 writer.Remove(reservedBytes);
             }
         }
-
 
         /// <summary>
         /// Reads a SyncType for spawn.
@@ -484,14 +509,13 @@ namespace FishNet.Object
             for (int i = 0; i < written; i++)
             {
                 byte syncTypeId = reader.ReadUInt8Unpacked();
-                
+
                 if (_syncTypes.TryGetValueIL2CPP(syncTypeId, out SyncBase sb))
                     sb.Read(reader, asServer: false);
                 else
                     NetworkManager.LogWarning($"SyncType not found for index {syncTypeId} on {transform.name}, component {GetType().FullName}. Remainder of packet may become corrupt.");
             }
         }
-
 
         /// <summary>
         /// Resets all SyncTypes for this NetworkBehaviour for server or client.

@@ -138,8 +138,8 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 50
-  _pingInterval: 15
+  _tickRate: 10
+  _pingInterval: 1
   _physicsMode: 1
 --- !u!1 &391166852
 GameObject:
@@ -316,7 +316,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 442045876}
   _networkObjectCache: {fileID: 0}
   _prefab: {fileID: 4512293259955182956, guid: b8017cef39731ba439c70fecc09488e3, type: 3}
-  _count: 50
+  _count: 0
   _displayText: {fileID: 0}
 --- !u!1 &584355000
 GameObject:
@@ -1251,12 +1251,9 @@ GameObject:
   - component: {fileID: 7443408886575219561}
   - component: {fileID: 7443408886575219562}
   - component: {fileID: 370472796}
-  - component: {fileID: 7443408886575219565}
   - component: {fileID: 7443408886575219564}
   - component: {fileID: 7443408886575219566}
-  - component: {fileID: 7443408886575219567}
   - component: {fileID: 7443408886575219568}
-  - component: {fileID: 7443408886575219569}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1276,27 +1273,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756c28cd3141c4140ae776188ee26729, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  NetworkTraffic:
-    _updateInteval: 1
-    _updateClient: 0
+  _runInRelease: 0
+  _networkTraffic:
+    _updateClient: 1
     _updateServer: 1
---- !u!114 &7443408886575219565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886575219563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bc8f0363ddc75946a958043c5e49a83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _color: {r: 1, g: 1, b: 1, a: 1}
-  _placement: 2
-  _secondsAveraged: 10
-  _showOutgoing: 1
-  _showIncoming: 1
 --- !u!114 &7443408886575219566
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1323,21 +1303,6 @@ MonoBehaviour:
   _frameRate: 70
   _shareIds: 1
   _startOnHeadless: 1
---- !u!114 &7443408886575219567
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886575219563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9b6b565cd9533c4ebc18003f0fc18a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _color: {r: 1, g: 1, b: 1, a: 1}
-  _placement: 1
-  _hideTickRate: 1
 --- !u!114 &7443408886575219568
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1353,22 +1318,3 @@ MonoBehaviour:
   _playerPrefab: {fileID: 4512293259955182956, guid: 7d413700c8c3cec4a99fad3b66e4575e, type: 3}
   _addToDefaultScene: 1
   Spawns: []
---- !u!114 &7443408886575219569
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886575219563}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6d0962ead4b02a34aae248fccce671ce, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  WriteSceneObjectDetails: 0
-  ValidateRpcLengths: 1
-  DisableObserversRpcLinks: 0
-  DisableTargetRpcLinks: 0
-  DisableServerRpcLinks: 0
-  DisableReplicateRpcLinks: 0
-  DisableReconcileRpcLinks: 0

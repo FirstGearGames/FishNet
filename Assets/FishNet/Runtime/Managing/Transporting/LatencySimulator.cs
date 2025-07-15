@@ -5,11 +5,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-//Thanks to TiToMoskito originally creating this as a Transport.
-//https://github.com/TiToMoskito/FishyLatency
+// Thanks to TiToMoskito originally creating this as a Transport.
+// https:// github.com/TiToMoskito/FishyLatency
 namespace FishNet.Managing.Transporting
 {
-    [System.Serializable]
+    [Serializable]
     public class LatencySimulator
     {
         #region Types.
@@ -25,11 +25,11 @@ namespace FishNet.Managing.Transporting
 
             public Message(int connectionId, ArraySegment<byte> segment, float latency)
             {
-                this.ConnectionId = connectionId;
-                this.SendTime = (Time.unscaledTime + latency);
-                this.Length = segment.Count;
-                this.Data = ByteArrayPool.Retrieve(this.Length);
-                Buffer.BlockCopy(segment.Array, segment.Offset, this.Data, 0, this.Length);
+                ConnectionId = connectionId;
+                SendTime = Time.unscaledTime + latency;
+                Length = segment.Count;
+                Data = ByteArrayPool.Retrieve(Length);
+                Buffer.BlockCopy(segment.Array, segment.Offset, Data, 0, Length);
             }
 
             public ArraySegment<byte> GetSegment()
@@ -43,7 +43,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// True if latency can be simulated.
         /// </summary>
-        internal bool CanSimulate => (GetEnabled() && (GetLatency() > 0 || GetPacketLost() > 0 || GetOutOfOrder() > 0));
+        internal bool CanSimulate => GetEnabled() && (GetLatency() > 0 || GetPacketLost() > 0 || GetOutOfOrder() > 0);
         #endregion
 
         #region Serialized
@@ -54,14 +54,16 @@ namespace FishNet.Managing.Transporting
         [Tooltip("True if latency simulator is enabled.")]
         [SerializeField]
         private bool _enabled;
+
         /// <summary>
         /// Gets the enabled value of simulator.
         /// </summary>
         public bool GetEnabled() => _enabled;
+
         /// <summary>
         /// Sets the enabled value of simulator.
         /// </summary>
-        /// <param name="value">New value.</param>
+        /// <param name = "value">New value.</param>
         public void SetEnabled(bool value)
         {
             if (value == _enabled)
@@ -70,8 +72,8 @@ namespace FishNet.Managing.Transporting
             _enabled = value;
             Reset();
         }
+
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("True to add latency on clientHost as well.")]
         [SerializeField]
@@ -83,15 +85,17 @@ namespace FishNet.Managing.Transporting
         [Range(0, 60000)]
         [SerializeField]
         private long _latency = 0;
+
         /// <summary>
         /// Gets the latency value.
         /// </summary>
         /// <returns></returns>
         public long GetLatency() => _latency;
+
         /// <summary>
         /// Sets a new latency value.
         /// </summary>
-        /// <param name="value">Latency as milliseconds.</param>
+        /// <param name = "value">Latency as milliseconds.</param>
         public void SetLatency(long value) => _latency = value;
 
         [Header("Unreliable")]
@@ -102,16 +106,19 @@ namespace FishNet.Managing.Transporting
         [Range(0f, 1f)]
         [SerializeField]
         private double _outOfOrder = 0;
+
         /// <summary>
         /// Out of order chance, 1f is a 100% chance to occur.
         /// </summary>
         /// <returns></returns>
         public double GetOutOfOrder() => _outOfOrder;
+
         /// <summary>
         /// Sets out of order chance. 1f is a 100% chance to occur.
         /// </summary>
-        /// <param name="value">New Value.</param>
+        /// <param name = "value">New Value.</param>
         public void SetOutOfOrder(double value) => _outOfOrder = value;
+
         /// <summary>
         /// Percentage of packets which should drop.
         /// </summary>
@@ -119,15 +126,17 @@ namespace FishNet.Managing.Transporting
         [Range(0, 1)]
         [SerializeField]
         private double _packetLoss = 0;
+
         /// <summary>
         /// Gets packet loss chance. 1f is a 100% chance to occur.
         /// </summary>
         /// <returns></returns>
         public double GetPacketLost() => _packetLoss;
+
         /// <summary>
         /// Sets packet loss chance. 1f is a 100% chance to occur.
         /// </summary>
-        /// <param name="value">New Value.</param>
+        /// <param name = "value">New Value.</param>
         public void SetPacketLoss(double value) => _packetLoss = value;
         #endregion
 
@@ -168,7 +177,7 @@ namespace FishNet.Managing.Transporting
             _networkManager = manager;
             _transport = transport;
         }
-        #endregion        
+        #endregion
 
         /// <summary>
         /// Stops both client and server.
@@ -177,7 +186,7 @@ namespace FishNet.Managing.Transporting
         {
             bool enabled = GetEnabled();
             if (_transport != null && enabled)
-            { 
+            {
                 IterateAndStore(_toServerReliable);
                 IterateAndStore(_toServerUnreliable);
                 IterateAndStore(_toClientReliable);
@@ -202,13 +211,13 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Removes pending or held packets for a connection.
         /// </summary>
-        /// <param name="conn">Connection to remove pending packets for.</param>
+        /// <param name = "conn">Connection to remove pending packets for.</param>
         public void RemovePendingForConnection(int connectionId)
         {
-            //If not enabled exit early to save work.
+            // If not enabled exit early to save work.
             if (!GetEnabled())
                 return;
-            
+
             RemoveFromCollection(_toServerUnreliable);
             RemoveFromCollection(_toServerUnreliable);
             RemoveFromCollection(_toClientReliable);
@@ -231,7 +240,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Returns long latency as a float.
         /// </summary>
-        /// <param name="ms"></param>
+        /// <param name = "ms"></param>
         /// <returns></returns>
         private float GetLatencyAsFloat()
         {
@@ -270,9 +279,9 @@ namespace FishNet.Managing.Transporting
             Channel c = (Channel)channelId;
 
             if (toServer)
-                collection = (c == Channel.Reliable) ? _toServerReliable : _toServerUnreliable;
+                collection = c == Channel.Reliable ? _toServerReliable : _toServerUnreliable;
             else
-                collection = (c == Channel.Reliable) ? _toClientReliable : _toClientUnreliable;
+                collection = c == Channel.Reliable ? _toClientReliable : _toClientUnreliable;
 
             float latency = GetLatencyAsFloat();
             //If dropping check to add extra latency if reliable, or discard if not.
@@ -280,7 +289,7 @@ namespace FishNet.Managing.Transporting
             {
                 if (c == Channel.Reliable)
                 {
-                    latency += (latency * 0.3f); //add extra for resend.
+                    latency += latency * 0.3f; //add extra for resend.
                 }
                 //If not reliable then return the segment array to pool.
                 else
@@ -300,7 +309,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Simulates pending outgoing packets.
         /// </summary>
-        /// <param name="asServer">True to send data from the local server to clients, false to send from the local client to server.
+        /// <param name = "asServer">True to send data from the local server to clients, false to send from the local client to server.
         public void IterateOutgoing(bool asServer)
         {
             if (_transport == null)
@@ -359,22 +368,21 @@ namespace FishNet.Managing.Transporting
         /// <returns></returns>
         private bool DropPacket()
         {
-            return (_packetLoss > 0d && (_random.NextDouble() < _packetLoss));
+            return _packetLoss > 0d && _random.NextDouble() < _packetLoss;
         }
 
         /// <summary>
         /// Returns if a packet should be out of order.
         /// </summary>
-        /// <param name="c"></param>
+        /// <param name = "c"></param>
         /// <returns></returns>
         private bool OutOfOrderPacket(Channel c)
         {
             if (c == Channel.Reliable)
                 return false;
 
-            return (_outOfOrder > 0d && (_random.NextDouble() < _outOfOrder));
+            return _outOfOrder > 0d && _random.NextDouble() < _outOfOrder;
         }
         #endregion
     }
 }
-

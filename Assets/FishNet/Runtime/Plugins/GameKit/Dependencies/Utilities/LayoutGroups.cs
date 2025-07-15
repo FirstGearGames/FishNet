@@ -3,7 +3,6 @@ using UnityEngine.UI;
 
 namespace GameKit.Dependencies.Utilities
 {
-
     public static class LayoutGroups
     {
         /// <summary>
@@ -14,7 +13,5 @@ namespace GameKit.Dependencies.Utilities
             RectTransform rectTransform = lg.GetComponent<RectTransform>();
             return Mathf.CeilToInt(rectTransform.rect.width / lg.cellSize.x);
         }
-
     }
-
 }

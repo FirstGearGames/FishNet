@@ -1,4 +1,3 @@
-
 namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
 {
     public class ButtonData : IResettable
@@ -8,11 +7,13 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
         /// Text to place on the button.
         /// </summary>
         public string Text { get; protected set; } = string.Empty;
+
         /// <summary>
         /// When not null this will be called when action is taken.
         /// </summary>
-        /// <param name="key">Optional key to associate with callback.</param>
+        /// <param name = "key">Optional key to associate with callback.</param>
         public delegate void PressedDelegate(string key);
+
         /// <summary>
         /// Optional key to include within the callback.
         /// </summary>
@@ -27,9 +28,9 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
         /// <summary>
         /// Initializes this for use.
         /// </summary>
-        /// <param name="text">Text to display on the button.</param>
-        /// <param name="callback">Callback when OnPressed is called.</param>
-        /// <param name="key">Optional key to include within the callback.</param>
+        /// <param name = "text">Text to display on the button.</param>
+        /// <param name = "callback">Callback when OnPressed is called.</param>
+        /// <param name = "key">Optional key to include within the callback.</param>
         public void Initialize(string text, PressedDelegate callback, string key = "")
         {
             Text = text;
@@ -54,6 +55,4 @@ namespace GameKit.Dependencies.Utilities.Types.CanvasContainers
 
         public void InitializeState() { }
     }
-
-
 }

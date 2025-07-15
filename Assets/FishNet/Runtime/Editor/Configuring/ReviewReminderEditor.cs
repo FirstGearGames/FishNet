@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace FishNet.Editing
 {
-
     /// <summary>
     /// Contributed by YarnCat! Thank you!
     /// </summary>
@@ -14,11 +13,9 @@ namespace FishNet.Editing
     {
         private Texture2D _fishnetLogo, _reviewButtonBg, _reviewButtonBgHover;
         private GUIStyle _labelStyle, _reviewButtonStyle;
-
         private const string DATETIME_REMINDED = "ReviewDateTimeReminded";
         private const string CHECK_REMIND_COUNT = "CheckRemindCount";
         private const string IS_ENABLED = "ReminderEnabled";
-
         private static ReviewReminderEditor _window;
 
         internal static void CheckRemindToReview()
@@ -29,15 +26,15 @@ namespace FishNet.Editing
 
             /* Require at least two opens and 10 days
              * to be passed before reminding. */
-            int checkRemindCount = (EditorPrefs.GetInt(CHECK_REMIND_COUNT, 0) + 1);
+            int checkRemindCount = EditorPrefs.GetInt(CHECK_REMIND_COUNT, 0) + 1;
             EditorPrefs.SetInt(CHECK_REMIND_COUNT, checkRemindCount);
-            
-            //Not enough checks.
+
+            // Not enough checks.
             if (checkRemindCount < 2)
                 return;
-            
+
             string dtStr = EditorPrefs.GetString(DATETIME_REMINDED, string.Empty);
-            //Somehow got cleared. Reset.
+            // Somehow got cleared. Reset.
             if (string.IsNullOrWhiteSpace(dtStr))
             {
                 ResetDateTimeReminded();
@@ -52,14 +49,14 @@ namespace FishNet.Editing
             }
             //Not enough time passed.
             DateTime dt = DateTime.FromBinary(binary);
-            
+
             if ((DateTime.Now - dt).TotalDays < 10)
                 return;
 
             //If here then the reminder can be shown.
             EditorPrefs.SetInt(CHECK_REMIND_COUNT, 0);
             ResetDateTimeReminded();
-            
+
             ShowReminder();
         }
 
@@ -72,12 +69,12 @@ namespace FishNet.Editing
         {
             InitializeWindow();
         }
-      
+
         private static void InitializeWindow()
         {
             if (_window != null)
                 return;
-            _window = (ReviewReminderEditor)EditorWindow.GetWindow(typeof(ReviewReminderEditor));
+            _window = (ReviewReminderEditor)GetWindow(typeof(ReviewReminderEditor));
             _window.position = new(0f, 0f, 320f, 300f);
             Rect mainPos;
             mainPos = EditorGUIUtility.GetMainWindowPosition();
@@ -89,7 +86,7 @@ namespace FishNet.Editing
             _window.position = pos;
         }
 
-        static void StyleWindow()
+        private static void StyleWindow()
         {
             InitializeWindow();
             _window._fishnetLogo = (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/FishNet/Runtime/Editor/Textures/UI/Logo_With_Text.png", typeof(Texture));
@@ -112,39 +109,38 @@ namespace FishNet.Editing
             _window._reviewButtonStyle.onHover.background = _window._reviewButtonBgHover;
             _window._reviewButtonStyle.alignment = TextAnchor.MiddleCenter;
             _window._reviewButtonStyle.normal.textColor = new(1, 1, 1, 1);
-
         }
 
-        void OnGUI()
+        private void OnGUI()
         {
-            float thisWidth = this.position.width;
+            float thisWidth = position.width;
             StyleWindow();
-            GUILayout.Box(_fishnetLogo, GUILayout.Width(this.position.width), GUILayout.Height(160f));
+            GUILayout.Box(_fishnetLogo, GUILayout.Width(position.width), GUILayout.Height(160f));
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(8f);
             GUILayout.Label("Have you considered leaving us a review?", _labelStyle, GUILayout.Width(thisWidth * 0.95f));
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Don't Ask Again", GUILayout.Width(this.position.width)))
+            if (GUILayout.Button("Don't Ask Again", GUILayout.Width(position.width)))
             {
-                this.Close();
+                Close();
                 EditorPrefs.SetBool(IS_ENABLED, false);
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Ask Later", GUILayout.Width(this.position.width)))
+            if (GUILayout.Button("Ask Later", GUILayout.Width(position.width)))
             {
-                this.Close();
+                Close();
                 //Application.OpenURL("https://discord.gg/Ta9HgDh4Hj");
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Leave A Review", GUILayout.Width(this.position.width)))
+            if (GUILayout.Button("Leave A Review", GUILayout.Width(position.width)))
             {
-                this.Close();
+                Close();
                 EditorPrefs.SetBool(IS_ENABLED, false);
                 Application.OpenURL("https://assetstore.unity.com/packages/tools/network/fish-net-networking-evolved-207815");
             }
@@ -165,6 +161,5 @@ namespace FishNet.Editing
             return backgroundTexture;
         }
     }
-
 }
 #endif

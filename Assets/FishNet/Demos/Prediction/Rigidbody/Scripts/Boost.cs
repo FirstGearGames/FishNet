@@ -24,7 +24,8 @@ namespace FishNet.Demo.Prediction.Rigidbodies
 
         private void NetworkTrigger_OnEnter(Collider c)
         {
-            if (!c.transform.root.TryGetComponent(out RigidbodyPrediction rbp)) return;
+            if (!c.transform.root.TryGetComponent(out RigidbodyPrediction rbp))
+                return;
 
             /* When the vehicle enters this object call set boosted.
              * This trigger will invoke if the client enters it after a reconcile as well.

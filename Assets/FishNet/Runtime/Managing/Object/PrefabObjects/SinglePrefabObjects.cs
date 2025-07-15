@@ -7,13 +7,12 @@ using UnityEngine;
 
 namespace FishNet.Managing.Object
 {
-    //document
+    // document
     [APIExclude]
     [CreateAssetMenu(fileName = "New SinglePrefabObjects", menuName = "FishNet/Spawnable Prefabs/Single Prefab Objects")]
     public class SinglePrefabObjects : PrefabObjects
     {
         /// <summary>
-        /// 
         /// </summary>
         [Tooltip("Prefabs which may be spawned.")]
         [SerializeField]
@@ -27,10 +26,12 @@ namespace FishNet.Managing.Object
         {
             _prefabs.Clear();
         }
+
         public override int GetObjectCount()
         {
             return _prefabs.Count;
         }
+
         public override NetworkObject GetObject(bool asServer, int id)
         {
             if (id < 0 || id >= _prefabs.Count)
@@ -86,6 +87,7 @@ namespace FishNet.Managing.Object
             if (initializeAdded && Application.isPlaying)
                 InitializePrefabRange(0);
         }
+
         public override void AddObjects(NetworkObject[] networkObjects, bool checkForDuplicates = false, bool initializeAdded = true)
         {
             AddObjects(networkObjects.ToList(), checkForDuplicates, initializeAdded);
@@ -97,13 +99,11 @@ namespace FishNet.Managing.Object
                 _prefabs.Add(nob);
         }
 
-        
         public override void InitializePrefabRange(int startIndex)
         {
             for (int i = startIndex; i < _prefabs.Count; i++)
                 ManagedObjects.InitializePrefab(_prefabs[i], i, CollectionId);
         }
-
 
         #region Unused.
         public override void AddObject(DualPrefab dualPrefab, bool checkForDuplicates = false, bool initializeAdded = true)

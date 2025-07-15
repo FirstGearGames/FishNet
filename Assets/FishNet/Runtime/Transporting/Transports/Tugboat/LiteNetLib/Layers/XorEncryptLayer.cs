@@ -7,11 +7,7 @@ namespace LiteNetLib.Layers
     public class XorEncryptLayer : PacketLayerBase
     {
         private byte[] _byteKey;
-
-        public XorEncryptLayer() : base(0)
-        {
-
-        }
+        public XorEncryptLayer() : base(0) { }
 
         public XorEncryptLayer(byte[] key) : this()
         {

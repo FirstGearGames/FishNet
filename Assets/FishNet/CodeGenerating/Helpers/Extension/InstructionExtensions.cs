@@ -5,8 +5,5 @@ using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Helping
 {
-    public static class Instructions
-    {
-    }
-
+    public static class Instructions { }
 }

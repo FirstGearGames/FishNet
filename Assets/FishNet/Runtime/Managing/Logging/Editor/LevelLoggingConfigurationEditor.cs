@@ -10,10 +10,8 @@ namespace FishNet.Managing.Logging.Editing
     {
         private SerializedProperty _isEnabled;
         private SerializedProperty _addLocalTick;
-
         private SerializedProperty _addTimestamps;
         private SerializedProperty _enableTimestampsInEditor;
-
         private SerializedProperty _developmentLogging;
         private SerializedProperty _guiLogging;
         private SerializedProperty _headlessLogging;
@@ -35,7 +33,7 @@ namespace FishNet.Managing.Logging.Editing
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-            
+
             EditorGUILayout.PropertyField(_isEnabled);
 
             if (_isEnabled.boolValue == false)
@@ -52,13 +50,13 @@ namespace FishNet.Managing.Logging.Editing
                 EditorGUILayout.PropertyField(_enableTimestampsInEditor);
                 EditorGUI.indentLevel--;
             }
-            
+
             EditorGUILayout.PropertyField(_developmentLogging);
             EditorGUILayout.PropertyField(_guiLogging);
             EditorGUILayout.PropertyField(_headlessLogging);
 
             EditorGUI.indentLevel--;
-            
+
             serializedObject.ApplyModifiedProperties();
         }
     }

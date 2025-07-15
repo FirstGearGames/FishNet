@@ -21,7 +21,7 @@ namespace FishNet.Managing.Timing
             /// <summary>
             /// Set LastRemoteTick and RemoteTick.
             /// </summary>
-            SetRemoteTick = 2,
+            SetRemoteTick = 2
         }
         #endregion
 
@@ -41,12 +41,12 @@ namespace FishNet.Managing.Timing
         /// True if LastRemoteTick is equal to RemoteTick.
         /// This would indicate that the LastRemoteTick did not arrive out of order.
         /// </summary>
-        public bool IsLastRemoteTickOrdered => (LastRemoteTick == RemoteTick);
+        public bool IsLastRemoteTickOrdered => LastRemoteTick == RemoteTick;
         /// <summary>
         /// True if value is unset.
         /// </summary>
-        //Only need to check one value for unset as they all would be if not set.
-        public bool IsUnset => (LocalTick == TimeManager.UNSET_TICK);
+        // Only need to check one value for unset as they all would be if not set.
+        public bool IsUnset => LocalTick == TimeManager.UNSET_TICK;
         /// <summary>
         /// Last TimeManager specified during an Update call.
         /// </summary>
@@ -56,7 +56,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private uint _valueLocalTick = TimeManager.UNSET_TICK;
 
-
         /// <summary>
         /// Number of ticks LocalTick is being current LocalTick.
         /// </summary>
@@ -65,8 +64,8 @@ namespace FishNet.Managing.Timing
             if (!TryAssignTimeManager(ref tm))
                 return TimeManager.UNSET_TICK;
 
-            long value = (tm.LocalTick - LocalTick);
-            //Shouldn't be possible to be less than 0.
+            long value = tm.LocalTick - LocalTick;
+            // Shouldn't be possible to be less than 0.
             if (value < 0)
                 return TimeManager.UNSET_TICK;
             else if (value > uint.MaxValue)
@@ -83,13 +82,13 @@ namespace FishNet.Managing.Timing
             if (!TryAssignTimeManager(ref tm))
                 return false;
 
-            return (!IsUnset && LocalTick == tm.LocalTick);
+            return !IsUnset && LocalTick == tm.LocalTick;
         }
 
         /// <summary>
         /// Current estimated value.
         /// </summary>
-        /// <param name="nm">NetworkManager to use. When null default value will be returned.</param>
+        /// <param name = "nm">NetworkManager to use. When null default value will be returned.</param>
         public uint Value(TimeManager tm = null)
         {
             if (!TryAssignTimeManager(ref tm))
@@ -101,11 +100,11 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Current estimated value. Outputs if value is current.
         /// </summary>
-        /// <param name="nm">NetworkManager to use. When null default value will be returned.</param>
-        /// <param name="isCurrent">True if the value was updated this local tick.</param>
+        /// <param name = "nm">NetworkManager to use. When null default value will be returned.</param>
+        /// <param name = "isCurrent">True if the value was updated this local tick.</param>
         public uint Value(out bool isCurrent, TimeManager tm = null)
         {
-            //Default value.
+            // Default value.
             isCurrent = false;
 
             if (!TryAssignTimeManager(ref tm))
@@ -115,8 +114,8 @@ namespace FishNet.Managing.Timing
 
             isCurrent = IsCurrent(tm);
 
-            uint diff = (tm.LocalTick - _valueLocalTick);
-            return (diff + RemoteTick);
+            uint diff = tm.LocalTick - _valueLocalTick;
+            return diff + RemoteTick;
         }
 
         /// <summary>
@@ -133,21 +132,22 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Updates values.
         /// </summary>
-        /// <param name="tm">TimeManager to use.</param>
-        /// <param name="remoteTick">Remote tick being updated.</param>
-        /// <param name="oldTickOption">How to handle remoteTick if it is old.</param>
-        /// /// <param name="resetValue">True to reset Value based on this information. False will allow Value to continue to to estimate tick based on the last reset.</param>
+        /// <param name = "tm">TimeManager to use.</param>
+        /// <param name = "remoteTick">Remote tick being updated.</param>
+        /// <param name = "oldTickOption">How to handle remoteTick if it is old.</param>
+        /// ///
+        /// <param name = "resetValue">True to reset Value based on this information. False will allow Value to continue to to estimate tick based on the last reset.</param>
         /// <returns>True if was able to update values.</returns>
         public bool Update(TimeManager tm, uint remoteTick, OldTickOption oldTickOption = OldTickOption.Discard, bool resetValue = true)
         {
             _updateTimeManager = tm;
-            //Always set LastRemoteTick even if out of order.
+            // Always set LastRemoteTick even if out of order.
             LastRemoteTick = remoteTick;
-            //If cannot update with old values return.
+            // If cannot update with old values return.
             if (oldTickOption != OldTickOption.SetRemoteTick && remoteTick <= RemoteTick)
                 return false;
 
-            //nm is assumed set here.
+            // nm is assumed set here.
             LocalTick = tm.LocalTick;
             if (resetValue)
                 _valueLocalTick = LocalTick;
@@ -159,9 +159,9 @@ namespace FishNet.Managing.Timing
         /// <summary>
         /// Updates values.
         /// </summary>
-        /// <param name="remoteTick">Remote tick being updated.</param>
-        /// <param name="oldTickOption">How to handle remoteTick if it is old.</param>
-        /// <param name="resetValue">True to reset Value based on this information. False will allow Value to continue to to estimate tick based on the last reset.</param>
+        /// <param name = "remoteTick">Remote tick being updated.</param>
+        /// <param name = "oldTickOption">How to handle remoteTick if it is old.</param>
+        /// <param name = "resetValue">True to reset Value based on this information. False will allow Value to continue to to estimate tick based on the last reset.</param>
         /// <returns>True if was able to update values.</returns>
         public bool Update(uint remoteTick, OldTickOption oldTickOption = OldTickOption.Discard, bool resetValue = true)
         {
@@ -190,7 +190,7 @@ namespace FishNet.Managing.Timing
             if (tm == null)
                 tm = _updateTimeManager;
 
-            return (tm != null);
+            return tm != null;
         }
 
         /// <summary>
@@ -201,7 +201,6 @@ namespace FishNet.Managing.Timing
             ResetTicks();
             _updateTimeManager = null;
         }
-
 
         /// <summary>
         /// Resets only tick values, leaving type references.

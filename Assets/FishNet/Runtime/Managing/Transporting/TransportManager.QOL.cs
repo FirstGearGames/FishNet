@@ -7,7 +7,6 @@ using UnityEngine;
 
 namespace FishNet.Managing.Transporting
 {
-
     /// <summary>
     /// Communicates with the Transport to send and receive data.
     /// </summary>
@@ -34,12 +33,12 @@ namespace FishNet.Managing.Transporting
         /// <returns></returns>
         public Transport GetTransport(int index)
         {
-            //If using multipass try to find the correct transport.
+            // If using multipass try to find the correct transport.
             if (Transport is Multipass mp)
             {
                 return mp.GetTransport(index);
             }
-            //Not using multipass.
+            // Not using multipass.
             else
             {
                 return Transport;
@@ -52,7 +51,7 @@ namespace FishNet.Managing.Transporting
         /// <returns>Returns the found transport which is of type T. Returns default of T if not found.</returns>
         public T GetTransport<T>() where T : Transport
         {
-            //If using multipass try to find the correct transport.
+            // If using multipass try to find the correct transport.
             if (Transport is Multipass mp)
             {
                 if (typeof(T) == typeof(Multipass))
@@ -60,27 +59,27 @@ namespace FishNet.Managing.Transporting
                 else
                     return mp.GetTransport<T>();
             }
-            //Not using multipass.
+            // Not using multipass.
             else
             {
                 if (Transport.GetType() == typeof(T))
                     return (T)(object)Transport;
                 else
-                    return default(T);
+                    return default;
             }
         }
-        
+
         /// <summary>
         /// Returns all transports configured on the TransportManager.
         /// </summary>
-        /// <param name="includeMultipass">True to add Multipass to the results if being used. When false and using Multipass only the transport specified within Multipass will be returned.</param>
+        /// <param name = "includeMultipass">True to add Multipass to the results if being used. When false and using Multipass only the transport specified within Multipass will be returned.</param>
         /// <returns></returns>
         /// <remarks>This returns a collection from cache.</remarks>
         public List<Transport> GetAllTransports(bool includeMultipass)
         {
             List<Transport> results = CollectionCaches<Transport>.RetrieveList();
-            
-            //If using multipass check all transports.
+
+            // If using multipass check all transports.
             if (Transport is Multipass mp)
             {
                 if (includeMultipass)
@@ -90,7 +89,7 @@ namespace FishNet.Managing.Transporting
                 foreach (Transport t in mp.Transports)
                     results.Add(t);
             }
-            //Not using multipass.
+            // Not using multipass.
             else
             {
                 results.Add(Transport);
@@ -99,5 +98,4 @@ namespace FishNet.Managing.Transporting
             return results;
         }
     }
-
 }

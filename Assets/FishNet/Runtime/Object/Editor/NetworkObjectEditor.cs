@@ -15,14 +15,12 @@ namespace FishNet.Object.Editing
         private SerializedProperty _initializeOrder;
         private SerializedProperty _preventDespawnOnDisconnect;
         private SerializedProperty _defaultDespawnType;
-
         private SerializedProperty _enablePrediction;
         private SerializedProperty _enableStateForwarding;
         private SerializedProperty _networkTransform;
         private SerializedProperty _predictionType;
         private SerializedProperty _graphicalObject;
         private SerializedProperty _detachGraphicalObject;
-
         private SerializedProperty _ownerSmoothedProperties;
         private SerializedProperty _spectatorSmoothedProperties;
         private SerializedProperty _ownerInterpolation;
@@ -30,10 +28,8 @@ namespace FishNet.Object.Editing
         private SerializedProperty _spectatorInterpolation;
         private SerializedProperty _enableTeleport;
         private SerializedProperty _teleportThreshold;
-
         private int _tabIndex;
         private int _savedTabIndex;
-
         private const string TAB_INDEX_PREFS_NAME = "FishNet_NetworkObject_TabIndex";
 
         protected virtual void OnEnable()
@@ -118,8 +114,8 @@ namespace FishNet.Object.Editing
                     }
 
                     EditorGUILayout.HelpBox("Smoothing settings on the NetworkObject will be obsoleted soon. Please unset the graphicalObject and use NetworkTickSmoother instead.", MessageType.Warning);
-                    
-                    bool graphicalSet = (_graphicalObject.objectReferenceValue != null);
+
+                    bool graphicalSet = _graphicalObject.objectReferenceValue != null;
                     EditorGUILayout.PropertyField(_graphicalObject);
                     if (graphicalSet)
                     {
@@ -127,7 +123,7 @@ namespace FishNet.Object.Editing
                         EditorGUILayout.PropertyField(_detachGraphicalObject);
                         EditorGUI.indentLevel--;
                     }
-                    
+
                     EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
                     if (!graphicalSet)
                     {

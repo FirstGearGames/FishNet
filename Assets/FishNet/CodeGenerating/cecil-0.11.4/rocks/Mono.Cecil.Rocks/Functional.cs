@@ -11,31 +11,31 @@
 using System;
 using System.Collections.Generic;
 
-namespace MonoFN.Cecil.Rocks {
+namespace MonoFN.Cecil.Rocks
+{
+    internal static class Functional
+    {
+        public static Func<A, R> Y<A, R>(Func<Func<A, R>, Func<A, R>> f)
+        {
+            Func<A, R> g = null;
+            g = f(a => g(a));
+            return g;
+        }
 
-	static class Functional {
+        public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> source, TSource element)
+        {
+            if (source == null)
+                throw new ArgumentNullException("source");
 
-		public static System.Func<A, R> Y<A, R> (System.Func<System.Func<A, R>, System.Func<A, R>> f)
-		{
-			System.Func<A, R> g = null;
-			g = f (a => g (a));
-			return g;
-		}
+            return PrependIterator(source, element);
+        }
 
-		public static IEnumerable<TSource> Prepend<TSource> (this IEnumerable<TSource> source, TSource element)
-		{
-			if (source == null)
-				throw new ArgumentNullException ("source");
+        private static IEnumerable<TSource> PrependIterator<TSource>(IEnumerable<TSource> source, TSource element)
+        {
+            yield return element;
 
-			return PrependIterator (source, element);
-		}
-
-		static IEnumerable<TSource> PrependIterator<TSource> (IEnumerable<TSource> source, TSource element)
-		{
-			yield return element;
-
-			foreach (var item in source)
-				yield return item;
-		}
-	}
+            foreach (var item in source)
+                yield return item;
+        }
+    }
 }

@@ -1,5 +1,4 @@
-﻿
-using FishNet.Broadcast;
+﻿using FishNet.Broadcast;
 
 namespace FishNet.Example.Authenticating
 {
@@ -17,5 +16,4 @@ namespace FishNet.Example.Authenticating
     {
         public bool Passed;
     }
-
 }

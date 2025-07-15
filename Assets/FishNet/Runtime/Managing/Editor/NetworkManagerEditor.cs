@@ -37,8 +37,8 @@ namespace FishNet.Managing.Editing
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour(networkManager), typeof(NetworkManager), false);
             GUI.enabled = true;
 
-            //EditorGUILayout.BeginVertical(GUI.skin.box);
-            //EditorGUILayout.EndVertical();
+            // EditorGUILayout.BeginVertical(GUI.skin.box);
+            // EditorGUILayout.EndVertical();
 
 
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);

@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
     /// <summary>
     /// Moves smoothly to transform changes over ticks giving cameras something to follow.
     /// </summary>
@@ -21,7 +20,7 @@ namespace GameKit.Dependencies.Utilities.Types
         /// </summary>
         public static DDOL GetDDOL()
         {
-            //Not yet made.
+            // Not yet made.
             if (_instance == null)
             {
                 GameObject obj = new();
@@ -31,13 +30,11 @@ namespace GameKit.Dependencies.Utilities.Types
                 _instance = ddol;
                 return ddol;
             }
-            //Already  made.
+            // Already  made.
             else
             {
                 return _instance;
             }
         }
     }
-
-
 }

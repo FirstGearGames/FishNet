@@ -4,8 +4,6 @@ using UnityEngine;
 
 namespace FishNet.Managing.Client.Editing
 {
-
-
     [CustomEditor(typeof(ClientManager), true)]
     [CanEditMultipleObjects]
     public class ClientManagerEditor : Editor
@@ -54,7 +52,6 @@ namespace FishNet.Managing.Client.Editing
 
             serializedObject.ApplyModifiedProperties();
         }
-
     }
 }
 #endif

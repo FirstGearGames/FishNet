@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace FishNet.Utility.Performance
 {
-
     /// <summary>
     /// Retrieves and stores byte arrays using a pooling system.
     /// </summary>
@@ -24,7 +23,7 @@ namespace FishNet.Utility.Performance
             if (_byteArrays.Count > 0)
                 result = _byteArrays.Dequeue();
 
-            int doubleMinimumLength = (minimumLength * 2);
+            int doubleMinimumLength = minimumLength * 2;
             if (result == null)
                 result = new byte[doubleMinimumLength];
             else if (result.Length < minimumLength)
@@ -46,8 +45,5 @@ namespace FishNet.Utility.Performance
                 return;
             _byteArrays.Enqueue(buffer);
         }
-
     }
-
-
 }

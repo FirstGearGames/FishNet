@@ -1,5 +1,4 @@
-﻿#if FISHNET_STABLE_SYNCTYPES
-using FishNet.Documenting;
+﻿using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
@@ -7,14 +6,12 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-    [System.Serializable]
+    [Serializable]
     public class SyncList<T> : SyncBase, IList<T>, IReadOnlyList<T>
-    { 
+    {
         #region Types.
         /// <summary>
         /// Information needed to invoke a callback.
@@ -41,14 +38,16 @@ namespace FishNet.Object.Synchronizing
         private struct ChangeData
         {
             internal readonly SyncListOperation Operation;
-            internal readonly int Index;
+            internal readonly int EntryIndex;
             internal readonly T Item;
+            internal readonly int CollectionCountAfterChange;
 
-            public ChangeData(SyncListOperation operation, int index, T item)
+            public ChangeData(SyncListOperation operation, int entryIndex, T item, int collectionCountAfterChange)
             {
                 Operation = operation;
-                Index = index;
+                EntryIndex = entryIndex;
                 Item = item;
+                CollectionCountAfterChange = collectionCountAfterChange;
             }
         }
         #endregion
@@ -59,15 +58,17 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         [APIExclude]
         public bool IsReadOnly => false;
+
         /// <summary>
         /// Delegate signature for when SyncList changes.
         /// </summary>
-        /// <param name="op"></param>
-        /// <param name="index"></param>
-        /// <param name="oldItem"></param>
-        /// <param name="newItem"></param>
+        /// <param name = "op"></param>
+        /// <param name = "index"></param>
+        /// <param name = "oldItem"></param>
+        /// <param name = "newItem"></param>
         [APIExclude]
         public delegate void SyncListChanged(SyncListOperation op, int index, T oldItem, T newItem, bool asServer);
+
         /// <summary>
         /// Called when the SyncList changes.
         /// </summary>
@@ -77,17 +78,12 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public List<T> Collection;
         /// <summary>
-        /// Copy of objects on client portion when acting as a host.
-        /// </summary>
-        [HideInInspector]
-        public List<T> ClientHostCollection;
-        /// <summary>
         /// Number of objects in the collection.
         /// </summary>
         public int Count => Collection.Count;
         #endregion
 
-        #region Private.        
+        #region Private.
         /// <summary>
         /// Values upon initialization.
         /// </summary>
@@ -121,21 +117,17 @@ namespace FishNet.Object.Synchronizing
 
         #region Constructors.
         public SyncList(SyncTypeSettings settings = new()) : this(CollectionCaches<T>.RetrieveList(), EqualityComparer<T>.Default, settings) { }
-        public SyncList(IEqualityComparer<T> comparer, SyncTypeSettings settings = new()) : this(new(), (comparer == null) ? EqualityComparer<T>.Default : comparer, settings) { }
+        public SyncList(IEqualityComparer<T> comparer, SyncTypeSettings settings = new()) : this(new(), comparer == null ? EqualityComparer<T>.Default : comparer, settings) { }
+
         public SyncList(List<T> collection, IEqualityComparer<T> comparer = null, SyncTypeSettings settings = new()) : base(settings)
         {
-            _comparer = (comparer == null) ? EqualityComparer<T>.Default : comparer;
-            Collection = (collection == null) ? CollectionCaches<T>.RetrieveList() : collection;
-            ClientHostCollection = CollectionCaches<T>.RetrieveList();
+            _comparer = comparer == null ? EqualityComparer<T>.Default : comparer;
+            Collection = collection == null ? CollectionCaches<T>.RetrieveList() : collection;
 
             _initialValues = CollectionCaches<T>.RetrieveList();
             _changed = CollectionCaches<ChangeData>.RetrieveList();
             _serverOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
             _clientOnChanges = CollectionCaches<CachedOnChange>.RetrieveList();
-
-            //Add each in collection to clienthostcollection.
-            foreach (T item in collection)
-                ClientHostCollection.Add(item);
         }
         #endregion
 
@@ -143,7 +135,6 @@ namespace FishNet.Object.Synchronizing
         ~SyncList()
         {
             CollectionCaches<T>.StoreAndDefault(ref Collection);
-            CollectionCaches<T>.StoreAndDefault(ref ClientHostCollection);
             CollectionCaches<T>.StoreAndDefault(ref _initialValues);
             CollectionCaches<ChangeData>.StoreAndDefault(ref _changed);
             CollectionCaches<CachedOnChange>.StoreAndDefault(ref _serverOnChanges);
@@ -158,12 +149,16 @@ namespace FishNet.Object.Synchronizing
         {
             base.Initialized();
 
-            //Initialize collections if needed. OdinInspector can cause them to become deinitialized.
+            // Initialize collections if needed. OdinInspector can cause them to become deinitialized.
 #if ODIN_INSPECTOR
-            if (_initialValues == null) _initialValues = new();
-            if (_changed == null) _changed = new();
-            if (_serverOnChanges == null) _serverOnChanges = new();
-            if (_clientOnChanges == null) _clientOnChanges = new();
+            if (_initialValues == null)
+                _initialValues = new();
+            if (_changed == null)
+                _changed = new();
+            if (_serverOnChanges == null)
+                _serverOnChanges = new();
+            if (_clientOnChanges == null)
+                _clientOnChanges = new();
 #endif
 
             foreach (T item in Collection)
@@ -173,35 +168,32 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Gets the collection being used within this SyncList.
         /// </summary>
-        /// <param name="asServer">True if returning the server value, false if client value. The values will only differ when running as host. While asServer is true the most current values on server will be returned, and while false the latest values received by client will be returned.</param>
+        /// <param name = "asServer">True if returning the server value, false if client value. The values will only differ when running as host. While asServer is true the most current values on server will be returned, and while false the latest values received by client will be returned.</param>
         /// <returns></returns>
         public List<T> GetCollection(bool asServer)
         {
-            bool asClientAndHost = (!asServer && base.NetworkManager.IsServerStarted);
-            List<T> collection = (asClientAndHost) ? ClientHostCollection : Collection;
-            return (collection as List<T>);
+            return Collection;
         }
 
         /// <summary>
         /// Adds an operation and invokes locally.
         /// </summary>
-        /// <param name="operation"></param>
-        /// <param name="index"></param>
-        /// <param name="prev"></param>
-        /// <param name="next"></param>
-        
-        private void AddOperation(SyncListOperation operation, int index, T prev, T next)
+        /// <param name = "operation"></param>
+        /// <param name = "index"></param>
+        /// <param name = "prev"></param>
+        /// <param name = "next"></param>
+        private void AddOperation(SyncListOperation operation, int index, T prev, T next, int collectionCountAfterChange)
         {
-            if (!base.IsInitialized)
+            if (!IsInitialized)
                 return;
 
             /* asServer might be true if the client is setting the value
-            * through user code. Typically synctypes can only be set
-            * by the server, that's why it is assumed asServer via user code.
-            * However, when excluding owner for the synctype the client should
-            * have permission to update the value locally for use with
-            * prediction. */
-            bool asServerInvoke = (!base.IsNetworkInitialized || base.NetworkBehaviour.IsServerStarted);
+             * through user code. Typically synctypes can only be set
+             * by the server, that's why it is assumed asServer via user code.
+             * However, when excluding owner for the synctype the client should
+             * have permission to update the value locally for use with
+             * prediction. */
+            bool asServerInvoke = !IsNetworkInitialized || NetworkBehaviour.IsServerStarted;
 
             /* Only the adds asServer may set
              * this synctype as dirty and add
@@ -210,10 +202,10 @@ namespace FishNet.Object.Synchronizing
             if (asServerInvoke)
             {
                 /* Set as changed even if cannot dirty.
-                * Dirty is only set when there are observers,
-                * but even if there are not observers
-                * values must be marked as changed so when
-                * there are observers, new values are sent. */
+                 * Dirty is only set when there are observers,
+                 * but even if there are not observers
+                 * values must be marked as changed so when
+                 * there are observers, new values are sent. */
                 _valuesChanged = true;
 
                 /* If unable to dirty then do not add to changed.
@@ -225,7 +217,7 @@ namespace FishNet.Object.Synchronizing
                  * collection as well the changed, which would double results. */
                 if (base.Dirty())
                 {
-                    ChangeData change = new(operation, index, next);
+                    ChangeData change = new(operation, index, next, collectionCountAfterChange);
                     _changed.Add(change);
                 }
             }
@@ -236,11 +228,11 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Called after OnStartXXXX has occurred.
         /// </summary>
-        /// <param name="asServer">True if OnStartServer was called, false if OnStartClient.</param>
+        /// <param name = "asServer">True if OnStartServer was called, false if OnStartClient.</param>
         protected internal override void OnStartCallback(bool asServer)
         {
             base.OnStartCallback(asServer);
-            List<CachedOnChange> collection = (asServer) ? _serverOnChanges : _clientOnChanges;
+            List<CachedOnChange> collection = asServer ? _serverOnChanges : _clientOnChanges;
 
             if (OnChange != null)
             {
@@ -252,13 +244,33 @@ namespace FishNet.Object.Synchronizing
         }
 
         /// <summary>
+        /// Writes an operation and data required by all operations.
+        /// </summary>
+        private void WriteOperationHeader(PooledWriter writer, SyncListOperation operation, int entryIndex, int collectionCountAfterChange)
+        {
+            writer.WriteUInt8Unpacked((byte)operation);
+            writer.WriteInt32(entryIndex);
+            writer.WriteInt32(collectionCountAfterChange);
+        }
+
+        /// <summary>
+        /// Reads an operation and data required by all operations.
+        /// </summary>
+        private void ReadOperationHeader(PooledReader reader, out SyncListOperation operation, out int entryIndex, out int collectionCountAfterChange)
+        {
+            operation = (SyncListOperation)reader.ReadUInt8Unpacked();
+            entryIndex = reader.ReadInt32();
+            collectionCountAfterChange = reader.ReadInt32();
+        }
+
+        /// <summary>
         /// Writes all changed values.
         /// </summary>
-        /// <param name="writer"></param>
-        ///<param name="resetSyncTick">True to set the next time data may sync.</param>
+        /// <param name = "writer"></param>
+        /// <param name = "resetSyncTick">True to set the next time data may sync.</param>
         protected internal override void WriteDelta(PooledWriter writer, bool resetSyncTick = true)
         {
-            //If sending all then clear changed and write full.
+            // If sending all then clear changed and write full.
             if (_sendAll)
             {
                 _sendAll = false;
@@ -269,29 +281,29 @@ namespace FishNet.Object.Synchronizing
             {
                 base.WriteDelta(writer, resetSyncTick);
 
-                //False for not full write.
+                // False for not full write.
                 writer.WriteBoolean(false);
 
-                //Number of entries expected.
+                // Number of entries expected.
                 writer.WriteInt32(_changed.Count);
 
                 for (int i = 0; i < _changed.Count; i++)
                 {
                     ChangeData change = _changed[i];
-                    writer.WriteUInt8Unpacked((byte)change.Operation);
 
-                    //Clear does not need to write anymore data so it is not included in checks.
+                    WriteOperationHeader(writer, change.Operation, change.EntryIndex, change.CollectionCountAfterChange);
+
+                    // Clear does not need to write anymore data so it is not included in checks.
                     if (change.Operation == SyncListOperation.Add)
                     {
                         writer.Write(change.Item);
                     }
                     else if (change.Operation == SyncListOperation.RemoveAt)
                     {
-                        writer.WriteInt32(change.Index);
+                        // Entry index already written in header.
                     }
                     else if (change.Operation == SyncListOperation.Insert || change.Operation == SyncListOperation.Set)
                     {
-                        writer.WriteInt32(change.Index);
                         writer.Write(change.Item);
                     }
                 }
@@ -303,21 +315,22 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Writes all values if not initial values.
         /// </summary>
-        /// <param name="writer"></param>
+        /// <param name = "writer"></param>
         protected internal override void WriteFull(PooledWriter writer)
         {
             if (!_valuesChanged)
                 return;
 
             base.WriteHeader(writer, false);
-            //True for full write.
+            // True for full write.
             writer.WriteBoolean(true);
 
             int count = Collection.Count;
             writer.WriteInt32(count);
+
             for (int i = 0; i < count; i++)
             {
-                writer.WriteUInt8Unpacked((byte)SyncListOperation.Add);
+                WriteOperationHeader(writer, SyncListOperation.Add, entryIndex: i, collectionCountAfterChange: i + 1);
                 writer.Write(Collection[i]);
             }
         }
@@ -325,85 +338,84 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Reads and sets the current values for server or client.
         /// </summary>
-        
         [APIExclude]
         protected internal override void Read(PooledReader reader, bool asServer)
         {
-            base.SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
-            
-            //True to warn if this object was deinitialized on the server.
-            bool deinitialized = (asClientHost && !base.OnStartServerCalled);
+            SetReadArguments(reader, asServer, out bool newChangeId, out bool asClientHost, out bool canModifyValues);
+
+            // True to warn if this object was deinitialized on the server.
+            bool deinitialized = asClientHost && !OnStartServerCalled;
             if (deinitialized)
-                base.NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
+                NetworkManager.LogWarning($"SyncType {GetType().Name} received a Read but was deinitialized on the server. Client callback values may be incorrect. This is a ClientHost limitation.");
 
-            List<T> collection = (asClientHost) ? ClientHostCollection : Collection;
+            List<T> collection = Collection;
 
-            //Clear collection since it's a full write.
             bool fullWrite = reader.ReadBoolean();
-            if (fullWrite)
+            // Clear collection since it's a full write.
+            if (canModifyValues && fullWrite)
                 collection.Clear();
 
             int changes = reader.ReadInt32();
 
             for (int i = 0; i < changes; i++)
             {
-                SyncListOperation operation = (SyncListOperation)reader.ReadUInt8Unpacked();
-                int index = -1;
+                ReadOperationHeader(reader, out SyncListOperation operation, out int entryIndex, out int collectionCountAfterChange);
+
                 T prev = default;
                 T next = default;
 
-                //Add.
-                if (operation == SyncListOperation.Add)
+                // Add.
+                if (operation == SyncListOperation.Add || operation == SyncListOperation.Insert)
                 {
                     next = reader.Read<T>();
-                    
-                    if (newChangeId)
+
+                    if (canModifyValues)
                     {
-                        index = collection.Count;
-                        collection.Add(next);
+                        // Integrity validation.
+                        if (collection.Count + 1 == collectionCountAfterChange && entryIndex <= collection.Count)
+                            collection.Insert(entryIndex, next);
                     }
                 }
-                //Clear.
+                // Clear.
                 else if (operation == SyncListOperation.Clear)
                 {
-                    if (newChangeId)
+                    if (canModifyValues)
+                    {
+                        //No integrity validation needed. 
                         collection.Clear();
-                }
-                //Insert.
-                else if (operation == SyncListOperation.Insert)
-                {
-                    index = reader.ReadInt32();
-                    next = reader.Read<T>();
-                    
-                    if (newChangeId)
-                        collection.Insert(index, next);
+                    }
                 }
                 //RemoveAt.
                 else if (operation == SyncListOperation.RemoveAt)
                 {
-                    index = reader.ReadInt32();
-                    
-                    if (newChangeId)
+                    if (canModifyValues)
                     {
-                        prev = collection[index];
-                        collection.RemoveAt(index);
+                        //Integrity validation.
+                        if (collection.Count - 1 == collectionCountAfterChange && entryIndex < collection.Count)
+                        {
+                            prev = collection[entryIndex];
+                            collection.RemoveAt(entryIndex);
+                        }
                     }
                 }
                 //Set
                 else if (operation == SyncListOperation.Set)
                 {
-                    index = reader.ReadInt32();
                     next = reader.Read<T>();
-                    
-                    if (newChangeId)
+
+                    if (canModifyValues)
                     {
-                        prev = collection[index];
-                        collection[index] = next;
+                        //Integrity validation.
+                        if (collection.Count == collectionCountAfterChange && entryIndex < collection.Count)
+                        {
+                            prev = collection[entryIndex];
+                            collection[entryIndex] = next;
+                        }
                     }
                 }
 
                 if (newChangeId)
-                    InvokeOnChange(operation, index, prev, next, false);
+                    InvokeOnChange(operation, entryIndex, prev, next, false);
             }
 
             //If changes were made invoke complete after all have been read.
@@ -418,14 +430,14 @@ namespace FishNet.Object.Synchronizing
         {
             if (asServer)
             {
-                if (base.NetworkBehaviour.OnStartServerCalled)
+                if (NetworkBehaviour.OnStartServerCalled)
                     OnChange?.Invoke(operation, index, prev, next, asServer);
                 else
                     _serverOnChanges.Add(new(operation, index, prev, next));
             }
             else
             {
-                if (base.NetworkBehaviour.OnStartClientCalled)
+                if (NetworkBehaviour.OnStartClientCalled)
                     OnChange?.Invoke(operation, index, prev, next, asServer);
                 else
                     _clientOnChanges.Add(new(operation, index, prev, next));
@@ -438,44 +450,44 @@ namespace FishNet.Object.Synchronizing
         protected internal override void ResetState(bool asServer)
         {
             base.ResetState(asServer);
-            _sendAll = false;
-            _changed.Clear();
-            ClientHostCollection.Clear();
-            Collection.Clear();
 
-            foreach (T item in _initialValues)
+            if (CanReset(asServer))
             {
-                Collection.Add(item);
-                ClientHostCollection.Add(item);
+                _sendAll = false;
+                _changed.Clear();
+                Collection.Clear();
+
+                foreach (T item in _initialValues)
+                    Collection.Add(item);
             }
         }
-
 
         /// <summary>
         /// Adds value.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name = "item"></param>
         public void Add(T item)
         {
             Add(item, true);
         }
+
         private void Add(T item, bool asServer)
         {
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
             Collection.Add(item);
             if (asServer)
             {
-                if (base.NetworkManager == null)
-                    ClientHostCollection.Add(item);
-                AddOperation(SyncListOperation.Add, Collection.Count - 1, default, item);
+                int entryIndex = Collection.Count - 1;
+                AddOperation(SyncListOperation.Add, entryIndex, default, item, Collection.Count);
             }
         }
+
         /// <summary>
         /// Adds a range of values.
         /// </summary>
-        /// <param name="range"></param>
+        /// <param name = "range"></param>
         public void AddRange(IEnumerable<T> range)
         {
             foreach (T entry in range)
@@ -489,35 +501,32 @@ namespace FishNet.Object.Synchronizing
         {
             Clear(true);
         }
+
         private void Clear(bool asServer)
         {
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
             Collection.Clear();
             if (asServer)
-            {
-                if (base.NetworkManager == null)
-                    ClientHostCollection.Clear();
-                AddOperation(SyncListOperation.Clear, -1, default, default);
-            }
+                AddOperation(SyncListOperation.Clear, -1, default, default, Collection.Count);
         }
 
         /// <summary>
         /// Returns if value exist.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name = "item"></param>
         /// <returns></returns>
         public bool Contains(T item)
         {
-            return (IndexOf(item) >= 0);
+            return IndexOf(item) >= 0;
         }
 
         /// <summary>
         /// Copies values to an array.
         /// </summary>
-        /// <param name="array"></param>
-        /// <param name="index"></param>
+        /// <param name = "array"></param>
+        /// <param name = "index"></param>
         public void CopyTo(T[] array, int index)
         {
             Collection.CopyTo(array, index);
@@ -526,7 +535,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Gets the index of value.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name = "item"></param>
         /// <returns></returns>
         public int IndexOf(T item)
         {
@@ -541,7 +550,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Finds index using match.
         /// </summary>
-        /// <param name="match"></param>
+        /// <param name = "match"></param>
         /// <returns></returns>
         public int FindIndex(Predicate<T> match)
         {
@@ -556,18 +565,18 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Finds value using match.
         /// </summary>
-        /// <param name="match"></param>
+        /// <param name = "match"></param>
         /// <returns></returns>
         public T Find(Predicate<T> match)
         {
             int i = FindIndex(match);
-            return (i != -1) ? Collection[i] : default;
+            return i != -1 ? Collection[i] : default;
         }
 
         /// <summary>
         /// Finds all values using match.
         /// </summary>
-        /// <param name="match"></param>
+        /// <param name = "match"></param>
         /// <returns></returns>
         public List<T> FindAll(Predicate<T> match)
         {
@@ -583,31 +592,28 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Inserts value at index.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="item"></param>
+        /// <param name = "index"></param>
+        /// <param name = "item"></param>
         public void Insert(int index, T item)
         {
             Insert(index, item, true);
         }
+
         private void Insert(int index, T item, bool asServer)
         {
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
             Collection.Insert(index, item);
             if (asServer)
-            {
-                if (base.NetworkManager == null)
-                    ClientHostCollection.Insert(index, item);
-                AddOperation(SyncListOperation.Insert, index, default, item);
-            }
+                AddOperation(SyncListOperation.Insert, index, default, item, Collection.Count);
         }
 
         /// <summary>
         /// Inserts a range of values.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="range"></param>
+        /// <param name = "index"></param>
+        /// <param name = "range"></param>
         public void InsertRange(int index, IEnumerable<T> range)
         {
             foreach (T entry in range)
@@ -620,7 +626,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Removes a value.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name = "item"></param>
         /// <returns></returns>
         public bool Remove(T item)
         {
@@ -635,41 +641,38 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Removes value at index.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="asServer"></param>
+        /// <param name = "index"></param>
+        /// <param name = "asServer"></param>
         public void RemoveAt(int index)
         {
             RemoveAt(index, true);
         }
+
         private void RemoveAt(int index, bool asServer)
         {
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
             T oldItem = Collection[index];
             Collection.RemoveAt(index);
             if (asServer)
-            {
-                if (base.NetworkManager == null)
-                    ClientHostCollection.RemoveAt(index);
-                AddOperation(SyncListOperation.RemoveAt, index, oldItem, default);
-            }
+                AddOperation(SyncListOperation.RemoveAt, index, oldItem, default, Collection.Count);
         }
 
         /// <summary>
         /// Removes all values within the collection.
         /// </summary>
-        /// <param name="match"></param>
+        /// <param name = "match"></param>
         /// <returns></returns>
         public int RemoveAll(Predicate<T> match)
         {
             List<T> toRemove = new();
             for (int i = 0; i < Collection.Count; ++i)
-            { 
+            {
                 if (match(Collection[i]))
                     toRemove.Add(Collection[i]);
             }
-            
+
             foreach (T entry in toRemove)
                 Remove(entry);
 
@@ -679,7 +682,7 @@ namespace FishNet.Object.Synchronizing
         /// <summary>
         /// Gets or sets value at an index.
         /// </summary>
-        /// <param name="i"></param>
+        /// <param name = "i"></param>
         /// <returns></returns>
         public T this[int i]
         {
@@ -693,9 +696,9 @@ namespace FishNet.Object.Synchronizing
         /// </summary>
         public void DirtyAll()
         {
-            if (!base.IsInitialized)
+            if (!IsInitialized)
                 return;
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
             if (base.Dirty())
@@ -707,69 +710,69 @@ namespace FishNet.Object.Synchronizing
         /// While using this operation previous value will be the same as next.
         /// This operation can be very expensive, and may fail if your value cannot be compared.
         /// </summary>
-        /// <param name="obj">Object to lookup.</param>
+        /// <param name = "obj">Object to lookup.</param>
         public void Dirty(T obj)
         {
             int index = Collection.IndexOf(obj);
             if (index != -1)
                 Dirty(index);
             else
-                base.NetworkManager.LogError($"Could not find object within SyncList, dirty will not be set.");
+                NetworkManager.LogError($"Could not find object within SyncList, dirty will not be set.");
         }
+
         /// <summary>
         /// Marks an index as dirty.
         /// While using this operation previous value will be the same as next.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name = "index"></param>
         public void Dirty(int index)
         {
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
-//            bool asServer = true;
             T value = Collection[index];
-//            if (asServer)
-                AddOperation(SyncListOperation.Set, index, value, value);
+            AddOperation(SyncListOperation.Set, index, value, value, Collection.Count);
         }
+
         /// <summary>
         /// Sets value at index.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="value"></param>
+        /// <param name = "index"></param>
+        /// <param name = "value"></param>
         public void Set(int index, T value, bool force = true)
         {
             Set(index, value, true, force);
         }
+
+        /// <summary>
+        /// Sets a value at an index.
+        /// </summary>
         private void Set(int index, T value, bool asServer, bool force)
         {
-            if (!base.CanNetworkSetValues(true))
+            if (!CanNetworkSetValues(true))
                 return;
 
-            bool sameValue = (!force && _comparer.Equals(Collection[index], value));
+            bool sameValue = !force && _comparer.Equals(Collection[index], value);
             if (!sameValue)
             {
                 T prev = Collection[index];
                 Collection[index] = value;
+
                 if (asServer)
-                {
-                    if (base.NetworkManager == null)
-                        ClientHostCollection[index] = value;
-                    AddOperation(SyncListOperation.Set, index, prev, value);
-                }
+                    AddOperation(SyncListOperation.Set, index, prev, value, Collection.Count);
             }
         }
-
 
         /// <summary>
         /// Returns Enumerator for collection.
         /// </summary>
         /// <returns></returns>
-        public IEnumerator GetEnumerator() => Collection.GetEnumerator();
+        public IEnumerator<T> GetEnumerator() => Collection.GetEnumerator();
+
         [APIExclude]
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => Collection.GetEnumerator();
+
         [APIExclude]
         IEnumerator IEnumerable.GetEnumerator() => Collection.GetEnumerator();
-
     }
 }
-#endif

@@ -8,7 +8,7 @@ namespace FishNet.Component.Prediction
     [UseGlobalCustomSerializer]
     [Preserve]
     public struct RigidbodyState
-    {        
+    {
         public Vector3 Position;
         public Quaternion Rotation;
         public bool IsKinematic;
@@ -23,6 +23,7 @@ namespace FishNet.Component.Prediction
             Velocity = rb.velocity;
             AngularVelocity = rb.angularVelocity;
         }
+
         public RigidbodyState(Rigidbody rb)
         {
             Position = rb.transform.position;
@@ -130,8 +131,6 @@ namespace FishNet.Component.Prediction
 
             return state;
         }
-
-
     }
 
     [Preserve]
@@ -144,6 +143,7 @@ namespace FishNet.Component.Prediction
         {
             return new(rb);
         }
+
         /// <summary>
         /// Sets a state to a rigidbody.
         /// </summary>
@@ -163,6 +163,7 @@ namespace FishNet.Component.Prediction
         {
             return new(rb);
         }
+
         /// <summary>
         /// Sets a state to a rigidbody.
         /// </summary>
@@ -174,6 +175,5 @@ namespace FishNet.Component.Prediction
             rb.velocity = state.Velocity;
             rb.angularVelocity = state.AngularVelocity;
         }
-
     }
 }

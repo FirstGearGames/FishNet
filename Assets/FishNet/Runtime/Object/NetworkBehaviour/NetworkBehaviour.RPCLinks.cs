@@ -42,7 +42,7 @@ namespace FishNet.Object
              * into availableRpcLinks, within the ServerManager. */
 
             ServerManager serverManager = NetworkManager.ServerManager;
-            //ObserverRpcs.
+            // ObserverRpcs.
             if (_observersRpcDelegates != null)
             {
                 foreach (uint rpcHash in _observersRpcDelegates.Keys)
@@ -51,7 +51,7 @@ namespace FishNet.Object
                         return;
                 }
             }
-            //TargetRpcs.
+            // TargetRpcs.
             if (_targetRpcDelegates != null)
             {
                 foreach (uint rpcHash in _targetRpcDelegates.Keys)
@@ -120,11 +120,11 @@ namespace FishNet.Object
                 writer.WriteInt32(methodWriter.Length);
             //Data.
             writer.WriteArraySegment(methodWriter.GetArraySegment());
-            
+
 #if DEVELOPMENT
             WriteDebugLengthForValidateRpc(writer, written);
 #endif
-            
+
             return writer;
         }
 

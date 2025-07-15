@@ -7,7 +7,6 @@ namespace FishNet.Serializing.Helping
     {
         [FieldOffset(0)]
         public float FloatValue;
-
         [FieldOffset(0)]
         public uint UIntValue;
     }
@@ -17,7 +16,6 @@ namespace FishNet.Serializing.Helping
     {
         [FieldOffset(0)]
         public double DoubleValue;
-
         [FieldOffset(0)]
         public ulong LongValue;
     }
@@ -27,12 +25,9 @@ namespace FishNet.Serializing.Helping
     {
         [FieldOffset(0)]
         public ulong LongValue1;
-
         [FieldOffset(8)]
         public ulong LongValue2;
-
         [FieldOffset(0)]
         public decimal DecimalValue;
     }
-
 }

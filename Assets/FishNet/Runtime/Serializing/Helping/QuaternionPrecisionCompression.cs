@@ -4,26 +4,24 @@ using UnityEngine;
 
 namespace FishNet.Serializing.Helping
 {
-    [System.Flags]
+    [Flags]
     internal enum QuaternionPrecisionFlag : byte
     {
         Unset = 0,
-        
         /* Its probably safe to discard '-IsNegative'
          * and replace with a single 'largest is negative'.
          * Doing this would still use the same amount of bytes
          * though, and would require a refactor on this and the delta
          * compression class. */
-        AIsNegative = (1 << 0),
-        BIsNegative = (1 << 1),
-        CIsNegative = (1 << 2),
-        DIsNegative = (1 << 3),
-        
-        LargestIsX = (1 << 4),
-        LargestIsY = (1 << 5),
-        LargestIsZ = (1 << 6),
-        //This flag can be discarded via refactor if we need it later.
-        LargestIsW = (1 << 7),
+        AIsNegative = 1 << 0,
+        BIsNegative = 1 << 1,
+        CIsNegative = 1 << 2,
+        DIsNegative = 1 << 3,
+        LargestIsX = 1 << 4,
+        LargestIsY = 1 << 5,
+        LargestIsZ = 1 << 6,
+        // This flag can be discarded via refactor if we need it later.
+        LargestIsW = 1 << 7
     }
 
     internal static class QuaternionPrecisionFlagExtensions
@@ -43,28 +41,28 @@ namespace FishNet.Serializing.Helping
         {
             /* When using 0.001f or less accurate precision use the classic
              * compression. This saves about a byte by send. */
-            if (precision >= 0.001f) 
+            if (precision >= 0.001f)
             {
                 Quaternion32Compression.Compress(writer, value, axesFlippingEnabled: false);
                 return;
             }
-            
-            //Position where the next byte is to be written.
+
+            // Position where the next byte is to be written.
             int startPosition = writer.Position;
 
-            //Skip one byte so the flags can be inserted after everything else is writteh.
+            // Skip one byte so the flags can be inserted after everything else is writteh.
             writer.Skip(1);
 
             QuaternionPrecisionFlag flags = QuaternionPrecisionFlag.Unset;
             float largestAxesValue = float.MinValue;
 
-            //Find out which value is the largest.
+            // Find out which value is the largest.
             UpdateLargestValues(Math.Abs(value.x), QuaternionPrecisionFlag.LargestIsX);
             UpdateLargestValues(Math.Abs(value.y), QuaternionPrecisionFlag.LargestIsY);
             UpdateLargestValues(Math.Abs(value.z), QuaternionPrecisionFlag.LargestIsZ);
             UpdateLargestValues(Math.Abs(value.w), QuaternionPrecisionFlag.LargestIsW);
-            
-            //Updates largest values and flags.
+
+            // Updates largest values and flags.
             void UpdateLargestValues(float checkedValue, QuaternionPrecisionFlag newFlag)
             {
                 if (checkedValue > largestAxesValue)
@@ -76,16 +74,16 @@ namespace FishNet.Serializing.Helping
 
             /* Write all but largest. */
 
-            //X is largest.
+            // X is largest.
             if (flags == QuaternionPrecisionFlag.LargestIsX)
                 WriteValuesAndSetPositives(value.y, value.z, value.w, value.x);
-            //Y is largest.
+            // Y is largest.
             else if (flags == QuaternionPrecisionFlag.LargestIsY)
                 WriteValuesAndSetPositives(value.x, value.z, value.w, value.y);
-            //Z is largest.
+            // Z is largest.
             else if (flags == QuaternionPrecisionFlag.LargestIsZ)
                 WriteValuesAndSetPositives(value.x, value.y, value.w, value.z);
-            //W is largest.
+            // W is largest.
             else if (flags == QuaternionPrecisionFlag.LargestIsW)
                 WriteValuesAndSetPositives(value.x, value.y, value.z, value.w);
 
@@ -96,26 +94,26 @@ namespace FishNet.Serializing.Helping
                 uint aUint = (uint)Mathf.RoundToInt(Math.Abs(aValue) * multiplier);
                 uint bUint = (uint)Mathf.RoundToInt(Math.Abs(bValue) * multiplier);
                 uint cUint = (uint)Mathf.RoundToInt(Math.Abs(cValue) * multiplier);
-                
+
                 writer.WriteUnsignedPackedWhole(aUint);
                 writer.WriteUnsignedPackedWhole(bUint);
                 writer.WriteUnsignedPackedWhole(cUint);
-                
+
                 /* Update sign on values. */
                 if (aValue < 0f)
                     flags |= QuaternionPrecisionFlag.AIsNegative;
                 if (bValue < 0f)
                     flags |= QuaternionPrecisionFlag.BIsNegative;
-                if (cValue<= 0f)
+                if (cValue <= 0f)
                     flags |= QuaternionPrecisionFlag.CIsNegative;
                 if (largestAxes < 0f)
                     flags |= QuaternionPrecisionFlag.DIsNegative;
             }
-      
-            //Insert flags.
+
+            // Insert flags.
             writer.InsertUInt8Unpacked((byte)flags, startPosition);
         }
-        
+
         /// <summary>
         /// Write a compressed a delta Quaternion using a variable precision.
         /// </summary>
@@ -123,14 +121,14 @@ namespace FishNet.Serializing.Helping
         {
             /* When using 0.001f or less accurate precision use the classic
              * compression. This saves about a byte by send. */
-            if (precision >= 0.001f) 
+            if (precision >= 0.001f)
                 return Quaternion32Compression.Decompress(reader, axesFlippingEnabled: false);
 
             uint multiplier = (uint)Mathf.RoundToInt(1f / precision);
 
             QuaternionPrecisionFlag flags = (QuaternionPrecisionFlag)reader.ReadUInt8Unpacked();
 
-            //Unset flags mean something went wrong in writing.
+            // Unset flags mean something went wrong in writing.
             if (flags == QuaternionPrecisionFlag.Unset)
             {
                 NetworkManagerExtensions.LogError($"Unset flags were returned.");
@@ -148,7 +146,7 @@ namespace FishNet.Serializing.Helping
             float bValue = (float)reader.ReadUnsignedPackedWhole() / (float)multiplier;
             float cValue = (float)reader.ReadUnsignedPackedWhole() / (float)multiplier;
 
-            //Make values negative if needed.
+            // Make values negative if needed.
             if (flags.FastContains(QuaternionPrecisionFlag.AIsNegative))
                 aValue *= -1f;
             if (flags.FastContains(QuaternionPrecisionFlag.BIsNegative))
@@ -167,8 +165,8 @@ namespace FishNet.Serializing.Helping
 
             dValue = (float)Math.Sqrt(dValue);
 
-            //Get magnitude of all values.
-            static float GetMagnitude(float a, float b, float c, float d = 0f) => (a * a + b * b + c * c + d * d);
+            // Get magnitude of all values.
+            static float GetMagnitude(float a, float b, float c, float d = 0f) => a * a + b * b + c * c + d * d;
 
             if (dValue >= 0f && flags.FastContains(QuaternionPrecisionFlag.DIsNegative))
                 dValue *= -1f;
@@ -176,7 +174,7 @@ namespace FishNet.Serializing.Helping
             if (!TryNormalize())
                 return default;
 
-            //Normalizes next values.
+            // Normalizes next values.
             bool TryNormalize()
             {
                 float magnitude = (float)Math.Sqrt(GetMagnitude(aValue, bValue, cValue, dValue));
@@ -196,13 +194,13 @@ namespace FishNet.Serializing.Helping
 
             /* Add onto the previous value. */
             if (flags.FastContains(QuaternionPrecisionFlag.LargestIsX))
-                return new Quaternion(dValue, aValue, bValue, cValue);
+                return new(dValue, aValue, bValue, cValue);
             else if (flags.FastContains(QuaternionPrecisionFlag.LargestIsY))
-                return new Quaternion(aValue, dValue, bValue, cValue);
+                return new(aValue, dValue, bValue, cValue);
             else if (flags.FastContains(QuaternionPrecisionFlag.LargestIsZ))
-                return new Quaternion(aValue, bValue, dValue, cValue);
+                return new(aValue, bValue, dValue, cValue);
             else if (flags.FastContains(QuaternionPrecisionFlag.LargestIsW))
-                return new Quaternion(aValue, bValue, cValue, dValue);
+                return new(aValue, bValue, cValue, dValue);
             else
                 NetworkManagerExtensions.LogError($"Unhandled Largest flag. Received flags are {flags}.");
 

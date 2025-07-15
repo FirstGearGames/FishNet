@@ -2,10 +2,7 @@
 
 namespace GameKit.Dependencies.Utilities.Types
 {
-
-
     [System.Serializable]
-
     public struct FloatRange2D
     {
         public FloatRange X;
@@ -17,7 +14,6 @@ namespace GameKit.Dependencies.Utilities.Types
             Y = y;
         }
 
-
         public FloatRange2D(float xMin, float xMax, float yMin, float yMax)
         {
             X = new(xMin, xMax);
@@ -26,19 +22,12 @@ namespace GameKit.Dependencies.Utilities.Types
 
         public Vector2 Clamp(Vector2 original)
         {
-            return new(
-                ClampX(original.x),
-                ClampY(original.y)
-                );
+            return new(ClampX(original.x), ClampY(original.y));
         }
 
         public Vector3 Clamp(Vector3 original)
         {
-            return new(
-                ClampX(original.x),
-                ClampY(original.y),
-                original.z
-                );
+            return new(ClampX(original.x), ClampY(original.y), original.z);
         }
 
         public float ClampX(float original)
@@ -50,9 +39,5 @@ namespace GameKit.Dependencies.Utilities.Types
         {
             return Mathf.Clamp(original, Y.Minimum, Y.Maximum);
         }
-
     }
-
-
-
 }

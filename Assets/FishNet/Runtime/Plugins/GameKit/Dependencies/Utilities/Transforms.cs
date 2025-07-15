@@ -8,11 +8,11 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Returns the sizeDelta halfed.
         /// </summary>
-        /// <param name="considerScale">True to multiple values by RectTransform scale.</param>
+        /// <param name = "considerScale">True to multiple values by RectTransform scale.</param>
         public static Vector2 HalfSizeDelta(this RectTransform rectTransform, bool useScale = false)
         {
-            Vector2 sizeDelta = (useScale) ? rectTransform.SizeDeltaScaled() : rectTransform.sizeDelta;
-            return (sizeDelta / 2f);
+            Vector2 sizeDelta = useScale ? rectTransform.SizeDeltaScaled() : rectTransform.sizeDelta;
+            return sizeDelta / 2f;
         }
 
         /// <summary>
@@ -20,14 +20,14 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static Vector2 SizeDeltaScaled(this RectTransform rectTransform)
         {
-            return (rectTransform.sizeDelta * rectTransform.localScale);
+            return rectTransform.sizeDelta * rectTransform.localScale;
         }
 
         /// <summary>
         /// Returns a position for the rectTransform ensuring it's fully on the screen.
         /// </summary>
-        /// <param name="desiredPosition">Preferred position for the rectTransform.</param>
-        /// <param name="padding">How much padding the transform must be from the screen edges.</param>
+        /// <param name = "desiredPosition">Preferred position for the rectTransform.</param>
+        /// <param name = "padding">How much padding the transform must be from the screen edges.</param>
         public static Vector3 GetOnScreenPosition(this RectTransform rectTransform, Vector3 desiredPosition, Vector2 padding)
         {
             RectTransform canvasRectTransform = rectTransform.GetComponentInParent<Canvas>().transform as RectTransform;
@@ -35,12 +35,12 @@ namespace GameKit.Dependencies.Utilities
             Vector2 localScale = canvasRectTransform.localScale;
             Vector2 oneMinusPivot = Vector2.one - rectTransform.pivot;
 
-            //The size has to be scaled to account for the size and scale of the Canvas it is childed to
+            // The size has to be scaled to account for the size and scale of the Canvas it is childed to
             Vector2 scaledSize = rectTransform.sizeDelta * localScale;
 
-            //Calculate the minimum and maximum bounds of the canvas our object can occupy
+            // Calculate the minimum and maximum bounds of the canvas our object can occupy
             Vector2 minClamp = scaledSize * rectTransform.pivot + padding;
-            Vector2 maxClamp = ((canvasRectTransform.rect.size) - (rectTransform.sizeDelta * oneMinusPivot + padding)) * localScale;
+            Vector2 maxClamp = (canvasRectTransform.rect.size - (rectTransform.sizeDelta * oneMinusPivot + padding)) * localScale;
 
             float clampX = Mathf.Clamp(clampedPos.x, minClamp.x, maxClamp.x);
             float clampY = Mathf.Clamp(clampedPos.y, minClamp.y, maxClamp.y);
@@ -51,7 +51,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Sets a parent for src while maintaining position, rotation, and scale of src.
         /// </summary>
-        /// <param name="parent">Transform to become a child of.</param>
+        /// <param name = "parent">Transform to become a child of.</param>
         public static void SetParentAndKeepTransform(this Transform src, Transform parent)
         {
             Vector3 pos = src.position;
@@ -69,7 +69,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static void DestroyChildren(this Transform t, bool destroyImmediately = false)
         {
-            //If destroying immediately then the iteration needs to occur only on the top-most children.
+            // If destroying immediately then the iteration needs to occur only on the top-most children.
             if (destroyImmediately)
             {
                 List<Transform> children = CollectionCaches<Transform>.RetrieveList();
@@ -79,15 +79,15 @@ namespace GameKit.Dependencies.Utilities
                     children.Add(t.GetChild(i));
 
                 foreach (Transform child in children)
-                    UnityEngine.Object.DestroyImmediate(child);
-                
+                    Object.DestroyImmediate(child);
+
                 CollectionCaches<Transform>.Store(children);
             }
-            //Iterate using Unitys enumerator.
+            // Iterate using Unitys enumerator.
             else
             {
                 foreach (Transform child in t)
-                    UnityEngine.Object.Destroy(child.gameObject);
+                    Object.Destroy(child.gameObject);
             }
         }
 
@@ -102,18 +102,18 @@ namespace GameKit.Dependencies.Utilities
                 if (destroyImmediately)
                     MonoBehaviour.DestroyImmediate(child.gameObject);
                 else
-                    UnityEngine.Object.Destroy(child.gameObject);
+                    Object.Destroy(child.gameObject);
             }
         }
 
         /// <summary>
         /// Gets components in children and optionally parent.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="results"></param>
-        /// <param name="parent"></param>
-        /// <param name="includeParent"></param>
-        /// <param name="includeInactive"></param>
+        /// <typeparam name = "T"></typeparam>
+        /// <param name = "results"></param>
+        /// <param name = "parent"></param>
+        /// <param name = "includeParent"></param>
+        /// <param name = "includeInactive"></param>
         public static void GetComponentsInChildren<T>(this Transform parent, List<T> results, bool includeParent = true, bool includeInactive = false) where T : Component
         {
             if (!includeParent)
@@ -137,7 +137,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static Vector3 GetPosition(this Transform t, bool localSpace)
         {
-            return (localSpace) ? t.localPosition : t.position;
+            return localSpace ? t.localPosition : t.position;
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static Quaternion GetRotation(this Transform t, bool localSpace)
         {
-            return (localSpace) ? t.localRotation : t.rotation;
+            return localSpace ? t.localRotation : t.rotation;
         }
 
         /// <summary>
@@ -159,8 +159,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Sets the position of this transform.
         /// </summary>
-        /// <param name="t"></param>
-        /// <param name="localSpace"></param>
+        /// <param name = "t"></param>
+        /// <param name = "localSpace"></param>
         public static void SetPosition(this Transform t, bool localSpace, Vector3 pos)
         {
             if (localSpace)
@@ -172,8 +172,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Sets the position of this transform.
         /// </summary>
-        /// <param name="t"></param>
-        /// <param name="localSpace"></param>
+        /// <param name = "t"></param>
+        /// <param name = "localSpace"></param>
         public static void SetRotation(this Transform t, bool localSpace, Quaternion rot)
         {
             if (localSpace)
@@ -185,8 +185,8 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Sets the position of this transform.
         /// </summary>
-        /// <param name="t"></param>
-        /// <param name="localSpace"></param>
+        /// <param name = "t"></param>
+        /// <param name = "localSpace"></param>
         public static void SetScale(this Transform t, Vector3 scale)
         {
             t.localScale = scale;

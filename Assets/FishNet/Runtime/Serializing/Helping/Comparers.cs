@@ -4,7 +4,6 @@ using UnityEngine.SceneManagement;
 
 namespace FishNet.Serializing.Helping
 {
-
     public class PublicPropertyComparer<T>
     {
         /// <summary>
@@ -16,16 +15,15 @@ namespace FishNet.Serializing.Helping
         /// </summary>
         public static Func<T, T, bool> Compare { get; set; }
     }
-     
 
     public class Comparers
     {
         /// <summary>
         /// Returns if A equals B using EqualityCompare.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
+        /// <typeparam name = "T"></typeparam>
+        /// <param name = "a"></param>
+        /// <param name = "b"></param>
         /// <returns></returns>
         public static bool EqualityCompare<T>(T a, T b)
         {
@@ -39,10 +37,9 @@ namespace FishNet.Serializing.Helping
 
         public static bool IsEqualityCompareDefault<T>(T a)
         {
-            return EqualityComparer<T>.Default.Equals(a, default(T));
+            return EqualityComparer<T>.Default.Equals(a, default);
         }
     }
-
 
     internal class SceneComparer : IEqualityComparer<Scene>
     {
@@ -52,9 +49,9 @@ namespace FishNet.Serializing.Helping
                 return false;
 
             if (a.handle != 0 || b.handle != 0)
-                return (a.handle == b.handle);
+                return a.handle == b.handle;
 
-            return (a.name == b.name);
+            return a.name == b.name;
         }
 
         public int GetHashCode(Scene obj)
@@ -62,5 +59,4 @@ namespace FishNet.Serializing.Helping
             return obj.GetHashCode();
         }
     }
-
 }

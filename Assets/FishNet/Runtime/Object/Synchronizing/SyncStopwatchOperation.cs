@@ -1,6 +1,5 @@
 ﻿namespace FishNet.Object.Synchronizing
 {
-
     public enum SyncStopwatchOperation : byte
     {
         /// <summary>
@@ -30,7 +29,6 @@
         /// <summary>
         /// All operations for the tick have been processed. This only occurs on clients as the server is unable to be aware of when the user is done modifying the list.
         /// </summary>
-        Complete = 9,
+        Complete = 9
     }
-
 }

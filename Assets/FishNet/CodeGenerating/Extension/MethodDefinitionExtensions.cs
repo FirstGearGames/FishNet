@@ -6,12 +6,10 @@ using System.Collections.Generic;
 
 namespace FishNet.CodeGenerating.Extension
 {
-
-
     internal static class MethodDefinitionExtensions
     {
-        public const MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = (MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig);
-        public const MethodAttributes PROTECTED_VIRTUAL_ATTRIBUTES = (MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig);
+        public const MethodAttributes PUBLIC_VIRTUAL_ATTRIBUTES = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
+        public const MethodAttributes PROTECTED_VIRTUAL_ATTRIBUTES = MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig;
 
         /// <summary>
         /// Returns a custom attribute.
@@ -27,7 +25,7 @@ namespace FishNet.CodeGenerating.Extension
                     return item;
             }
 
-            //Not found.
+            // Not found.
             return null;
         }
 
@@ -44,18 +42,17 @@ namespace FishNet.CodeGenerating.Extension
         /// <summary>
         /// Returns the ParameterDefinition index from end of parameters.
         /// </summary>
-        /// <param name="md"></param>
-        /// <param name="index"></param>
+        /// <param name = "md"></param>
+        /// <param name = "index"></param>
         /// <returns></returns>
         internal static ParameterDefinition GetEndParameter(this MethodDefinition md, int index)
         {
-            //Not enough parameters.
-            if (md.Parameters.Count < (index + 1))
+            // Not enough parameters.
+            if (md.Parameters.Count < index + 1)
                 return null;
 
             return md.Parameters[md.Parameters.Count - (index + 1)];
         }
-
 
         /// <summary>
         /// Creates a variable type within the body and returns it's VariableDef.
@@ -78,17 +75,18 @@ namespace FishNet.CodeGenerating.Extension
         /// <summary>
         /// Returns the proper OpCode to use for call methods.
         /// </summary>
-        public static MonoFN.Cecil.Cil.OpCode GetCallOpCode(this MethodDefinition md)
+        public static OpCode GetCallOpCode(this MethodDefinition md)
         {
             if (md.Attributes.HasFlag(MethodAttributes.Virtual))
-                return MonoFN.Cecil.Cil.OpCodes.Callvirt;
+                return OpCodes.Callvirt;
             else
-                return MonoFN.Cecil.Cil.OpCodes.Call;
+                return OpCodes.Call;
         }
+
         /// <summary>
         /// Returns the proper OpCode to use for call methods.
         /// </summary>
-        public static MonoFN.Cecil.Cil.OpCode GetCallOpCode(this MethodReference mr, CodegenSession session)
+        public static OpCode GetCallOpCode(this MethodReference mr, CodegenSession session)
         {
             return mr.CachedResolve(session).GetCallOpCode();
         }
@@ -115,9 +113,9 @@ namespace FishNet.CodeGenerating.Extension
             {
                 session.ImportReference(pd.ParameterType.CachedResolve(session));
                 int currentCount = thisMd.Parameters.Count;
-                string name = (pd.Name + currentCount);
+                string name = pd.Name + currentCount;
                 ParameterDefinition parameterDef = new(name, pd.Attributes, pd.ParameterType);
-                //Set any default values.
+                // Set any default values.
                 parameterDef.Constant = pd.Constant;
                 parameterDef.IsReturnValue = pd.IsReturnValue;
                 parameterDef.IsOut = pd.IsOut;
@@ -147,7 +145,7 @@ namespace FishNet.CodeGenerating.Extension
         {
             MethodReference methodRef = session.ImportReference(md);
 
-            //Is generic.
+            // Is generic.
             if (md.DeclaringType.HasGenericParameters)
             {
                 GenericInstanceType git = methodRef.DeclaringType.MakeGenericInstanceType();
@@ -156,7 +154,7 @@ namespace FishNet.CodeGenerating.Extension
                     HasThis = md.HasThis,
                     ExplicitThis = md.ExplicitThis,
                     DeclaringType = git,
-                    CallingConvention = md.CallingConvention,
+                    CallingConvention = md.CallingConvention
                 };
                 foreach (ParameterDefinition pd in md.Parameters)
                 {
@@ -170,7 +168,6 @@ namespace FishNet.CodeGenerating.Extension
                 return methodRef;
             }
         }
-
 
         /// <summary>
         /// Returns a method reference for a generic method.
@@ -198,7 +195,6 @@ namespace FishNet.CodeGenerating.Extension
             }
         }
 
-
         /// <summary>
         /// Returns a method reference for a generic method.
         /// </summary>
@@ -211,9 +207,9 @@ namespace FishNet.CodeGenerating.Extension
         public static MethodDefinition CreateCopy(this MethodDefinition copiedMd, CodegenSession session, string nameOverride = null, MethodAttributes? attributesOverride = null)
         {
             session.ImportReference(copiedMd.ReturnType);
-            
-            MethodAttributes attr = (attributesOverride.HasValue) ? attributesOverride.Value : copiedMd.Attributes;
-            string name = (nameOverride == null) ? copiedMd.Name : nameOverride;
+
+            MethodAttributes attr = attributesOverride.HasValue ? attributesOverride.Value : copiedMd.Attributes;
+            string name = nameOverride == null ? copiedMd.Name : nameOverride;
             MethodDefinition result = new(name, attr, copiedMd.ReturnType);
             foreach (GenericParameter item in copiedMd.GenericParameters)
                 result.GenericParameters.Add(item);
@@ -229,11 +225,10 @@ namespace FishNet.CodeGenerating.Extension
         {
             md.Attributes = PUBLIC_VIRTUAL_ATTRIBUTES;
         }
+
         public static void SetProtectedAttributes(this MethodDefinition md)
         {
             md.Attributes = PROTECTED_VIRTUAL_ATTRIBUTES;
         }
     }
-
-
 }

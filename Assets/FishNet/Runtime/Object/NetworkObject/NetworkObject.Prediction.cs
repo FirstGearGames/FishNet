@@ -21,7 +21,7 @@ namespace FishNet.Object
         /// <summary>
         /// Type of prediction movement being used.
         /// </summary>
-        [System.Serializable]
+        [Serializable]
         internal enum PredictionType : byte
         {
             Other = 0,
@@ -35,10 +35,9 @@ namespace FishNet.Object
         /// True if a reconcile is occuring on any NetworkBehaviour that is on or nested of this NetworkObject. Runtime NetworkBehaviours are not included, such as if you child a NetworkObject to another at runtime.
         /// </summary>
         public bool IsObjectReconciling { get; internal set; }
-
         /// <summary>
         /// Graphical smoother to use when using set for owner.
-        /// </summary> 
+        /// </summary>
         [Obsolete("This field will be removed in v5. Instead reference NetworkTickSmoother on each graphical object used.")]
         public TransformTickSmoother PredictionSmoother { get; private set; }
         #endregion
@@ -48,7 +47,6 @@ namespace FishNet.Object
         /// Pauses and unpauses rigidbodies when they do not have data to reconcile to.
         /// </summary>
         public RigidbodyPauser RigidbodyPauser => _rigidbodyPauser;
-
         private RigidbodyPauser _rigidbodyPauser;
         #endregion
 
@@ -57,7 +55,6 @@ namespace FishNet.Object
         /// True if this object uses prediciton methods.
         /// </summary>
         public bool EnablePrediction => _enablePrediction;
-
         [Tooltip("True if this object uses prediction methods.")]
         [SerializeField]
         private bool _enablePrediction;
@@ -83,7 +80,7 @@ namespace FishNet.Object
         /// <summary>
         /// Sets a new graphical object for prediction.
         /// </summary>
-        /// <param name="t"></param>
+        /// <param name = "t"></param>
         public void SetGraphicalObject(Transform t)
         {
             _graphicalObject = t;
@@ -98,12 +95,10 @@ namespace FishNet.Object
         [Tooltip("True to detach and re-attach the graphical object at runtime when the client initializes/deinitializes the item. This can resolve camera jitter or be helpful objects child of the graphical which do not handle reconiliation well, such as certain animation rigs. Transform is detached after OnStartClient, and reattached before OnStopClient.")]
         [SerializeField]
         private bool _detachGraphicalObject;
-
         /// <summary>
         /// True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.
         /// </summary>
-        public bool EnableStateForwarding => (_enablePrediction && _enableStateForwarding);
-
+        public bool EnableStateForwarding => _enablePrediction && _enableStateForwarding;
         [Tooltip("True to forward replicate and reconcile states to all clients. This is ideal with games where you want all clients and server to run the same inputs. False to only use prediction on the owner, and synchronize to spectators using other means such as a NetworkTransform.")]
         [SerializeField]
         private bool _enableStateForwarding = true;
@@ -247,12 +242,12 @@ namespace FishNet.Object
         /// </summary>
         private void InitializeSmoothers()
         {
-            bool usesRb = (_predictionType == PredictionType.Rigidbody);
-            bool usesRb2d = (_predictionType == PredictionType.Rigidbody2D);
+            bool usesRb = _predictionType == PredictionType.Rigidbody;
+            bool usesRb2d = _predictionType == PredictionType.Rigidbody2D;
             if (usesRb || usesRb2d)
             {
                 _rigidbodyPauser = ResettableObjectCaches<RigidbodyPauser>.Retrieve();
-                RigidbodyType rbType = (usesRb) ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
+                RigidbodyType rbType = usesRb ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
                 _rigidbodyPauser.UpdateRigidbodies(transform, rbType, true);
             }
 
@@ -275,7 +270,7 @@ namespace FishNet.Object
         {
             if (PredictionSmoother == null)
                 return;
-            float teleportT = (_enableTeleport) ? _teleportThreshold : MoveRates.UNSET_VALUE;
+            float teleportT = _enableTeleport ? _teleportThreshold : MoveRates.UNSET_VALUE;
             PredictionSmoother.InitializeNetworked(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
         }
 
@@ -379,7 +374,7 @@ namespace FishNet.Object
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
-            uint replayTick = (IsOwner) ? clientTick : serverTick;
+            uint replayTick = IsOwner ? clientTick : serverTick;
             for (int i = 0; i < _predictionBehaviours.Count; i++)
                 _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
         }
@@ -406,7 +401,7 @@ namespace FishNet.Object
         /// <summary>
         /// Sets the last tick a NetworkBehaviour replicated with.
         /// </summary>
-        /// <param name="setUnordered">True to set unordered value, false to set ordered.</param>
+        /// <param name = "setUnordered">True to set unordered value, false to set ordered.</param>
         internal void SetReplicateTick(uint value, bool createdReplicate)
         {
             if (createdReplicate && Owner.IsValid)

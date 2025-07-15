@@ -11,7 +11,7 @@ namespace FishNet.Component.Prediction
         /// </summary>
         [Tooltip("Type of prediction movement which is being used.")]
         [SerializeField]
-        private RigidbodyType _rigidbodyType;  
+        private RigidbodyType _rigidbodyType;
         /// <summary>
         /// True to also get rigidbody components within children.
         /// </summary>
@@ -36,7 +36,6 @@ namespace FishNet.Component.Prediction
             InitializeOnce();
         }
 
-
         private void OnDestroy()
         {
             ChangeSubscription(false);
@@ -55,15 +54,15 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Sets a new PredictionManager to use.
         /// </summary>
-        /// <param name="tm"></param>
+        /// <param name = "tm"></param>
         public void SetPredictionManager(PredictionManager pm)
         {
             if (pm == _predictionManager)
                 return;
 
-            //Unsub from current.
+            // Unsub from current.
             ChangeSubscription(false);
-            //Sub to newest.
+            // Sub to newest.
             _predictionManager = pm;
             ChangeSubscription(true);
         }
@@ -106,9 +105,4 @@ namespace FishNet.Component.Prediction
             _rigidbodyPauser.Unpause();
         }
     }
-
-
 }
-
-
-

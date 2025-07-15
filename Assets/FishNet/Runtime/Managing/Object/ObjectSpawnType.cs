@@ -25,7 +25,7 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Indicates the receiver is the predicted spawner.
         /// </summary>
-        IsPredictedSpawner = 16,
+        IsPredictedSpawner = 16
     }
 
     [APIExclude]
@@ -39,7 +39,4 @@ namespace FishNet.Managing.Object
             return (whole & part) == part;
         }
     }
-
-
-
 }

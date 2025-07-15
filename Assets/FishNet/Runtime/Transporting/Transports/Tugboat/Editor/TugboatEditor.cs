@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace FishNet.Transporting.Tugboat.Editing
 {
-
     [CustomEditor(typeof(Tugboat), true)]
     [CanEditMultipleObjects]
     public class TugboatEditor : Editor
@@ -14,15 +13,12 @@ namespace FishNet.Transporting.Tugboat.Editing
         private SerializedProperty _dontRoute;
         private SerializedProperty _reuseAddress;
         private SerializedProperty _unreliableMtu;
-
         private SerializedProperty _ipv4BindAddress;
         private SerializedProperty _enableIpv6;
         private SerializedProperty _ipv6BindAddress;
         private SerializedProperty _port;
         private SerializedProperty _maximumClients;
-
         private SerializedProperty _clientAddress;
-
 
         protected virtual void OnEnable()
         {
@@ -35,7 +31,7 @@ namespace FishNet.Transporting.Tugboat.Editing
             _ipv6BindAddress = serializedObject.FindProperty(nameof(_ipv6BindAddress));
             _port = serializedObject.FindProperty(nameof(_port));
             _maximumClients = serializedObject.FindProperty(nameof(_maximumClients));
-            _clientAddress = serializedObject.FindProperty(nameof(_clientAddress));            
+            _clientAddress = serializedObject.FindProperty(nameof(_clientAddress));
         }
 
         public override void OnInspectorGUI()
@@ -83,12 +79,7 @@ namespace FishNet.Transporting.Tugboat.Editing
 
             serializedObject.ApplyModifiedProperties();
         }
-
-
-
     }
-
 }
-
 
 #endif

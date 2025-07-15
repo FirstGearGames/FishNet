@@ -1,12 +1,10 @@
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #define DEVELOPMENT
 #endif
-
 #if UNITY_EDITOR
 using FishNet.Editing.PrefabCollectionGenerator;
 using UnityEditor;
 #endif
-
 using FishNet.Connection;
 using FishNet.Managing.Client;
 using FishNet.Managing.Server;
@@ -20,16 +18,17 @@ using System.Collections.Generic;
 using System;
 using FishNet.Managing.Observing;
 using System.Linq;
+using FishNet.Broadcast;
 using FishNet.Managing.Debugging;
 using FishNet.Managing.Object;
 using FishNet.Transporting;
 using FishNet.Managing.Statistic;
 using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
+using FishNet.Configuring;
+using FishNet.Configuring.EditorCloning;
 using FishNet.Managing.Predicting;
 using GameKit.Dependencies.Utilities;
-
-
 
 namespace FishNet.Managing
 {
@@ -67,12 +66,9 @@ namespace FishNet.Managing
         /// True if this instance of the NetworkManager is initialized.
         /// </summary>
         public bool Initialized { get; private set; }
-
         /// <summary>
-        /// 
         /// </summary>
         private static List<NetworkManager> _instances = new();
-
         /// <summary>
         /// Currently initialized NetworkManagers.
         /// </summary>
@@ -96,52 +92,42 @@ namespace FishNet.Managing
                 return _instances;
             }
         }
-
         /// <summary>
         /// PredictionManager for this NetworkManager.
         /// </summary>
         internal PredictionManager PredictionManager { get; private set; }
-
         /// <summary>
         /// ServerManager for this NetworkManager.
         /// </summary>
         public ServerManager ServerManager { get; private set; }
-
         /// <summary>
         /// ClientManager for this NetworkManager.
         /// </summary>
         public ClientManager ClientManager { get; private set; }
-
         /// <summary>
         /// TransportManager for this NetworkManager.
         /// </summary>
         public TransportManager TransportManager { get; private set; }
-
         /// <summary>
         /// TimeManager for this NetworkManager.
         /// </summary>
         public TimeManager TimeManager { get; private set; }
-
         /// <summary>
         /// SceneManager for this NetworkManager.
         /// </summary>
         public SceneManager SceneManager { get; private set; }
-
         /// <summary>
         /// ObserverManager for this NetworkManager.
         /// </summary>
         public ObserverManager ObserverManager { get; private set; }
-
         /// <summary>
         /// DebugManager for this NetworkManager.
         /// </summary>
         public DebugManager DebugManager { get; private set; }
-
         /// <summary>
         /// StatisticsManager for this NetworkManager.
         /// </summary>
         public StatisticsManager StatisticsManager { get; private set; }
-
         /// <summary>
         /// An empty connection reference. Used when a connection cannot be found to prevent object creation.
         /// </summary>
@@ -150,6 +136,38 @@ namespace FishNet.Managing
         #endregion
 
         #region Internal.
+#if DEVELOPMENT && !UNITY_SERVER
+        /// <summary>
+        /// Names of broadcasts.
+        /// Key: Broadcast key.
+        /// Value: Name.
+        /// </summary>
+        /// <remarks>Only broadcast which were registered at least once will be found within this collection. This collection is never cleared.</remarks>
+        private Dictionary<ushort, string> _broadcastNames = new();
+
+        /// <summary>
+        /// Gets a broadcast name by key.
+        /// </summary>
+        internal string GetBroadcastName(ushort key)
+        {
+            if (_broadcastNames.TryGetValueIL2CPP(key, out string result))
+                return result;
+
+            const string notFoundName = "Unregistered Broadcasts";
+
+            return notFoundName;
+        }
+
+        /// <summary>
+        /// Sets a broadcast name to be used with GetBroadcastName.
+        /// </summary>
+        internal void SetBroadcastName<T>(ushort key) where T : struct, IBroadcast
+        {
+            // Avoid allocation by checking if key already exist.
+            if (!_broadcastNames.ContainsKey(key))
+                _broadcastNames[key] = typeof(T).Name;
+        }
+#endif
         /// <summary>
         /// Starting index for RpcLinks.
         /// </summary>
@@ -183,12 +201,10 @@ namespace FishNet.Managing
         [Tooltip("True to make this instance DontDestroyOnLoad. This is typical if you only want one NetworkManager.")]
         [SerializeField]
         private bool _dontDestroyOnLoad = true;
-
         /// <summary>
         /// Object pool to use for this NetworkManager. Value may be null.
         /// </summary>
         public ObjectPool ObjectPool => _objectPool;
-
         [Tooltip("Object pool to use for this NetworkManager. Value may be null.")]
         [SerializeField]
         private ObjectPool _objectPool;
@@ -211,7 +227,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.9";
+        public const string FISHNET_VERSION = "4.6.10";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -227,7 +243,9 @@ namespace FishNet.Managing
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(Enums.GetHighestValue<PacketId>() + 1);
 
-            bool isDefaultPrefabs = (SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects);
+            bool isDefaultPrefabs = SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects;
+            CloneChecker.IsMultiplayerClone(out EditorCloneType cloneType); 
+
 #if UNITY_EDITOR
             /* If first instance then force
              * default prefabs to repopulate.
@@ -235,7 +253,12 @@ namespace FishNet.Managing
              * cloning tools sometimes don't synchronize
              * scriptable object changes, which is what
              * the default prefabs is. */
-            if (_refreshDefaultPrefabs && _instances.Count == 0 && isDefaultPrefabs)
+
+            /* There is an issue with Unity Multiplayer where if a prefab
+             * is modified in the main editor with a multiplayer window open,
+             * the modified prefab becomes null in the collection. Because of this,
+             * we must re-generate on the cloned window. */
+            if (isDefaultPrefabs && (cloneType == EditorCloneType.UnityMultiplayer || (_refreshDefaultPrefabs && _instances.Count == 0)))
             {
                 Generator.IgnorePostProcess = true;
                 Debug.Log("DefaultPrefabCollection is being refreshed.");
@@ -243,11 +266,11 @@ namespace FishNet.Managing
                 Generator.IgnorePostProcess = false;
             }
 #endif
-            //If default prefabs then also make a new instance and sort them.
+            // If default prefabs then also make a new instance and sort them.
             if (isDefaultPrefabs)
             {
                 DefaultPrefabObjects originalDpo = (DefaultPrefabObjects)SpawnablePrefabs;
-                //If not editor then a new instance must be made and sorted.
+                // If not editor then a new instance must be made and sorted.
                 DefaultPrefabObjects instancedDpo = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
                 instancedDpo.AddObjects(originalDpo.Prefabs.ToList(), checkForDuplicates: false, initializeAdded: false);
                 instancedDpo.Sort();
@@ -303,10 +326,12 @@ namespace FishNet.Managing
         {
             TimeManager.InitializeOnce_Internal(this);
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
-            SceneManager.InitializeOnce_Internal(this);
             TransportManager.InitializeOnce_Internal(this);
+
             ClientManager.InitializeOnce_Internal(this);
             ServerManager.InitializeOnce_Internal(this);
+
+            SceneManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
             RollbackManager.InitializeOnce_Internal(this);
             PredictionManager.InitializeOnce(this);
@@ -321,9 +346,9 @@ namespace FishNet.Managing
         {
             bool clientStarted = ClientManager.Started;
             bool serverStarted = ServerManager.Started;
-            
+
             int frameRate = 0;
-            //If both client and server are started then use whichever framerate is higher.
+            // If both client and server are started then use whichever framerate is higher.
             if (clientStarted && serverStarted)
                 frameRate = Math.Max(ServerManager.FrameRate, ClientManager.FrameRate);
             else if (clientStarted)
@@ -341,7 +366,7 @@ namespace FishNet.Managing
             else if (frameRate < TimeManager.TickRate)
                 frameRate = minimumServerFramerate;
 #endif
-            //If there is a framerate to set.
+            // If there is a framerate to set.
             if (frameRate > 0)
                 Application.targetFrameRate = frameRate;
         }
@@ -356,10 +381,9 @@ namespace FishNet.Managing
              * in awake. Rather than try to fix or care why Unity
              * does this just set it in LateUpdate(or Update). */
             SetRunInBackground();
-            //Let's object pooler do regular work.
+            // Let's object pooler do regular work.
             _objectPool.LateUpdate();
         }
-
 
         /// <summary>
         /// Returns if this NetworkManager can initialize.
@@ -374,30 +398,30 @@ namespace FishNet.Managing
                 return true;
 
             List<NetworkManager> instances = Instances.ToList();
-            //This is the first instance, it may initialize.
+            // This is the first instance, it may initialize.
             if (instances.Count == 0)
                 return true;
 
-            //First instance of NM.
+            // First instance of NM.
             NetworkManager firstInstance = instances[0];
 
-            //If to destroy the newest.
+            // If to destroy the newest.
             if (_persistence == PersistenceType.DestroyNewest)
             {
                 InternalLog($"NetworkManager on object {gameObject.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance already exist on {firstInstance.name}.");
                 DestroyImmediate(gameObject);
-                //This one is being destroyed because its the newest.
+                // This one is being destroyed because its the newest.
                 return false;
             }
-            //If to destroy the oldest.
+            // If to destroy the oldest.
             else if (_persistence == PersistenceType.DestroyOldest)
             {
                 InternalLog($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
                 DestroyImmediate(firstInstance.gameObject);
-                //This being the new one will persist, allow initialization.
+                // This being the new one will persist, allow initialization.
                 return true;
             }
-            //Unhandled.
+            // Unhandled.
             else
             {
                 InternalLog($"Persistance type of {_persistence} is unhandled on {gameObject.name}. Initialization will not proceed.");
@@ -456,7 +480,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Gets a component, creating and adding it if it does not exist.
         /// </summary>
-        /// <param name="presetValue">Value which may already be set. When not null this is returned instead.</param>
+        /// <param name = "presetValue">Value which may already be set. When not null this is returned instead.</param>
         private T GetOrCreateComponent<T>(T presetValue = null) where T : UnityEngine.Component
         {
             //If already set then return set value.
@@ -472,11 +496,11 @@ namespace FishNet.Managing
         /// <summary>
         /// Clears a client collection after disposing of the NetworkConnections.
         /// </summary>
-        /// <param name="clients"></param>
+        /// <param name = "clients"></param>
         internal void ClearClientsCollection(Dictionary<int, NetworkConnection> clients, int transportIndex = -1)
         {
             //True to dispose all connections.
-            bool disposeAll = (transportIndex < 0);
+            bool disposeAll = transportIndex < 0;
             List<int> cache = CollectionCaches<int>.RetrieveList();
 
 

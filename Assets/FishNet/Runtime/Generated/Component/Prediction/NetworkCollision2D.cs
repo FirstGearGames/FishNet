@@ -6,10 +6,8 @@ namespace FishNet.Component.Prediction
     {
         protected override void Awake()
         {
-            base.IsTrigger = false;
+            IsTrigger = false;
             base.Awake();
         }
-
     }
-
 }

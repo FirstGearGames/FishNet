@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
-     public static class ColliderExtensions
+    public static class ColliderExtensions
     {
         public static void GetBoxOverlapParams(this BoxCollider boxCollider, out Vector3 center, out Vector3 halfExtents)
         {
@@ -43,39 +43,39 @@ namespace GameKit.Dependencies.Utilities
             switch (capsuleCollider.direction)
             {
                 case 1:
-                    {
-                        radius = capsuleCollider.radius * Math.Max(absX, absZ);
+                {
+                    radius = capsuleCollider.radius * Math.Max(absX, absZ);
 
-                        height = capsuleCollider.height * absY;
+                    height = capsuleCollider.height * absY;
 
-                        direction = Vector3.up;
+                    direction = Vector3.up;
 
-                        break;
-                    }
+                    break;
+                }
 
                 case 2:
-                    {
-                        radius = capsuleCollider.radius * Math.Max(absX, absY);
+                {
+                    radius = capsuleCollider.radius * Math.Max(absX, absY);
 
-                        height = capsuleCollider.height * absZ;
+                    height = capsuleCollider.height * absZ;
 
-                        direction = Vector3.forward;
+                    direction = Vector3.forward;
 
-                        break;
-                    }
+                    break;
+                }
 
                 default:
-                    {
-                        // Falling back to X is Unity's default behaviour.
+                {
+                    // Falling back to X is Unity's default behaviour.
 
-                        radius = capsuleCollider.radius * Math.Max(absY, absZ);
+                    radius = capsuleCollider.radius * Math.Max(absY, absZ);
 
-                        height = capsuleCollider.height * absX;
+                    height = capsuleCollider.height * absX;
 
-                        direction = Vector3.right;
+                    direction = Vector3.right;
 
-                        break;
-                    }
+                    break;
+                }
             }
 
             Vector3 center = cachedTransform.TransformPoint(capsuleCollider.center);
@@ -117,7 +117,6 @@ namespace GameKit.Dependencies.Utilities
         }
     }
 
-
     public static class Collider2DExtensions
     {
         public static void GetBox2DOverlapParams(this BoxCollider2D boxCollider, out Vector3 center, out Vector3 halfExtents)
@@ -158,5 +157,4 @@ namespace GameKit.Dependencies.Utilities
             radius = circleCollider.radius * Math.Max(Math.Max(x, y), z);
         }
     }
-
 }

@@ -5,16 +5,12 @@ namespace LiteNetLib
 {
     public class InvalidPacketException : ArgumentException
     {
-        public InvalidPacketException(string message) : base(message)
-        {
-        }
+        public InvalidPacketException(string message) : base(message) { }
     }
 
     public class TooBigPacketException : InvalidPacketException
     {
-        public TooBigPacketException(string message) : base(message)
-        {
-        }
+        public TooBigPacketException(string message) : base(message) { }
     }
 
     public enum NetLogLevel
@@ -41,6 +37,7 @@ namespace LiteNetLib
     {
         public static INetLogger Logger = null;
         private static readonly object DebugLogLock = new();
+
         private static void WriteLogic(NetLogLevel logLevel, string str, params object[] args)
         {
             lock (DebugLogLock)
@@ -72,13 +69,15 @@ namespace LiteNetLib
             WriteLogic(level, str);
         }
 
-        [Conditional("DEBUG_MESSAGES"), Conditional("DEBUG")]
+        [Conditional("DEBUG_MESSAGES")]
+        [Conditional("DEBUG")]
         internal static void WriteForce(string str)
         {
             WriteLogic(NetLogLevel.Trace, str);
         }
 
-        [Conditional("DEBUG_MESSAGES"), Conditional("DEBUG")]
+        [Conditional("DEBUG_MESSAGES")]
+        [Conditional("DEBUG")]
         internal static void WriteForce(NetLogLevel level, string str)
         {
             WriteLogic(level, str);
