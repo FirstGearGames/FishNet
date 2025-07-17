@@ -153,7 +153,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         public static void GenerateChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, PrefabGeneratorConfigurations settings = null)
         {
-#if PARRELSYNC
+#if PARRELSYNC && UNITY_EDITOR
             if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 UnityDebug.Log("Skipping prefab generation in ParrelSync clone");
@@ -334,7 +334,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         public static void GenerateFull(PrefabGeneratorConfigurations settings = null, bool forced = false, bool initializeAdded = true)
         {
-#if PARRELSYNC
+#if PARRELSYNC && UNITY_EDITOR
             if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 UnityDebug.Log("Skipping prefab generation in ParrelSync clone");
@@ -540,7 +540,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 }
             }
 
-#if PARRELSYNC
+#if PARRELSYNC && UNITY_EDITOR
             if (!ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
 #endif
@@ -560,7 +560,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 AssetDatabase.CreateAsset(_cachedDefaultPrefabs, defaultPrefabsPath);
                 AssetDatabase.SaveAssets();
             }
-#if PARRELSYNC
+#if PARRELSYNC && UNITY_EDITOR
             }
 #endif
 

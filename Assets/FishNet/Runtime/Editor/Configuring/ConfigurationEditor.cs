@@ -83,7 +83,7 @@ namespace FishNet.Editing
         [MenuItem("Tools/Fish-Networking/Utility/Refresh Default Prefabs", false, 300)]
         public static void RebuildDefaultPrefabs()
         {
-#if PARRELSYNC
+#if PARRELSYNC && UNITY_EDITOR
             if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
             {
                 Debug.Log("Cannot perform this operation on a ParrelSync clone");

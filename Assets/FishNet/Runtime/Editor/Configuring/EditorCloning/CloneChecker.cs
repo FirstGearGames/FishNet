@@ -16,7 +16,7 @@ namespace FishNet.Configuring.EditorCloning
                 return true;
             }
 
-#if PARRELSYNC
+#if PARRELSYNC && UNITY_EDITOR
             if (ParrelSync.ClonesManager.IsClone())
             {
                 editorCloneType = EditorCloneType.ParrelSync;

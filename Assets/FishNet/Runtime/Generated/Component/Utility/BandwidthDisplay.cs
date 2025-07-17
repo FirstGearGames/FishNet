@@ -162,13 +162,17 @@ namespace FishNet.Component.Utility
         /// </summary>
         private NetworkTrafficStatistics _networkTrafficStatistics;
         /// <summary>
-        /// Next time server text can be updated.
+        /// Next time the server text can be updated.
         /// </summary>
         private float _nextServerTextUpdateTime;
         /// <summary>
-        /// Next time server text can be updated.
+        /// Next time the server text can be updated.
         /// </summary>
         private float _nextClientTextUpdateTime;
+        /// <summary>
+        /// True if component is initialized.
+        /// </summary>
+        private bool _initialized;
         #endregion
 
         private void Start()
@@ -187,12 +191,17 @@ namespace FishNet.Component.Utility
             if (!InstanceFinder.NetworkManager.StatisticsManager.TryGetNetworkTrafficStatistics(out _networkTrafficStatistics))
                 return;
 
+            if (!_networkTrafficStatistics.UpdateClient && !_networkTrafficStatistics.UpdateServer)
+            {
+                Debug.LogWarning($"StatisticsManager.NetworkTraffic is not updating for client nor server. To see results ensure your NetworkManager has a StatisticsManager component added with the NetworkTraffic values configured.");
+                return;
+            }
+
             SetSecondsAveraged(_secondsAveraged);
 
             _networkTrafficStatistics.OnNetworkTraffic += NetworkTrafficStatistics_OnNetworkTraffic;
-
-            if (!_networkTrafficStatistics.UpdateClient && !_networkTrafficStatistics.UpdateServer)
-                Debug.LogWarning($"StatisticsManager.NetworkTraffic is not updating for client nor server. To see results ensure your NetworkManager has a StatisticsManager component added with the NetworkTraffic values configured.");
+            
+            _initialized = true;
         }
 
         private void OnDestroy()
@@ -228,6 +237,9 @@ namespace FishNet.Component.Utility
         /// </summary>
         private void NetworkTrafficStatistics_OnNetworkTraffic(uint tick, BidirectionalNetworkTraffic serverTraffic, BidirectionalNetworkTraffic clientTraffic)
         {
+            if (!_initialized)
+                return;
+            
             ServerAverages.AddIn(serverTraffic.InboundTraffic.Bytes);
             ServerAverages.AddOut(serverTraffic.OutboundTraffic.Bytes);
 
@@ -264,6 +276,9 @@ namespace FishNet.Component.Utility
         /// </summary>
         private void NetworkTraffic_OnClientNetworkTraffic(BidirectionalNetworkTraffic traffic)
         {
+            if (!_initialized)
+                return;
+
             ClientAverages.AddIn(traffic.InboundTraffic.Bytes);
             ClientAverages.AddOut(traffic.OutboundTraffic.Bytes);
 
@@ -287,6 +302,9 @@ namespace FishNet.Component.Utility
         /// </summary>
         private void NetworkTraffic_OnServerNetworkTraffic(BidirectionalNetworkTraffic traffic)
         {
+            if (!_initialized)
+                return;
+
             ServerAverages.AddIn(traffic.InboundTraffic.Bytes);
             ServerAverages.AddOut(traffic.OutboundTraffic.Bytes);
 
@@ -368,6 +386,9 @@ namespace FishNet.Component.Utility
 
         private void ResetCalculationsAndDisplay(bool forServer)
         {
+            if (!_initialized)
+                return;
+
             if (forServer)
             {
                 _serverText = string.Empty;
