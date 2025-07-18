@@ -143,8 +143,8 @@ namespace FishNet.Managing.Statistic
              * the traffic stat fields are reset. Each listener should use
              * the MultiwayTrafficCollection.Clone method to get a copy,
              * and should cache that copy when done. */
-            _clientTraffic.ResetState();
-            _serverTraffic.ResetState();
+            _clientTraffic.Reinitialize();
+            _serverTraffic.Reinitialize();
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace FishNet.Managing.Statistic
         /// </summary>
         internal void PacketBundleReceived(bool asServer)
         {
-            Debug.LogError("Inbound and outbound bidirection datas should count up how many packet bundles are received. This is so the bundle headers can be calculated appropriately.");
+            //Debug.LogError("Inbound and outbound bidirection datas should count up how many packet bundles are received. This is so the bundle headers can be calculated appropriately.");
         }
 
         /// <summary>
@@ -186,7 +186,7 @@ namespace FishNet.Managing.Statistic
         {
             if (bytes <= 0)
                 return;
-
+ 
             GetBidirectionalNetworkTraffic(asServer).InboundTraffic.AddPacketIdData(typeSource, details, (ulong)bytes, gameObject);
         }
 

@@ -239,7 +239,7 @@ namespace FishNet.Component.Utility
         {
             if (!_initialized)
                 return;
-            
+ 
             ServerAverages.AddIn(serverTraffic.InboundTraffic.Bytes);
             ServerAverages.AddOut(serverTraffic.OutboundTraffic.Bytes);
 
@@ -252,7 +252,7 @@ namespace FishNet.Component.Utility
 
             string nl = System.Environment.NewLine;
             string result = string.Empty;
-
+            
             if (_showIncoming)
                 result += $"Server In: {NetworkTrafficStatistics.FormatBytesToLargest(ServerAverages.GetAverage(inAverage: true))}/s{nl}";
             if (_showOutgoing)

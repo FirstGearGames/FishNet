@@ -59,7 +59,6 @@ namespace FishNet.Component.Transforming.Editing
             LayoutTools.AddObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false, EditorLayoutEnableType.Disabled);
 
             bool isPro = false;
-            
             if (isPro)
                 EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
             else

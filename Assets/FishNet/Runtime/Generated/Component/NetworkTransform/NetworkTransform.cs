@@ -445,6 +445,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         /// <param name = "value">New value.</param>
         public void SetSynchronizePosition(bool value) => _synchronizePosition = value;
+
         /// <summary>
         /// Distance sensitivity on position checks.
         /// </summary>
@@ -504,6 +505,7 @@ namespace FishNet.Component.Transforming
         [Range(0.00001f, 1.25f)]
         [SerializeField]
         private float _scaleSensitivity = 0.001f;
+
         /// <summary>
         /// Sets if to synchronize scale.
         /// </summary>
@@ -972,6 +974,25 @@ namespace FishNet.Component.Transforming
         }
 
         /// <summary>
+        /// Sets the interpolation value.
+        /// </summary>
+        public void SetInterpolation(ushort value)
+        {
+            if (value < 1)
+                value = 1;
+            
+            _interpolation = value;
+        }
+
+        /// <summary>
+        /// Sets the extrapolation value.
+        /// </summary>
+        public void SetExtrapolation(ushort value)
+        {
+            _extrapolation = value;
+        }
+
+        /// <summary>
         /// Returns if controlling logic can be run. This may be the server when there is no owner, even if client authoritative, and more.
         /// </summary>
         /// <returns></returns>
@@ -979,15 +1000,12 @@ namespace FishNet.Component.Transforming
         {
             //Client auth.
             if (_clientAuthoritative)
-            {
                 return IsController;
-            }
+
+
             //Server auth.
-            else
-            {
-                if (IsServerInitialized)
-                    return true;
-            }
+            if (IsServerInitialized)
+                return true;
 
             //Fall through.
             return false;
@@ -1625,8 +1643,7 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    
-                        /* If everything matches up then end queue.
+                    /* If everything matches up then end queue.
                          * Otherwise let it play out until stuff
                          * aligns. Generally the time remaining is enough
                          * but every once in awhile something goes funky
@@ -1634,8 +1651,7 @@ namespace FishNet.Component.Transforming
                         if (!HasChanged(td))
                             _currentGoalData = null;
                         OnInterpolationComplete?.Invoke();
-                        
-                }
+                        }
             }
         }
 
@@ -2135,13 +2151,12 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets extrapolation data on next.
         /// </summary>
-        private void SetExtrapolation(TransformData prev, TransformData next, Channel channel)
+        private void SetExtrapolatedData(TransformData prev, TransformData next, Channel channel)
         {
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            
-        }
+            }
 
         /// <summary>
         /// Updates a client with transform data.
@@ -2224,7 +2239,7 @@ namespace FishNet.Component.Transforming
             UpdateTransformData(data, prevTd, nextTd, ref changedFull);
 
             OnDataReceived?.Invoke(prevTd, nextTd);
-            SetExtrapolation(prevTd, nextTd, channel);
+            SetExtrapolatedData(prevTd, nextTd, channel);
 
             bool hasChanged = HasChanged(prevTd, nextTd);
 

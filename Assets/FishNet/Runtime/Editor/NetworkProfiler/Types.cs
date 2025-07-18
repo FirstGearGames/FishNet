@@ -59,7 +59,16 @@ namespace FishNet.Editing
 
             return traffic;
         }
-        
+
+        /// <summary>
+        /// Re-initializes by calling ResetState, then InitializeState.
+        /// </summary>
+        public void Reinitialize() 
+        {
+            ResetState();
+            InitializeState();
+        }
+
         public void ResetState()
         {
             ResettableObjectCaches<NetworkTraffic>.StoreAndDefault(ref InboundTraffic);
@@ -234,6 +243,7 @@ namespace FishNet.Editing
 
         public void ResetState()
         {
+            Bytes = 0;
             ResettableT2CollectionCaches<PacketId, PacketGroup>.StoreAndDefault(ref _packetGroups);
         }
 

@@ -44,14 +44,11 @@ namespace FishNet.Transporting.Yak.Server
             return true;
         }
 
-        
-
         /// <summary>
         /// Stops the local socket.
         /// </summary>
         internal bool StopConnection()
         {
-            
             return true;
         }
 
@@ -61,18 +58,10 @@ namespace FishNet.Transporting.Yak.Server
         /// <param name = "connectionId">ConnectionId of the client to disconnect.</param>
         internal bool StopConnection(int connectionId)
         {
-            
             return true;
         }
 
-        
-
-        
-
         #region Local client.
-        
-
-        
         #endregion
     }
 }
