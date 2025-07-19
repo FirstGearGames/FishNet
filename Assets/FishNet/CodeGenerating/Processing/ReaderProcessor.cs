@@ -595,6 +595,17 @@ namespace FishNet.CodeGenerating.Helping
 
             return readMethodRef;
         }
+
+        /// <summary>
+        /// Gets an existing reader method or creates one with enhanced context information.
+        /// </summary>
+        internal MethodReference GetOrCreateReadMethodReference(TypeReference typeRef, SerializationContext context)
+        {
+            // Convert context to legacy string format for backward compatibility
+            string typeTrace = context.GetTraceString();
+            return GetOrCreateReadMethodReference(typeRef, typeTrace);
+        }
+
         #endregion
 
         /// <summary>
@@ -959,7 +970,14 @@ namespace FishNet.CodeGenerating.Helping
                 GetClass<GeneralHelper>().SetVariableDefinitionFromObject(processor, objectVariableDef, objectTypeDef);
             }
 
-            if (!ReadFieldsAndProperties(createdReaderMd, readerParameterDef, objectVariableDef, objectTr))
+            // Create context for class/struct serialization
+            var classStructContext = new SerializationContext(SerializationSource.NestedField)
+            {
+                DeclaringType = objectTypeDef,
+                AdditionalInfo = $"class/struct '{objectTypeDef.Name}'"
+            };
+
+            if (!ReadFieldsAndProperties(createdReaderMd, readerParameterDef, objectVariableDef, objectTr, classStructContext))
                 return null;
             /* // codegen scriptableobjects seem to climb too high up to UnityEngine.Object when
              * creating serializers/deserialized. Make sure this is not possible. */
@@ -974,7 +992,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Reads all fields of objectTypeRef.
         /// </summary>
-        private bool ReadFieldsAndProperties(MethodDefinition readerMd, ParameterDefinition readerPd, VariableDefinition encasingValueVd, TypeReference objectTr)
+        private bool ReadFieldsAndProperties(MethodDefinition readerMd, ParameterDefinition readerPd, VariableDefinition encasingValueVd, TypeReference objectTr, SerializationContext context)
         {
             ReaderProcessor rp = GetClass<ReaderProcessor>();
 
@@ -982,24 +1000,35 @@ namespace FishNet.CodeGenerating.Helping
             if (objectTr.Module != Module)
                 objectTr = ImportReference(objectTr.CachedResolve(Session));
 
-            string traceText;
-            
             // Fields.
             foreach (FieldDefinition fieldDef in objectTr.FindAllSerializableFields(Session, EXCLUDED_AUTO_SERIALIZER_TYPES, EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                traceText = FieldDefinitionTraceText(fieldDef);
-                
+                // Create nested context for this field
+                var fieldContext = new SerializationContext(SerializationSource.NestedField)
+                {
+                    DeclaringType = fieldDef.DeclaringType,
+                    DeclaringField = fieldDef,
+                    AdditionalInfo = $"field '{fieldDef.Name}' (of type '{fieldDef.FieldType.Name}') in class '{fieldDef.DeclaringType.Name}'",
+                    ParentContext = context
+                };
+
                 FieldReference importedFr = ImportReference(fieldDef);
-                if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr, traceText))
+                if (GetReadMethod(fieldDef.FieldType, out MethodReference readMr, fieldContext))
                     rp.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, encasingValueVd, importedFr);
             }
 
             // Properties.
             foreach (PropertyDefinition propertyDef in objectTr.FindAllSerializableProperties(Session, EXCLUDED_AUTO_SERIALIZER_TYPES, EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                traceText = PropertyDefinitionTraceText(propertyDef);
-                
-                if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr, traceText))
+                // Create nested context for this property
+                var propertyContext = new SerializationContext(SerializationSource.NestedField)
+                {
+                    DeclaringType = propertyDef.DeclaringType,
+                    AdditionalInfo = $"property '{propertyDef.Name}' (of type '{propertyDef.PropertyType.Name}') in class '{propertyDef.DeclaringType.Name}'",
+                    ParentContext = context
+                };
+
+                if (GetReadMethod(propertyDef.PropertyType, out MethodReference readMr, propertyContext))
                 {
                     MethodReference setMr = Module.ImportReference(propertyDef.SetMethod);
                     rp.CreateReadIntoClassOrStruct(readerMd, readerPd, readMr, encasingValueVd, setMr, propertyDef.PropertyType);
@@ -1007,10 +1036,10 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             // Gets or creates writer method and outputs it. Returns true if method is found or created.
-            bool GetReadMethod(TypeReference tr, out MethodReference readMr, string lTraceText)
+            bool GetReadMethod(TypeReference tr, out MethodReference readMr, SerializationContext lContext)
             {
                 tr = ImportReference(tr);
-                readMr = rp.GetOrCreateReadMethodReference(tr, lTraceText);
+                readMr = rp.GetOrCreateReadMethodReference(tr, lContext);
                 return readMr != null;
             }
 
