@@ -692,7 +692,7 @@ namespace FishNet.CodeGenerating.Helping
             // Fall through, no matches.
             return false;
         }
-        
+
         /// <summary>
         /// Returns if fieldDef has a NonSerialized attribute.
         /// </summary>

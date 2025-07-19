@@ -297,9 +297,9 @@ namespace FishNet.CodeGenerating.Helping
             if (!result && createMissing)
             {
                 if (!GetClass<GeneralHelper>().HasNonSerializableAttribute(typeRef.CachedResolve(Session)))
-                { 
+                {
                     string traceText = TypeReferenceTraceText(typeRef);
-                    
+
                     MethodReference methodRef = CreateWriter(typeRef, traceText);
                     result = methodRef != null;
                 }
@@ -394,6 +394,17 @@ namespace FishNet.CodeGenerating.Helping
 
             return writeMethodRef;
         }
+
+        /// <summary>
+        /// Gets an existing writer method or creates one with enhanced context information.
+        /// </summary>
+        internal MethodReference GetOrCreateWriteMethodReference(TypeReference typeRef, SerializationContext context)
+        {
+            // Convert context to legacy string format for backward compatibility
+            string traceText = context.GetTraceString();
+            return GetOrCreateWriteMethodReference(typeRef, traceText);
+        }
+
         #endregion
 
         /// <summary>
@@ -846,7 +857,16 @@ namespace FishNet.CodeGenerating.Helping
 
             // Write all fields for the class or struct.
             ParameterDefinition valueParameterDef = createdWriterMd.Parameters[1];
-            if (!WriteFieldsAndProperties(createdWriterMd, valueParameterDef, objectTr))
+
+            // Create context for class/struct serialization
+            TypeDefinition objectTypeDef = objectTr.CachedResolve(Session);
+            var classStructContext = new SerializationContext(SerializationSource.NestedField)
+            {
+                DeclaringType = objectTypeDef,
+                AdditionalInfo = $"class/struct '{objectTypeDef.Name}'"
+            };
+
+            if (!WriteFieldsAndProperties(createdWriterMd, valueParameterDef, objectTr, classStructContext))
                 return null;
 
             processor.Emit(OpCodes.Ret);
@@ -859,7 +879,7 @@ namespace FishNet.CodeGenerating.Helping
         /// <param name = "objectTr"></param>
         /// <param name = "processor"></param>
         /// <returns>false if fail</returns>
-        private bool WriteFieldsAndProperties(MethodDefinition generatedWriteMd, ParameterDefinition encasingValuePd, TypeReference objectTr)
+        private bool WriteFieldsAndProperties(MethodDefinition generatedWriteMd, ParameterDefinition encasingValuePd, TypeReference objectTr, SerializationContext context)
         {
             WriterProcessor wh = GetClass<WriterProcessor>();
 
@@ -870,25 +890,31 @@ namespace FishNet.CodeGenerating.Helping
             // Fields
             foreach (FieldDefinition fieldDef in objectTr.FindAllSerializableFields(Session)) // , WriterHelper.EXCLUDED_AUTO_SERIALIZER_TYPES))
             {
-                TypeReference tr;
-                if (fieldDef.FieldType.IsGenericInstance)
+                // Create nested context for this field
+                var fieldContext = new SerializationContext(SerializationSource.NestedField)
                 {
-                    GenericInstanceType genericTr = (GenericInstanceType)fieldDef.FieldType;
-                    tr = genericTr.GenericArguments[0];
-                }
-                else
-                {
-                    tr = fieldDef.FieldType;
-                }
+                    DeclaringType = fieldDef.DeclaringType,
+                    DeclaringField = fieldDef,
+                    AdditionalInfo = $"field '{fieldDef.Name}' (of type '{fieldDef.FieldType.Name}') in class '{fieldDef.DeclaringType.Name}'",
+                    ParentContext = context
+                };
 
-                if (GetWriteMethod(fieldDef.FieldType, out MethodReference writeMr))
+                if (GetWriteMethod(fieldDef.FieldType, out MethodReference writeMr, fieldContext))
                     wh.CreateWrite(generatedWriteMd, encasingValuePd, fieldDef, writeMr);
             }
 
             // Properties.
             foreach (PropertyDefinition propertyDef in objectTr.FindAllSerializableProperties(Session, EXCLUDED_AUTO_SERIALIZER_TYPES, EXCLUDED_ASSEMBLY_PREFIXES))
             {
-                if (GetWriteMethod(propertyDef.PropertyType, out MethodReference writerMr))
+                // Create nested context for this property
+                var propertyContext = new SerializationContext(SerializationSource.NestedField)
+                {
+                    DeclaringType = propertyDef.DeclaringType,
+                    AdditionalInfo = $"property '{propertyDef.Name}' (of type '{propertyDef.PropertyType.Name}') in class '{propertyDef.DeclaringType.Name}'",
+                    ParentContext = context
+                };
+
+                if (GetWriteMethod(propertyDef.PropertyType, out MethodReference writerMr, propertyContext))
                 {
                     MethodReference getMr = Module.ImportReference(propertyDef.GetMethod);
                     wh.CreateWrite(generatedWriteMd, encasingValuePd, getMr, writerMr);
@@ -896,10 +922,10 @@ namespace FishNet.CodeGenerating.Helping
             }
 
             // Gets or creates writer method and outputs it. Returns true if method is found or created.
-            bool GetWriteMethod(TypeReference tr, out MethodReference writeMr)
+            bool GetWriteMethod(TypeReference tr, out MethodReference writeMr, SerializationContext lContext)
             {
                 tr = ImportReference(tr);
-                writeMr = wh.GetOrCreateWriteMethodReference(tr, TypeReferenceTraceText(objectTr));
+                writeMr = wh.GetOrCreateWriteMethodReference(tr, lContext);
                 return writeMr != null;
             }
 
