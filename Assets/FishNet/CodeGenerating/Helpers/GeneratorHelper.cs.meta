@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 9b1882eac63e3d94aad8f41915bc1ab8
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 287711
+  packageName: 'FishNet Pro: Networking Evolved'
+  packageVersion: 4.6.2R Pro
+  assetPath: Assets/FishNet/CodeGenerating/Helpers/Typed/GeneratorHelper.cs
+  uploadId: 737116
