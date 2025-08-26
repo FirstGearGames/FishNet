@@ -269,7 +269,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
              * Doing this does risk a chance of graphical jitter in the
              * scenario a de-synchronization occurs, but if only predicting
              * a couple ticks the chances are low. */
-            // See https:// fish-networking.gitbook.io/docs/manual/guides/prediction/version-2/creating-code/predicting-states
+            // See https://fish-networking.gitbook.io/docs/manual/guides/prediction/version-2/creating-code/predicting-states
             if (!IsServerStarted && !IsOwner)
             {
                 /* If ticked then set last ticked value.

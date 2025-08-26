@@ -7,7 +7,7 @@ namespace GameKit.Dependencies.Utilities
     public static class Layers
     {
         /* GetInteractableLayer methods is an implementation from this
-         * link: https:// forum.unity.com/threads/is-there-a-way-to-get-the-layer-collision-matrix.260744/#post-3483886 */
+         * link: https://forum.unity.com/threads/is-there-a-way-to-get-the-layer-collision-matrix.260744/#post-3483886 */
         /// <summary>
         /// Lookup of interactable layers for each layer.
         /// </summary>

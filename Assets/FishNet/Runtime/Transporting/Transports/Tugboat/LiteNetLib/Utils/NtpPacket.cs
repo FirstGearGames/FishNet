@@ -20,7 +20,7 @@ namespace LiteNetLib.Utils
     ///     which is not part of the packet on network and it is instead set locally after receiving the packet.
     ///     </para>
     ///     <para>
-    ///     Copied from <a href = "https:// guerrillantp.machinezoo.com/">GuerrillaNtp project</a>
+    ///     Copied from <a href = "https://guerrillantp.machinezoo.com/">GuerrillaNtp project</a>
     ///     with permission from Robert Vazan (@robertvazan) under MIT license, see https://github.com/RevenantX/LiteNetLib/pull/236
     ///     </para>
     /// </remarks>

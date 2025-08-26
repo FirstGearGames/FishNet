@@ -4,8 +4,8 @@ using UnityEngine;
 namespace FishNet.Serializing.Helping
 {
     /// <summary>
-    /// Credit to https:// github.com/viliwonka
-    /// https:// github.com/FirstGearGames/FishNet/pull/23
+    /// Credit to https://github.com/viliwonka
+    /// https://github.com/FirstGearGames/FishNet/pull/23
     /// </summary>
     public static class Quaternion64Compression
     {

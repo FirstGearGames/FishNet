@@ -75,7 +75,7 @@ namespace FishNet.Editing
 
             if (GUILayout.Button("Leave us a review!", _reviewButtonStyle))
             {
-                Application.OpenURL("https:// assetstore.unity.com/packages/tools/network/fish-net-networking-evolved-207815");
+                Application.OpenURL("https://assetstore.unity.com/packages/tools/network/fish-net-networking-evolved-207815");
             }
 
             GUILayout.Space(20);
@@ -83,31 +83,31 @@ namespace FishNet.Editing
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Documentation", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https:// fish-networking.gitbook.io/docs/");
+                Application.OpenURL("https://fish-networking.gitbook.io/docs/");
             }
 
             if (GUILayout.Button("Discord", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https:// discord.gg/Ta9HgDh4Hj");
+                Application.OpenURL("https://discord.gg/Ta9HgDh4Hj");
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("FishNet Pro", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https:// fish-networking.gitbook.io/docs/master/pro");
+                Application.OpenURL("https://fish-networking.gitbook.io/docs/master/pro");
             }
 
             if (GUILayout.Button("Github", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https:// github.com/FirstGearGames/FishNet");
+                Application.OpenURL("https://github.com/FirstGearGames/FishNet");
             }
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Pro Downloads", GUILayout.Width(position.width * 0.485f)))
             {
-                Application.OpenURL("https:// www.firstgeargames.com/");
+                Application.OpenURL("https://www.fish-networking.com/");
             }
 
             // if (GUILayout.Button("Examples", GUILayout.Width(this.position.width * 0.485f)))
