@@ -31,7 +31,7 @@ namespace MonoFN.Cecil.PE
 
         public int GetHashCode(ByteBuffer buffer)
         {
-            // See http:// en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
+            // See http://en.wikipedia.org/wiki/Fowler%E2%80%93Noll%E2%80%93Vo_hash_function
             const int fnv_offset_bias = unchecked((int)2166136261);
             const int fnv_prime = 16777619;
 

@@ -19,7 +19,7 @@ namespace FishNet.Managing.Scened
         public bool AllowStacking;
         /// <summary>
         /// LocalPhysics mode to use when loading this scene. Generally this will only be used when applying scene stacking. Only used by the server.
-        /// https:// docs.unity3d.com/ScriptReference/SceneManagement.LocalPhysicsMode.html
+        /// https://docs.unity3d.com/ScriptReference/SceneManagement.LocalPhysicsMode.html
         /// </summary>
         [System.NonSerialized]
         public LocalPhysicsMode LocalPhysics = LocalPhysicsMode.None;

@@ -32,7 +32,7 @@ namespace MonoFN.Cecil
                 var publicKey = new byte [12 + cspBlob.Length];
                 Buffer.BlockCopy(cspBlob, 0, publicKey, 12, cspBlob.Length);
                 // The first 12 bytes are documented at:
-                // http:// msdn.microsoft.com/library/en-us/cprefadd/html/grfungethashfromfile.asp
+                // http://msdn.microsoft.com/library/en-us/cprefadd/html/grfungethashfromfile.asp
                 // ALG_ID - Signature
                 publicKey[1] = 36;
                 // ALG_ID - Hash

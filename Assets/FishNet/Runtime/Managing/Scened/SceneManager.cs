@@ -1225,7 +1225,7 @@ namespace FishNet.Managing.Scened
                 bool allScenesLoaded;
                 do
                 {
-                    // Reset state for iteration https:// github.com/FirstGearGames/FishNet/issues/322
+                    // Reset state for iteration https://github.com/FirstGearGames/FishNet/issues/322
                     allScenesLoaded = true;
                     foreach (Scene s in loadedScenes)
                     {

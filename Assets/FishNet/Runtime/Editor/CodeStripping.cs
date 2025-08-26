@@ -67,7 +67,7 @@ namespace FishNet.Configuring
             }
 
         /* Solution for builds ending with errors and not triggering OnPostprocessBuild.
-         * Link: https:// gamedev.stackexchange.com/questions/181611/custom-build-failure-callback
+         * Link: https://gamedev.stackexchange.com/questions/181611/custom-build-failure-callback
          */
         private void CompilationPipelineOnCompilationStarted(object compilationContext)
         {
