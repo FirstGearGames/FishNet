@@ -60,6 +60,7 @@ namespace FishNet.Object
         /// NetworkObject this behaviour is for.
         /// </summary>
         public NetworkObject NetworkObject => _networkObjectCache;
+        public static implicit operator NetworkObject(NetworkBehaviour nb) => nb._networkObjectCache;
         #endregion
 
         #region Private.
