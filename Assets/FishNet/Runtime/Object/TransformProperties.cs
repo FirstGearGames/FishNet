@@ -143,6 +143,22 @@ namespace FishNet.Object
         /// </summary>
         public static TransformProperties GetTransformDefault() => new(Vector3.zero, Quaternion.identity, Vector3.one);
 
+        public static TransformProperties operator +(TransformProperties a, TransformProperties b)
+        {
+            return new TransformProperties(
+                a.Position + b.Position,
+                a.Rotation * b.Rotation,
+                a.Scale + b.Scale);
+        }
+        
+        public static TransformProperties operator -(TransformProperties a, TransformProperties b)
+        {
+            return new TransformProperties(
+                a.Position - b.Position,
+                a.Rotation * Quaternion.Inverse(b.Rotation),
+                a.Scale - b.Scale);
+        }
+        
         public override string ToString()
         {
             return $"Position: {Position.ToString()}, Rotation {Rotation.ToString()}, Scale {Scale.ToString()}";

@@ -21,30 +21,13 @@ namespace FishNet.Component.Transforming.Beta
         {
             public readonly uint Tick;
             public readonly TransformProperties Properties;
+            public readonly TransformProperties FixedOffset;
 
-            public TickTransformProperties(uint tick, Transform t)
+            public TickTransformProperties(uint tick, TransformProperties properties, TransformProperties fixedOffset)
             {
                 Tick = tick;
-                Properties = new(t.localPosition, t.localRotation, t.localScale);
-            }
-
-            public TickTransformProperties(uint tick, Transform t, Vector3 localScale)
-            {
-                Tick = tick;
-                Properties = new(t.localPosition, t.localRotation, localScale);
-            }
-
-            public TickTransformProperties(uint tick, TransformProperties tp)
-            {
-                Tick = tick;
-                Properties = tp;
-            }
-
-            public TickTransformProperties(uint tick, TransformProperties tp, Vector3 localScale)
-            {
-                Tick = tick;
-                tp.Scale = localScale;
-                Properties = tp;
+                Properties = properties;
+                FixedOffset = fixedOffset;
             }
         }
         #endregion
@@ -73,6 +56,10 @@ namespace FishNet.Component.Transforming.Beta
         /// World values of the graphical after it's been aligned to initialized values in PreTick.
         /// </summary>
         private TransformProperties _graphicsPreTickWorldValues;
+        /// <summary>
+        /// Fixed Offset of World values of the graphical after it's been accumulated in PostTick.
+        /// </summary>
+        private TransformProperties _graphicsPostTickFixedOffsetWorldValues;
         /// <summary>
         /// Cached value of adaptive interpolation value.
         /// </summary>
@@ -123,6 +110,109 @@ namespace FishNet.Component.Transforming.Beta
         /// TimeManager tickDelta.
         /// </summary>
         private float _tickDelta;
+        /// <summary>
+        /// Ring buffer entry for externally provided (non-interpolated) fixed offsets per tick.
+        /// </summary>
+        private struct FixedOffsetEntry { public uint Tick; public TransformProperties Sum; }
+        /// <summary>
+        /// Buffer of fixed offsets. Size should cover interpolation window + network jitter.
+        /// </summary>
+        private readonly FixedOffsetEntry[] _fixedOffsets = new FixedOffsetEntry[128];
+
+        private TransformProperties _currentAccumulatedOffset;
+        
+        /// <summary>
+        /// Adds a world-space offset that must NOT be smoothed for the specified tick.
+        /// Offsets are accumulated within a tick.
+        /// </summary>
+        public void AddFixedOffset(uint tick, TransformProperties worldDelta)
+        {
+            // Ignore when tick is invalid.
+            if (tick == TimeManager.UNSET_TICK)
+                return;
+            int i = (int)(tick % (uint)_fixedOffsets.Length);
+            if (_fixedOffsets[i].Tick != tick)
+                _fixedOffsets[i] = new FixedOffsetEntry { Tick = tick, Sum = worldDelta };
+            else
+                _fixedOffsets[i].Sum += worldDelta;
+        }
+
+        /// <summary>
+        /// Consumes (reads and clears) accumulated fixed offset for a tick.
+        /// </summary>
+        private TransformProperties ConsumeFixedOffset(uint tick)
+        {
+            if (tick == TimeManager.UNSET_TICK)
+                return default;
+            int i = (int)(tick % (uint)_fixedOffsets.Length);
+            if (_fixedOffsets[i].Tick == tick)
+            {
+                TransformProperties v = _fixedOffsets[i].Sum;
+                _fixedOffsets[i].Sum = default;
+                return v;
+            }
+            return default;
+        }
+
+        /// <summary>
+        /// Axis-wise clamps fixedDelta against totalDelta: does not flip sign and does not exceed magnitude per axis.
+        /// Components of totalDelta that are ~0 cause clamping to 0 on that axis.
+        /// </summary>
+        private static TransformProperties AxiswiseClamp(TransformProperties fixedDelta, TransformProperties totalDelta)
+        {
+            var pos = new Vector3(
+                Clamp1(fixedDelta.Position.x, totalDelta.Position.x),
+                Clamp1(fixedDelta.Position.y, totalDelta.Position.y),
+                Clamp1(fixedDelta.Position.z, totalDelta.Position.z));
+            
+            
+            var rf = fixedDelta.Rotation;
+            var rt = totalDelta.Rotation;
+            if (rf == default) rf = Quaternion.identity;
+            if (rt == default) rt = Quaternion.identity;
+
+            rf.ToAngleAxis(out var aF, out var axF);
+            rt.ToAngleAxis(out var aT, out var axT);
+            
+            aF = Mathf.DeltaAngle(0f, aF);
+            aT = Mathf.DeltaAngle(0f, aT);
+
+            Quaternion rotDelta;
+            if (Mathf.Abs(aT) < 1e-6f || axT == Vector3.zero)
+            {
+                rotDelta = Quaternion.identity;
+            }
+            else
+            {
+                var sign = Mathf.Sign(Vector3.Dot(axF, axT));
+                var signedF = aF * sign;
+
+                var clampedAngle = Clamp1(signedF, aT);
+                if (Mathf.Abs(clampedAngle) < 1e-6f)
+                    rotDelta = Quaternion.identity;
+                else
+                {
+                    var s = Mathf.Sign(clampedAngle);
+                    rotDelta = Quaternion.AngleAxis(Mathf.Abs(clampedAngle), axT * s);
+                }
+            }
+            
+            var scale = new Vector3(
+                Clamp1(fixedDelta.Scale.x, totalDelta.Scale.x),
+                Clamp1(fixedDelta.Scale.y, totalDelta.Scale.y),
+                Clamp1(fixedDelta.Scale.z, totalDelta.Scale.z)
+            );
+
+            return new TransformProperties(pos, rotDelta, scale);
+
+            static float Clamp1(float f, float t)
+            {
+                if (Mathf.Abs(t) < 1e-6f) return 0f;
+                if (Math.Abs(Mathf.Sign(f) - Mathf.Sign(t)) >= 1e-6f) return 0f;
+                return Mathf.Sign(t) * Mathf.Min(Mathf.Abs(f), Mathf.Abs(t));
+            }
+        }
+        
         /// <summary>
         /// NetworkBehaviour this is initialized for. Value may be null.
         /// </summary>
@@ -553,18 +643,27 @@ namespace FishNet.Component.Transforming.Beta
                 return;
             if (clientTick <= _teleportedTick)
                 return;
-
+            
             //If preticked then previous transform values are known.
             if (_preTicked)
             {
-                DiscardExcessiveTransformPropertiesQueue();
-
+                var trackerProps = GetTrackerWorldProperties();
+                var fixedOffset = default(TransformProperties);
+                
+                // Apply non-interpolated fixed offsets for this tick (if any).
+                var fixedDelta = ConsumeFixedOffset(clientTick);
+                // Total delta for the tick (tracker vs pre-tick graphics).
+                var totalDelta = trackerProps - _graphicsPreTickWorldValues;
+                var clamped = AxiswiseClamp(fixedDelta, totalDelta);
+                fixedOffset += clamped;
+                
                 //Only needs to be put to pretick position if not detached.
                 if (!_detachOnStart)
-                    _graphicalTransform.SetWorldProperties(_graphicsPreTickWorldValues);
-
+                    _graphicalTransform.SetWorldProperties(_graphicsPreTickWorldValues + fixedOffset);
+                
+                DiscardExcessiveTransformPropertiesQueue();
                 //SnapNonSmoothedProperties();
-                AddTransformProperties(clientTick);
+                AddTransformProperties(clientTick, trackerProps, fixedOffset);
             }
             //If did not pretick then the only thing we can do is snap to instantiated values.
             else
@@ -647,22 +746,27 @@ namespace FishNet.Component.Transforming.Beta
             //If there are entries to dequeue.
             if (dequeueCount > 0)
             {
-                TickTransformProperties tpp = default;
+                TickTransformProperties ttp = default;
                 for (int i = 0; i < dequeueCount; i++)
-                    tpp = _transformProperties.Dequeue();
+                {
+                    ttp = _transformProperties.Dequeue();
+                    _currentAccumulatedOffset -= ttp.FixedOffset;
+                }
 
-                SetMoveRates(tpp.Properties);
+                var nextValues = ttp.Properties + ttp.FixedOffset;
+                SetMoveRates(nextValues);
             }
         }
 
         /// <summary>
         /// Adds a new transform properties and sets move rates if needed.
         /// </summary>
-        private void AddTransformProperties(uint tick)
+        private void AddTransformProperties(uint tick, TransformProperties properties, TransformProperties fixedOffset)
         {
-            TickTransformProperties tpp = new(tick, GetTrackerWorldProperties());
-            _transformProperties.Enqueue(tpp);
-
+            TickTransformProperties ttp = new(tick, properties, fixedOffset);
+            _transformProperties.Enqueue(ttp);
+            _currentAccumulatedOffset += fixedOffset;
+            
             //If first entry then set move rates.
             if (_transformProperties.Count == 1)
             {
@@ -715,7 +819,9 @@ namespace FishNet.Component.Transforming.Beta
                         newProperties.Scale = Vector3.Lerp(oldProperties.Scale, newProperties.Scale, easePercent);
                     }
 
-                    _transformProperties[index] = new(tick, newProperties);
+                    _currentAccumulatedOffset -= _transformProperties[index].FixedOffset;
+                    // TODO: set fixedOffset to default maybe can be a problem
+                    _transformProperties[index] = new(tick, newProperties, default);
                 }
             }
             else
@@ -761,7 +867,8 @@ namespace FishNet.Component.Transforming.Beta
                 return;
             }
 
-            TransformProperties nextValues = _transformProperties.Peek().Properties;
+            TickTransformProperties ttp = _transformProperties.Peek();
+            TransformProperties nextValues = ttp.Properties + ttp.FixedOffset;
 
             float duration = _tickDelta;
 
@@ -839,10 +946,11 @@ namespace FishNet.Component.Transforming.Beta
             }
 
             TickTransformProperties ttp = _transformProperties.Peek();
-
+            TransformProperties properties = ttp.Properties + _currentAccumulatedOffset;
+            
             TransformPropertiesFlag smoothedProperties = _cachedSmoothedProperties;
 
-            _moveRates.Move(_graphicalTransform, ttp.Properties, smoothedProperties, delta * _movementMultiplier, useWorldSpace: true);
+            _moveRates.Move(_graphicalTransform, properties, smoothedProperties, delta * _movementMultiplier, useWorldSpace: true);
 
             float tRemaining = _moveRates.TimeRemaining;
             //if TimeLeft is <= 0f then transform is at goal. Grab a new goal if possible.
@@ -850,11 +958,12 @@ namespace FishNet.Component.Transforming.Beta
             {
                 //Dequeue current entry and if there's another call a move on it.
                 _transformProperties.Dequeue();
+                _currentAccumulatedOffset -= ttp.FixedOffset;
 
                 //If there are entries left then setup for the next.
                 if (_transformProperties.Count > 0)
                 {
-                    SetMoveRates(ttp.Properties);
+                    SetMoveRates(properties);
                     //If delta is negative then call move again with abs.
                     if (tRemaining < 0f)
                         MoveToTarget(Mathf.Abs(tRemaining));
