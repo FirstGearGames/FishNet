@@ -117,8 +117,7 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// Buffer of fixed offsets. Size should cover interpolation window + network jitter.
         /// </summary>
-        private readonly FixedOffsetEntry[] _fixedOffsets = new FixedOffsetEntry[128];
-
+        private FixedOffsetEntry[] _fixedOffsets;
         private TransformProperties _currentAccumulatedOffset;
         
         /// <summary>
@@ -379,6 +378,8 @@ namespace FishNet.Component.Transforming.Beta
             if (!TransformsAreValid(graphicalTransform, targetTransform))
                 return;
 
+            _fixedOffsets = CollectionCaches<FixedOffsetEntry>.RetrieveArray();
+            Array.Resize(ref _fixedOffsets, 128);
             _transformProperties = CollectionCaches<TickTransformProperties>.RetrieveBasicQueue();
             _controllerMovementSettings = ownerSettings;
             _spectatorMovementSettings = spectatorSettings;
@@ -731,6 +732,7 @@ namespace FishNet.Component.Transforming.Beta
         private void ClearTransformPropertiesQueue()
         {
             _transformProperties.Clear();
+            _currentAccumulatedOffset = default;
             //Also unset move rates since there is no more queue.
             _moveRates = new(MoveRates.UNSET_VALUE);
         }
@@ -1028,7 +1030,9 @@ namespace FishNet.Component.Transforming.Beta
 
             _teleportedTick = TimeManager.UNSET_TICK;
             _movementMultiplier = 1f;
+            CollectionCaches<FixedOffsetEntry>.StoreAndDefault(ref _fixedOffsets, 128);
             CollectionCaches<TickTransformProperties>.StoreAndDefault(ref _transformProperties);
+            _currentAccumulatedOffset = default;
             _moveRates = default;
             _preTicked = default;
             _queuedTrackerProperties = null;
