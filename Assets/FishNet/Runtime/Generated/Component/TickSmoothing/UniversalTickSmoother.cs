@@ -114,12 +114,10 @@ namespace FishNet.Component.Transforming.Beta
         /// Ring buffer entry for externally provided (non-interpolated) fixed offsets per tick.
         /// </summary>
         private struct FixedOffsetEntry { public uint Tick; public TransformProperties Sum; }
-
         /// <summary>
         /// Buffer of fixed offsets. Size should cover interpolation window + network jitter.
         /// </summary>
         private FixedOffsetEntry[] _fixedOffsets;
-
         private TransformProperties _currentAccumulatedOffset;
         
         /// <summary>

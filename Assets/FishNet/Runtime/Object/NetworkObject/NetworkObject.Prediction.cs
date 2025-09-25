@@ -7,6 +7,7 @@ using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using FishNet.Component.Transforming.Beta;
 using FishNet.Connection;
 using FishNet.Managing.Server;
 using UnityEngine;
@@ -40,6 +41,21 @@ namespace FishNet.Object
         /// </summary>
         [Obsolete("This field will be removed in v5. Instead reference NetworkTickSmoother on each graphical object used.")]
         public TransformTickSmoother PredictionSmoother { get; private set; }
+
+        public bool TryGetTickSmootherControllersByTarget(Transform target,
+            out IReadOnlyList<TickSmootherController> tickSmootherControllers)
+        {
+            if (_tickSmoothersByTarget.TryGetValue(target, out var tickSmootherControllersRaw))
+            {
+                tickSmootherControllers = tickSmootherControllersRaw;
+                return true;
+            }
+
+            tickSmootherControllers = null;
+            return false;
+        }
+
+        
         #endregion
 
         #region Internal.
@@ -48,6 +64,38 @@ namespace FishNet.Object
         /// </summary>
         public RigidbodyPauser RigidbodyPauser => _rigidbodyPauser;
         private RigidbodyPauser _rigidbodyPauser;
+
+        /// <summary>
+        /// Registers a TickSmootherController for a given target transform.
+        /// Called from TickSmootherController when it becomes initialized online.
+        /// </summary>
+        internal void RegisterTickSmootherController(Transform target, TickSmootherController controller)
+        {
+            if (target == null || controller == null)
+                return;
+            if (!_tickSmoothersByTarget.TryGetValue(target, out var list))
+            {
+                list = new List<TickSmootherController>();
+                _tickSmoothersByTarget[target] = list;
+            }
+            if (!list.Contains(controller))
+                list.Add(controller);
+        }
+
+        /// <summary>
+        /// Unregisters a TickSmootherController for a given target transform.
+        /// </summary>
+        internal void UnregisterTickSmootherController(Transform target, TickSmootherController controller)
+        {
+            if (target == null || controller == null)
+                return;
+            if (_tickSmoothersByTarget.TryGetValue(target, out var list))
+            {
+                if (list.Remove(controller) && list.Count == 0)
+                    _tickSmoothersByTarget.Remove(target);
+            }
+        }
+        
         #endregion
 
         #region Serialized.
@@ -158,6 +206,9 @@ namespace FishNet.Object
         /// NetworkBehaviours which use prediction.
         /// </summary>
         private List<NetworkBehaviour> _predictionBehaviours = new();
+        
+        private readonly Dictionary<Transform, List<TickSmootherController>> _tickSmoothersByTarget = new();
+        
         #endregion
 
         private void TimeManager_OnUpdate_Prediction()
@@ -308,7 +359,7 @@ namespace FishNet.Object
 
             if (!asServer)
             {
-                if (TimeManager != null)
+                if (TimeManager)
                     TimeManager.OnUpdate -= TimeManager_Update;
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnStopClient();
