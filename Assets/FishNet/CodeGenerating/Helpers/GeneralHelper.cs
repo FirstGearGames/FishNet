@@ -1258,28 +1258,29 @@ namespace FishNet.CodeGenerating.Helping
                     foreach (FieldDefinition fieldDef in dataTr.FindAllSerializableFields(Session, null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
                     {
                         FieldReference fr = ImportReference(fieldDef);
-                        MethodDefinition recursiveMd = CreateEqualityComparer(fieldDef.FieldType);
+                        TypeReference fieldTypeRef = ImportReference( fieldDef.FieldType );
+                        MethodDefinition recursiveMd = CreateEqualityComparer(fieldTypeRef);
                         if (recursiveMd == null)
                             break;
                         processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
                         processor.Emit(OpCodes.Ldfld, fr);
                         processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
                         processor.Emit(OpCodes.Ldfld, fr);
-                        FinishTypeReferenceCompare(fieldDef.FieldType);
+                        FinishTypeReferenceCompare( fieldTypeRef );
                     }
 
                     // Properties.
                     foreach (PropertyDefinition propertyDef in dataTr.FindAllSerializableProperties(Session, null, WriterProcessor.EXCLUDED_ASSEMBLY_PREFIXES))
                     {
                         MethodReference getMr = Module.ImportReference(propertyDef.GetMethod);
-                        MethodDefinition recursiveMd = CreateEqualityComparer(getMr.ReturnType);
+                        MethodDefinition recursiveMd = CreateEqualityComparer( ImportReference( getMr.ReturnType ) );
                         if (recursiveMd == null)
                             break;
                         processor.Append(GetLoadParameterInstruction(comparerMd, v0Pd));
                         processor.Emit(OpCodes.Call, getMr);
                         processor.Append(GetLoadParameterInstruction(comparerMd, v1Pd));
                         processor.Emit(OpCodes.Call, getMr);
-                        FinishTypeReferenceCompare(propertyDef.PropertyType);
+                        FinishTypeReferenceCompare( ImportReference( propertyDef.PropertyType ) );
                     }
 
                     // Return true;
