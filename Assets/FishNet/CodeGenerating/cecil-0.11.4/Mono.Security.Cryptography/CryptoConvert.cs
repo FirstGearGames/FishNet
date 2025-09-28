@@ -4,8 +4,8 @@
 // Author:
 // 	Sebastien Pouliot  <sebastien@ximian.com>
 //
-// (C) 2003 Motus Technologies Inc. (http:// www.motus.com)
-// Copyright (C) 2004-2006 Novell Inc. (http:// www.novell.com)
+// (C) 2003 Motus Technologies Inc. (http://www.motus.com)
+// Copyright (C) 2004-2006 Novell Inc. (http://www.novell.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining
 // a copy of this software and associated documentation files (the
@@ -133,7 +133,7 @@ namespace MonoFN.Security.Cryptography
 
                 // ok, this is hackish but CryptoAPI support it so...
                 // note: only works because CRT is used by default
-                // http:// bugzilla.ximian.com/show_bug.cgi?id=57941
+                // http://bugzilla.ximian.com/show_bug.cgi?id=57941
                 rsap.D = new byte [byteLen]; // must be allocated
                 if (pos + byteLen + offset <= blob.Length)
                 {
@@ -157,7 +157,7 @@ namespace MonoFN.Security.Cryptography
             {
                 // this may cause problem when this code is run under
                 // the SYSTEM identity on Windows (e.g. ASP.NET). See
-                // http:// bugzilla.ximian.com/show_bug.cgi?id=77559
+                // http://bugzilla.ximian.com/show_bug.cgi?id=77559
                 bool throws = false;
                 try
                 {
@@ -220,7 +220,7 @@ namespace MonoFN.Security.Cryptography
                 {
                     // this may cause problem when this code is run under
                     // the SYSTEM identity on Windows (e.g. ASP.NET). See
-                    // http:// bugzilla.ximian.com/show_bug.cgi?id=77559
+                    // http://bugzilla.ximian.com/show_bug.cgi?id=77559
                     CspParameters csp = new();
                     csp.Flags = CspProviderFlags.UseMachineKeyStore;
                     rsa = new RSACryptoServiceProvider(csp);

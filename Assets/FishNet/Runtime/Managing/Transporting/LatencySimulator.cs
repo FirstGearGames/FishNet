@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Thanks to TiToMoskito originally creating this as a Transport.
-// https:// github.com/TiToMoskito/FishyLatency
+// https://github.com/TiToMoskito/FishyLatency
 namespace FishNet.Managing.Transporting
 {
     [Serializable]

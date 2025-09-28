@@ -101,7 +101,7 @@ namespace FishNet.Authenticating
         /// <summary>
         /// Sets a host hash of length.
         /// </summary>
-        /// https:// stackoverflow.com/questions/32932679/using-rngcryptoserviceprovider-to-generate-random-string
+        /// https://stackoverflow.com/questions/32932679/using-rngcryptoserviceprovider-to-generate-random-string
         private void SetHostHash(int length)
         {
             if (length <= 0)
