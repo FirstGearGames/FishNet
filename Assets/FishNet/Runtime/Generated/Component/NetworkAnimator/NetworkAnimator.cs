@@ -647,6 +647,7 @@ namespace FishNet.Component.Animating
             foreach (AnimatorControllerParameter item in _animator.parameters)
             {
                 bool process = !_animator.IsParameterControlledByCurve(item.name);
+                
                 if (process)
                 {
                     //Over 250 parameters; who would do this!?

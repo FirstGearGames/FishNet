@@ -25,20 +25,117 @@ namespace FishNet.Managing.Predicting
     public sealed class PredictionManager : MonoBehaviour
     {
         #region Types.
-        internal class StatePacketTick
+        /// <summary>
+        /// Responsible for throttling client reconcile amounts.
+        /// </summary>
+        internal class ClientReconcileThrottler
         {
-            public uint Client = TimeManager.UNSET_TICK;
-            public uint Server = TimeManager.UNSET_TICK;
+            /// <summary>
+            /// True if the last reconcile attempt was throttled.
+            /// </summary>
+            public bool WasLastAttemptThrottled { get; private set; }
+            /// <summary>
+            /// Last time a reconcile ran.
+            /// </summary>
+            private float _lastReconcileUnscaledTime;
+            /// <summary>
+            /// Number of frames passed.
+            /// </summary>
+            private ushort _accumulatedFrames;
+            /// <summary>
+            /// Last evaluated frame rate.
+            /// </summary>
+            private ushort _evaluatedFramerate;
+            /// <summary>
+            /// Total delta time added by frames since the last reset.
+            /// </summary>
+            private float _accumulatedDeltaTime;
+            /// <summary>
+            /// Value to use when no frames are recorded.
+            /// </summary>
+            private const ushort UNSET_FRAME_COUNT = 0;
+
+            /// <summary>
+            /// True if a reconcile can be performed and sets the next time a reconcile may occur if so.
+            /// </summary>
+            /// <returns></returns>
+            public bool TryReconcile(ushort minimumFrameRate)
+            {
+                //No frames are set -- allow reconcile.
+                if (_evaluatedFramerate == UNSET_FRAME_COUNT)
+                    return ReturnTrueAndUpdateValues();
+
+                if (_evaluatedFramerate >= minimumFrameRate)
+                    return ReturnTrueAndUpdateValues();
+
+                /* If here then frames are not met. */
+
+                //Enough time has passed since last reconcile to run another.
+                //Not enough time has passed.
+                if (Time.fixedUnscaledTime - _lastReconcileUnscaledTime >= 0.25f)
+                    return ReturnTrueAndUpdateValues();
+
+                /* Reconcile will not be performed if here. */
+
+                WasLastAttemptThrottled = true;
+                return false;
+
+                bool ReturnTrueAndUpdateValues()
+                {
+                    _lastReconcileUnscaledTime = Time.unscaledTime;
+                    WasLastAttemptThrottled = false;
+
+                    return true;
+                }
+            }
+
+            /// <summary>
+            /// Adds that a frame had occurred.
+            /// </summary>
+            public void AddFrame(float unscaledDeltaTime)
+            {
+                _accumulatedDeltaTime += unscaledDeltaTime;
+
+                if (_accumulatedFrames < ushort.MaxValue)
+                    _accumulatedFrames++;
+
+                /* Frames will only be updated every three seconds. */
+                if (_accumulatedDeltaTime < 3f)
+                    return;
+
+                //Update evaluated frame rate.
+                _evaluatedFramerate = _accumulatedFrames;
+
+                _accumulatedDeltaTime = 0f;
+                _accumulatedFrames = 0;
+            }
+
+            /// <summary>
+            /// Resets current values.
+            /// </summary>
+            public void ResetState()
+            {
+                _accumulatedDeltaTime = 0f;
+                _accumulatedFrames = UNSET_FRAME_COUNT;
+                WasLastAttemptThrottled = false;
+                _lastReconcileUnscaledTime = 0f;
+            }
+        }
+
+        private class StatePacketTick
+        {
+            private uint _client = TimeManager.UNSET_TICK;
+            private uint _server = TimeManager.UNSET_TICK;
             /// <summary>
             /// Returns if ticks are unset.
             /// Only client needs to be checked, as they both are set with non default at the same time.
             /// </summary>
-            public bool IsUnset => Client == TimeManager.UNSET_TICK;
+            public bool IsUnset => _client == TimeManager.UNSET_TICK;
 
             public void Update(uint client, uint server)
             {
-                Client = client;
-                Server = server;
+                _client = client;
+                _server = server;
             }
 
             /// <summary>
@@ -46,8 +143,53 @@ namespace FishNet.Managing.Predicting
             /// </summary>
             public void AddTick(uint quantity)
             {
-                Client += quantity;
-                Server += quantity;
+                _client += quantity;
+                _server += quantity;
+            }
+        }
+
+        internal class StatePacket : IResettable
+        {
+            public struct IncomingData
+            {
+                public ArraySegment<byte> Data;
+                public Channel Channel;
+
+                public IncomingData(ArraySegment<byte> data, Channel channel)
+                {
+                    Data = data;
+                    Channel = channel;
+                }
+            }
+
+            public List<IncomingData> Datas;
+            public uint ClientTick;
+            public uint ServerTick;
+
+            public void Update(ArraySegment<byte> data, uint clientTick, uint serverTick, Channel channel)
+            {
+                AddData(data, channel);
+                ServerTick = serverTick;
+                ClientTick = clientTick;
+            }
+
+            public void AddData(ArraySegment<byte> data, Channel channel)
+            {
+                if (data.Array != null)
+                    Datas.Add(new(data, channel));
+            }
+
+            public void ResetState()
+            {
+                for (int i = 0; i < Datas.Count; i++)
+                    ByteArrayPool.Store(Datas[i].Data.Array);
+
+                CollectionCaches<IncomingData>.StoreAndDefault(ref Datas);
+            }
+
+            public void InitializeState()
+            {
+                Datas = CollectionCaches<IncomingData>.RetrieveList();
             }
         }
         #endregion
@@ -143,36 +285,19 @@ namespace FishNet.Managing.Predicting
 
         #region Serialized.
         /// <summary>
+        /// True to reduce reconciles when frame rate drops below a threshold.
+        /// When frame rate drops below the specified value reconciles will be reduced to roughly 4-5 times a second.
         /// </summary>
-        [Tooltip("True to drop replicates from clients which are being received excessively. This can help with attacks but may cause client to temporarily desynchronize during connectivity issues. When false the server will hold at most up to 3 seconds worth of replicates, consuming multiple per tick to clear out the buffer quicker. This is good to ensure all inputs are executed but potentially could allow speed hacking.")]
+        [Tooltip("True to reduce reconciles when frame rate drops below a threshold. When frame rate drops below the specified value reconciles will be reduced to roughly 4-5 times a second.")]
         [SerializeField]
-        private bool _dropExcessiveReplicates = true;
+        private bool _reduceReconcilesWithFramerate = true;
         /// <summary>
-        /// True to drop replicates from clients which are being received excessively. This can help with attacks but may cause client to temporarily desynchronize during connectivity issues.
-        /// When false the server will hold at most up to 3 seconds worth of replicates, consuming multiple per tick to clear out the buffer quicker. This is good to ensure all inputs are executed but potentially could allow speed hacking.
+        /// Frame rate client must fall below to begin reducing how many reconciles the client runs locally.
         /// </summary>
-        internal bool DropExcessiveReplicates => _dropExcessiveReplicates;
-
-        /// <summary>
-        /// Sets the maximum number of replicates a server can queue per object.
-        /// </summary>
-        public void SetMaximumServerReplicates(byte value)
-        {
-            _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
-        }
-
-        /// <summary>
-        /// Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.
-        /// </summary>
-        public byte GetMaximumServerReplicates() => _maximumServerReplicates;
-
-        [Tooltip("Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.")]
+        [Tooltip("Frame rate client must fall below to begin reducing how many reconciles the client runs locally.")]
+        [Range(15, NetworkManager.MAXIMUM_FRAMERATE)]
         [SerializeField]
-        private byte _maximumServerReplicates = 15;
-        /// <summary>
-        /// No more than this value of replicates should be stored as a buffer.
-        /// </summary>
-        internal ushort MaximumPastReplicates => (ushort)(_networkManager.TimeManager.TickRate * 5);
+        private ushort _minimumClientReconcileFramerate = 50;
         /// <summary>
         /// True for the client to create local reconcile states. Enabling this feature allows reconciles to be sent less frequently and provides data to use for reconciles when packets are lost.
         /// </summary>
@@ -210,7 +335,7 @@ namespace FishNet.Managing.Predicting
         /// <param name = "stateOrder"></param>
         public void SetStateOrder(ReplicateStateOrder stateOrder)
         {
-            // Server doesnt use state order, exit early if server.
+            // Server doesn't use state order, exit early if server.
             if (_networkManager.IsServerStarted)
                 return;
             // Same as before, do nothing.
@@ -229,28 +354,38 @@ namespace FishNet.Managing.Predicting
         }
 
         /// <summary>
+        /// True to drop replicates from clients which are being received excessively. This can help with attacks but may cause client to temporarily desynchronize during connectivity issues.
+        /// When false the server will hold at most up to 3 seconds worth of replicates, consuming multiple per tick to clear out the buffer quicker. This is good to ensure all inputs are executed but potentially could allow speed hacking.
+        /// </summary>
+        internal bool DropExcessiveReplicates => _dropExcessiveReplicates;
+        [Tooltip("True to drop replicates from clients which are being received excessively. This can help with attacks but may cause client to temporarily desynchronize during connectivity issues. When false the server will hold at most up to 3 seconds worth of replicates, consuming multiple per tick to clear out the buffer quicker. This is good to ensure all inputs are executed but potentially could allow speed hacking.")]
+        [SerializeField]
+        private bool _dropExcessiveReplicates = true;
+        /// <summary>
+        /// No more than this value of replicates should be stored as a buffer.
+        /// </summary>
+        internal ushort MaximumPastReplicates => (ushort)(_networkManager.TimeManager.TickRate * 5);
+        [Tooltip("Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.")]
+        [SerializeField]
+        private byte _maximumServerReplicates = 15;
+
+        /// <summary>
+        /// Sets the maximum number of replicates a server can queue per object.
+        /// </summary>
+        public void SetMaximumServerReplicates(byte value) => _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
+
+        /// <summary>
+        /// Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.
+        /// </summary>
+        public byte GetMaximumServerReplicates() => _maximumServerReplicates;
+
+        /// <summary>
         /// Number of past inputs to send, which is also the number of times to resend final datas.
         /// </summary>
         internal byte RedundancyCount => (byte)(_stateInterpolation + 1);
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        // [Tooltip("How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.")]
-        // [Range(0, MAXIMUM_PAST_INPUTS + 30)]
-        // [SerializeField]
-        // private byte _serverInterpolation = 1;
-        ///// <summary>
-        ///// How many states to try and hold in a buffer before running them on server. Larger values add resilience against network issues at the cost of running states later.
-        ///// </summary>
-        // internal byte ServerInterpolation => _serverInterpolation;
         #endregion
 
         #region Private.
-        /// <summary>
-        /// Number of reconciles dropped due to high latency.
-        /// This is not necessarily needed but can save performance on machines struggling to keep up with simulations when combined with low frame rate.
-        /// </summary>
-        private byte _droppedReconcilesCount;
         /// <summary>
         /// Ticks for the last state packet to run.
         /// </summary>
@@ -273,6 +408,14 @@ namespace FishNet.Managing.Predicting
         /// <summary>
         /// </summary>
         private NetworkTrafficStatistics _networkTrafficStatistics;
+        /// <summary>
+        /// 
+        /// </summary>
+        private ClientReconcileThrottler _clientReconcileThrottler = new();
+        /// <summary>
+        /// True if the client-side had subscribed to the TimeManager.
+        /// </summary>
+        private bool _clientSubscribedToTimeManager;
         /// <summary>
         /// NetworkManager used with this.
         /// </summary>
@@ -332,8 +475,14 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj)
         {
-            _droppedReconcilesCount = 0;
+            _clientReconcileThrottler.ResetState();
             _lastOrderedReadReconcileTick = 0;
+
+            //If state is started.
+            if (obj.ConnectionState == LocalConnectionState.Started)
+                SubscribeToTimeManager(subscribe: true, asServer: false);
+            else
+                SubscribeToTimeManager(subscribe: false, asServer: false);
         }
 
         /// <summary>
@@ -364,49 +513,41 @@ namespace FishNet.Managing.Predicting
                 _networkManager.LogWarning(LESS_THAN_MINIMUM_INSERTED_MESSAGE);
         }
 
-        internal class StatePacket : IResettable
+        /// <summary>
+        /// Changes subscription to TimeManager.
+        /// </summary>
+        private void SubscribeToTimeManager(bool subscribe, bool asServer)
         {
-            public struct IncomingData
+            if (asServer)
+                return;
+            if (_networkManager == null)
+                return;
+
+            if (subscribe == _clientSubscribedToTimeManager)
+                return;
+
+            _clientSubscribedToTimeManager = subscribe;
+
+            if (subscribe)
+                _networkManager.TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
+            else
+                _networkManager.TimeManager.OnLateUpdate -= TimeManager_OnLateUpdate;
+        }
+
+        /// <summary>
+        /// Called when late update fires on the TimeManager.
+        /// </summary>
+        private void TimeManager_OnLateUpdate()
+        {
+            /* Do not throttle nor count frames if scene manager has performed actions recently. */
+            if (_networkManager.SceneManager.HasProcessedScenesRecently(timeFrame: 2f)) 
             {
-                public ArraySegment<byte> Data;
-                public Channel Channel;
-
-                public IncomingData(ArraySegment<byte> data, Channel channel)
-                {
-                    Data = data;
-                    Channel = channel;
-                }
+                _clientReconcileThrottler.ResetState();
+                return;
             }
-
-            public List<IncomingData> Datas;
-            public uint ClientTick;
-            public uint ServerTick;
-
-            public void Update(ArraySegment<byte> data, uint clientTick, uint serverTick, Channel channel)
-            {
-                AddData(data, channel);
-                ServerTick = serverTick;
-                ClientTick = clientTick;
-            }
-
-            public void AddData(ArraySegment<byte> data, Channel channel)
-            {
-                if (data.Array != null)
-                    Datas.Add(new(data, channel));
-            }
-
-            public void ResetState()
-            {
-                for (int i = 0; i < Datas.Count; i++)
-                    ByteArrayPool.Store(Datas[i].Data.Array);
-
-                CollectionCaches<IncomingData>.StoreAndDefault(ref Datas);
-            }
-
-            public void InitializeState()
-            {
-                Datas = CollectionCaches<IncomingData>.RetrieveList();
-            }
+            
+            if (_reduceReconcilesWithFramerate)
+                _clientReconcileThrottler.AddFrame(Time.unscaledDeltaTime);
         }
 
         /// <summary>
@@ -490,32 +631,9 @@ namespace FishNet.Managing.Predicting
                 uint clientTick = sp.ClientTick;
                 uint serverTick = sp.ServerTick;
 
-                /* If client has a low frame rate
-                 * then limit the number of reconciles to prevent further performance loss.
-                 * Wait 2 seconds for client to achieve a 'not low framerate'.*/
-                if (_networkManager.TimeManager.LowFrameRate && _networkManager.TimeManager.ClientUptime > 2f)
-                {
-                    /* Limit 3 drops a second. DropValue will be roughly the same
-                     * as every 330ms. */
-                    int reconcileValue = Mathf.Max(1, _networkManager.TimeManager.TickRate / 3);
-                    // If cannot drop then reset dropcount.
-                    if (_droppedReconcilesCount >= reconcileValue)
-                    {
-                        _droppedReconcilesCount = 0;
-                    }
-                    // If can drop...
-                    else
-                    {
-                        dropReconcile = true;
-                        _droppedReconcilesCount++;
-                    }
-                }
-                // }
-                // No reason to believe client is struggling, allow reconcile.
-                else
-                {
-                    _droppedReconcilesCount = 0;
-                }
+                //Check to throttle reconciles.
+                if (_reduceReconcilesWithFramerate && _clientReconcileThrottler.TryReconcile(_minimumClientReconcileFramerate))
+                    dropReconcile = true;
 
                 if (!dropReconcile)
                 {
@@ -688,13 +806,13 @@ namespace FishNet.Managing.Predicting
                 nc.StorePredictionStateWriters();
             }
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_networkTrafficStatistics != null)
             {
                 int written = STATE_HEADER_RESERVE_LENGTH * headersWritten;
                 _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.StateUpdate, string.Empty, written, gameObject: null, asServer: true);
             }
-#endif
+            #endif
         }
 
         /// <summary>
@@ -745,10 +863,10 @@ namespace FishNet.Managing.Predicting
                 }
             }
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_networkTrafficStatistics != null)
                 _networkTrafficStatistics.AddInboundPacketIdData(PacketId.StateUpdate, string.Empty, STATE_HEADER_RESERVE_LENGTH, gameObject: null, asServer: false);
-#endif
+            #endif
         }
         //
         // /// <summary>
@@ -811,12 +929,12 @@ namespace FishNet.Managing.Predicting
             ResettableObjectCaches<StatePacket>.Store(sp);
         }
 
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         private void OnValidate()
         {
             ValidateClampInterpolation();
         }
 
-#endif
+        #endif
     }
 }

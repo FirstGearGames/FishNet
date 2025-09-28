@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using FishNet.Configuring.EditorCloning;
 using UnityEditor;
 using UnityEngine;
 using UnityDebug = UnityEngine.Debug;
@@ -153,13 +154,11 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         public static void GenerateChanged(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths, PrefabGeneratorConfigurations settings = null)
         {
-#if PARRELSYNC && UNITY_EDITOR
-            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
+            if (!CloneChecker.CanGenerateFiles())
             {
-                UnityDebug.Log("Skipping prefab generation in ParrelSync clone");
+                UnityDebug.Log("Skipping prefab generation as clone settings does not allow it.");
                 return;
             }
-#endif
 
             // Do not run if the reserializer is currently running.
             if (ReserializeNetworkObjectsEditor.IsRunning)
@@ -323,7 +322,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             foreach (SpecifiedFolder sf in specifiedFolders)
                 foundNobs.AddRange(GetNetworkObjects(sf, settings));
-            
+
             foundNobs = foundNobs.OrderBy(nob => nob.AssetPathHash).ToList();
 
             return foundNobs;
@@ -334,14 +333,13 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         /// </summary>
         public static void GenerateFull(PrefabGeneratorConfigurations settings = null, bool forced = false, bool initializeAdded = true)
         {
-#if PARRELSYNC && UNITY_EDITOR
-            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
+            if (!CloneChecker.CanGenerateFiles())
             {
-                UnityDebug.Log("Skipping prefab generation in ParrelSync clone");
+                UnityDebug.Log("Skipping prefab generation as clone settings does not allow it.");
                 return;
             }
-#endif
-            // Do not run if the reserializer is currently running.
+
+            // Do not run if the re-serializer is currently running.
             if (ReserializeNetworkObjectsEditor.IsRunning)
             {
                 UnityDebug.LogError($"Cannot generate default prefabs when ReserializeNetworkObjectsEditor is running");
@@ -540,32 +538,34 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 }
             }
 
-#if PARRELSYNC && UNITY_EDITOR
-            if (!ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
-            {
-#endif
-            if (_cachedDefaultPrefabs == null)
-            {
-                string fullPath = Path.GetFullPath(defaultPrefabsPath);
-                UnityDebug.Log($"Creating a new DefaultPrefabsObject at {fullPath}.");
-                string directory = Path.GetDirectoryName(fullPath);
+            //Will be true also if not a clone.
+            if (CloneChecker.CanGenerateFiles())
+                CreateDefaultPrefabsAssetIfNeeded();
 
-                if (!Directory.Exists(directory))
+            //Creates DefaultPrefabs asset if missing or not set.
+            void CreateDefaultPrefabsAssetIfNeeded()
+            {
+                if (_cachedDefaultPrefabs == null)
                 {
-                    Directory.CreateDirectory(directory);
-                    AssetDatabase.Refresh();
-                }
+                    string fullPath = Path.GetFullPath(defaultPrefabsPath);
+                    UnityDebug.Log($"Creating a new DefaultPrefabsObject at {fullPath}.");
+                    string directory = Path.GetDirectoryName(fullPath);
 
-                _cachedDefaultPrefabs = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
-                AssetDatabase.CreateAsset(_cachedDefaultPrefabs, defaultPrefabsPath);
-                AssetDatabase.SaveAssets();
+                    if (!Directory.Exists(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                        AssetDatabase.Refresh();
+                    }
+
+                    _cachedDefaultPrefabs = ScriptableObject.CreateInstance<DefaultPrefabObjects>();
+                    AssetDatabase.CreateAsset(_cachedDefaultPrefabs, defaultPrefabsPath);
+                    AssetDatabase.SaveAssets();
+                }
             }
-#if PARRELSYNC && UNITY_EDITOR
-            }
-#endif
 
             if (_cachedDefaultPrefabs != null && _retryRefreshDefaultPrefabs)
                 UnityDebug.Log("DefaultPrefabObjects found on the second iteration.");
+
             return _cachedDefaultPrefabs;
         }
 

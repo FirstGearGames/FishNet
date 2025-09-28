@@ -152,9 +152,15 @@ namespace FishNet.Component.Prediction
             Transform t = rb.transform;
             t.position = state.Position;
             t.rotation = state.Rotation;
-            rb.velocity = state.Velocity;
-            rb.angularVelocity = state.AngularVelocity;
+            rb.isKinematic = state.IsKinematic;
+   
+            if (!state.IsKinematic)
+            {
+                rb.velocity = state.Velocity;
+                rb.angularVelocity = state.AngularVelocity;
+            }
         }
+
 
         /// <summary>
         /// Gets a Rigidbody2DState.
@@ -172,8 +178,13 @@ namespace FishNet.Component.Prediction
             Transform t = rb.transform;
             t.position = state.Position;
             t.rotation = state.Rotation;
-            rb.velocity = state.Velocity;
-            rb.angularVelocity = state.AngularVelocity;
+            rb.isKinematic = state.IsKinematic;
+
+            if (!state.IsKinematic)
+            {
+                rb.velocity = state.Velocity;
+                rb.angularVelocity = state.AngularVelocity;
+            }
         }
     }
 }

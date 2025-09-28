@@ -168,11 +168,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e08bb003fce297d4086cf8cba5aa459a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _dropExcessiveReplicates: 1
-  _maximumServerReplicates: 5
+  _reduceReconcilesWithFramerate: 1
+  _minimumClientReconcileFramerate: 70
   _createLocalStates: 1
   _stateInterpolation: 2
   _stateOrder: 1
+  _dropExcessiveReplicates: 1
+  _maximumServerReplicates: 5
 --- !u!1 &493975406
 GameObject:
   m_ObjectHideFlags: 0
@@ -1467,7 +1469,7 @@ MonoBehaviour:
   _objectPool: {fileID: 0}
   _persistence: 0
   _logging: {fileID: 0}
-  _spawnablePrefabs: {fileID: 11400000, guid: ef18464092139404db8e515b0bf59331, type: 2}
+  _spawnablePrefabs: {fileID: 0}
 --- !u!114 &7443408886491487336
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1495,9 +1497,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8bc8f0363ddc75946a958043c5e49a83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _runInRelease: 0
+  _secondsAveraged: 1
+  _updateInterval: 1
   _color: {r: 0, g: 0, b: 0, a: 1}
   _placement: 2
-  _secondsAveraged: 1
   _showOutgoing: 1
   _showIncoming: 1
 --- !u!114 &7443408886491487338
@@ -1512,10 +1516,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 756c28cd3141c4140ae776188ee26729, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  NetworkTraffic:
-    _updateInteval: 1
-    _updateClient: 1
-    _updateServer: 1
+  _runInRelease: 0
+  _networkTraffic:
+    _enableMode: 0
+    _updateClient: 0
+    _updateServer: 0
 --- !u!114 &7443408886491487339
 MonoBehaviour:
   m_ObjectHideFlags: 0

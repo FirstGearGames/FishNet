@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using FishNet.Configuring.EditorCloning;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -83,13 +84,11 @@ namespace FishNet.Editing
         [MenuItem("Tools/Fish-Networking/Utility/Refresh Default Prefabs", false, 300)]
         public static void RebuildDefaultPrefabs()
         {
-#if PARRELSYNC && UNITY_EDITOR
-            if (ParrelSync.ClonesManager.IsClone() && ParrelSync.Preferences.AssetModPref.Value)
+            if (!CloneChecker.CanGenerateFiles())
             {
-                Debug.Log("Cannot perform this operation on a ParrelSync clone");
+                Debug.Log("Skipping prefab generation as clone settings does not allow it.");
                 return;
             }
-#endif
             Debug.Log("Refreshing default prefabs.");
             Generator.GenerateFull(null, true);
         }

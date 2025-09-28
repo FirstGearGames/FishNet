@@ -103,10 +103,15 @@ namespace FishNet.Managing.Timing
         /// Returns half value of RoundTripTime rounded to nearest whole.
         /// </summary>
         public long HalfRoundTripTime => (long)Math.Round((double)RoundTripTime / 2d);
+
         /// <summary>
-        /// True if the number of frames per second are less than the number of expected ticks per second.
+        /// True if multiple ticks had occured within the past specified time.
         /// </summary>
-        internal bool LowFrameRate => Time.unscaledTime - _lastMultipleTicksTime < 1f;
+        internal bool HasMultipleTicksOccurred(float timeSinceMultipleTicks)
+        {
+            return Time.unscaledTime - _lastMultipleTicksTime < timeSinceMultipleTicks;
+        }
+
         /// <summary>
         /// Tick on the last received packet, be it from server or client.
         /// </summary>

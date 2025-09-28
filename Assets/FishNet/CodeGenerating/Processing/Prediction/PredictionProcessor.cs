@@ -713,7 +713,7 @@ namespace FishNet.CodeGenerating.Processing
             {
                 ILProcessor processor = replicateMd.Body.GetILProcessor();
                 ParameterDefinition replicateDataPd = replicateMd.Parameters[0];
-				replicateDataPd.ParameterType = Module.ImportReference( replicateDataPd.ParameterType );
+                replicateDataPd.ParameterType = Module.ImportReference(replicateDataPd.ParameterType);
                 MethodDefinition comparerMd = gh.CreateEqualityComparer(replicateDataPd.ParameterType);
                 gh.CreateIsDefaultComparer(replicateDataPd.ParameterType, comparerMd);
 
@@ -1008,7 +1008,7 @@ namespace FishNet.CodeGenerating.Processing
         private void ServerCreateReconcile(MethodDefinition reconcileMd, CreatedPredictionFields predictionFields, ref uint rpcCount)
         {
             ParameterDefinition reconcileDataPd = reconcileMd.Parameters[0];
-			reconcileDataPd.ParameterType = Module.ImportReference( reconcileDataPd.ParameterType );
+            reconcileDataPd.ParameterType = Module.ImportReference(reconcileDataPd.ParameterType);
             ParameterDefinition channelPd = reconcileMd.Parameters[1];
             ILProcessor processor = reconcileMd.Body.GetILProcessor();
 

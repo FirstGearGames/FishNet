@@ -67,7 +67,7 @@ namespace FishNet.Connection
             /* Server FPS is running low, timing isn't reliable enough to kick clients.
              * Respond with clients ping and remove infractions just in case the
              * client received some from other server instabilities. */
-            if (tm.LowFrameRate)
+            if (tm.HasMultipleTicksOccurred(timeSinceMultipleTicks: 1f))
             {
                 // _excessivePingCount = 0f;
                 return false;

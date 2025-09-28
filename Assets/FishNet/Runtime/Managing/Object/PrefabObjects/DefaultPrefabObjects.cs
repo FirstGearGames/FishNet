@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using GameKit.Dependencies.Utilities;
 #if UNITY_EDITOR
+using System.Text;
 using FishNet.Editing;
 using UnityEditor;
 #endif
@@ -16,17 +17,46 @@ namespace FishNet.Managing.Object
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
         /// <summary>
+        /// Instance of this class.
+        /// </summary>
+        /// <remarks>This is used to ensure only one copy of this class exists on disk.</remarks>
+        [System.NonSerialized]
+        internal static DefaultPrefabObjects Instance;
+
+        private StringBuilder _stringBuilder = new();
+        
+        public DefaultPrefabObjects()
+        {
+            if (Instance != null)
+            {
+                string searchLiteral = "\"t: DefaultPrefabObjects\"";
+                Debug.LogError($"{nameof(DefaultPrefabObjects)} already exists. There should be only one instance of {nameof(DefaultPrefabObjects)} in memory, as well on disk. Search (without quotations) {searchLiteral} in your Project tab and delete all copies. A new file will be automatically generated after all {nameof(DefaultPrefabObjects)} are removed.");
+            
+                return;
+            }
+            
+            Instance = this;
+        }
+
+        ~DefaultPrefabObjects() 
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
+        /// <summary>
         /// Sets asset path hashes for prefabs starting at index, or if missing.
         /// </summary
         /// <return>Returns true if one or more NetworkObjects were updated.</return>
         internal bool SetAssetPathHashes(int index)
         {
-#if UNITY_EDITOR
+            #if UNITY_EDITOR
             bool dirtied = false;
             int count = base.GetObjectCount();
 
             if (count == 0)
                 return false;
+            
             if (index < 0 || index >= count)
             {
                 Debug.LogError($"Index {index} is out of range when trying to set asset path hashes. Collection length is {count}. Defaulf prefabs may need to be rebuilt.");
@@ -39,8 +69,16 @@ namespace FishNet.Managing.Object
                 if (i < index)
                     continue;
 
-                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
-                ulong hashcode = Hashing.GetStableHashU64(pathAndName);
+                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}".Trim().ToLower();
+
+                _stringBuilder.Clear();
+                foreach (char c in pathAndName)
+                {
+                    if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                        _stringBuilder.Append(c);
+                }
+                
+                ulong hashcode = _stringBuilder.ToString().GetStableHashU64();
                 // Already set.
                 if (n.AssetPathHash == hashcode)
                     continue;
@@ -50,10 +88,29 @@ namespace FishNet.Managing.Object
                 dirtied = true;
             }
 
+            //Check for conflicts.
+            Dictionary<ulong, string> hashesAndPaths = new();
+            for (int i = 0; i < count; i++)
+            {
+                NetworkObject n = Prefabs[i];
+
+                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}";
+                
+                if (hashesAndPaths.TryGetValueIL2CPP(n.AssetPathHash, out string path)) 
+                {
+                    Debug.LogError($"Assets {pathAndName} and {path} have the same assetPath hash of {n.AssetPathHash}. Please modify the prefab name of either to resolve.");
+                    dirtied = false;
+                }
+                else
+                {
+                    hashesAndPaths.Add(n.AssetPathHash, pathAndName);
+                }
+            }
+            
             return dirtied;
-#else
+            #else
             return false;
-#endif
+            #endif
         }
 
         /// <summary>

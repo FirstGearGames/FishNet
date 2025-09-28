@@ -13,7 +13,7 @@ using FishNet.Observing;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using UnityEngine;
+using UnityEngine; 
 
 namespace FishNet.Object
 {
@@ -34,6 +34,11 @@ namespace FishNet.Object
         public bool IsServer => IsServerInitialized;
         #endregion
 
+        /// <summary>
+        /// Gets this instance as the containing NetworkObject.
+        /// </summary>
+        public static implicit operator NetworkObject(NetworkBehaviour nb) => nb._networkObjectCache; 
+        
         /// <summary>
         /// True if the NetworkObject for this NetworkBehaviour is deinitializing.
         /// </summary>

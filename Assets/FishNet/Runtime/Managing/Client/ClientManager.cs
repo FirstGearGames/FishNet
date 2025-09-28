@@ -368,10 +368,10 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void ParseReceived(ClientReceivedDataArgs args)
         {
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_networkTrafficStatistics != null)
                 _networkTrafficStatistics.PacketBundleReceived(asServer: false);
-#endif
+            #endif
 
             _lastPacketTime = Time.unscaledTime;
 
@@ -397,19 +397,19 @@ namespace FishNet.Managing.Client
         internal void ParseReader(PooledReader reader, Channel channel, bool print = false)
         {
             PacketId packetId = PacketId.Unset;
-#if !DEVELOPMENT
+            #if !DEVELOPMENT
             try
             {
-#endif
+            #endif
             Reader.DataSource dataSource = Reader.DataSource.Server;
             /* This is a special condition where a message may arrive split.
              * When this occurs buffer each packet until all packets are
              * received. */
             if (reader.PeekPacketId() == PacketId.Split)
             {
-#if DEVELOPMENT
+                #if DEVELOPMENT
                 NetworkManager.PacketIdHistory.ReceivedPacket(PacketId.Split, packetFromServer: true);
-#endif
+                #endif
                 // Skip packetId.
                 reader.ReadPacketId();
                 int expectedMessages;
@@ -429,7 +429,7 @@ namespace FishNet.Managing.Client
             while (reader.Remaining > 0)
             {
                 packetId = reader.ReadPacketId();
-#if DEVELOPMENT
+                #if DEVELOPMENT
                 NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: true);
                 // if (!NetworkManager.IsServerStarted)
                 //     print = true;
@@ -441,7 +441,7 @@ namespace FishNet.Managing.Client
                 //         Debug.LogWarning($"PacketId {packetId} - Remaining {reader.Remaining}.");
                 // }
                 // print = false;
-#endif
+                #endif
                 bool spawnOrDespawn = packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn;
                 /* Length of data. Only available if using unreliable. Unreliable packets
                  * can arrive out of order which means object orientated messages such as RPCs may
@@ -533,17 +533,17 @@ namespace FishNet.Managing.Client
                     else
                     {
                         NetworkManager.LogError($"Client received an unhandled PacketId of {(ushort)packetId} on channel {channel}. Remaining data has been purged.");
-#if DEVELOPMENT
+                        #if DEVELOPMENT
                         NetworkManager.LogError(NetworkManager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: true));
-#endif
+                        #endif
                         return;
                     }
                 }
 
-#if DEVELOPMENT
+                #if DEVELOPMENT
                 if (print)
                     Debug.Log($"Reader remaining {reader.Remaining}");
-#endif
+                #endif
             }
 
             /* Iterate cache when reader is emptied.
@@ -553,13 +553,13 @@ namespace FishNet.Managing.Client
              * in doing this check multiple times as there's
              * an exit early check. */
             Objects.IterateObjectCache();
-#if !DEVELOPMENT
+            #if !DEVELOPMENT
             }
             catch (Exception e)
             {
                 NetworkManagerExtensions.LogError($"Client encountered an error while parsing data for packetId {packetId}. Message: {e.Message}.");
             }
-#endif
+            #endif
         }
 
         /// <summary>
@@ -573,10 +573,10 @@ namespace FishNet.Managing.Client
             uint clientTick = reader.ReadTickUnpacked();
             NetworkManager.TimeManager.ModifyPing(clientTick);
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_networkTrafficStatistics != null)
                 _networkTrafficStatistics.AddInboundPacketIdData(PacketId.PingPong, string.Empty, reader.Position - readerPositionAfterDebug + TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
-#endif
+            #endif
         }
 
         /// <summary>
@@ -596,8 +596,11 @@ namespace FishNet.Managing.Client
         {
             NetworkManager networkManager = NetworkManager;
             int connectionId = reader.ReadNetworkConnectionId();
+
+            bool isServerStarted = networkManager.IsServerStarted;
+
             // If only a client then make a new connection.
-            if (!networkManager.IsServerStarted)
+            if (!isServerStarted)
             {
                 Clients.TryGetValueIL2CPP(connectionId, out Connection);
                 /* This is bad and should never happen unless the connection is dropping
@@ -631,8 +634,14 @@ namespace FishNet.Managing.Client
             {
                 int count = (int)reader.ReadSignedPackedWhole();
                 Queue<int> q = Connection.PredictedObjectIds;
+
                 for (int i = 0; i < count; i++)
-                    q.Enqueue(reader.ReadNetworkObjectId());
+                {
+                    /* If host then just read Ids, but do not
+                     * enqueue as server side already did so. */
+                    if (!isServerStarted)
+                        q.Enqueue(reader.ReadNetworkObjectId());
+                }
             }
 
             /* Set the TimeManager tick to lastReceivedTick.
@@ -677,11 +686,11 @@ namespace FishNet.Managing.Client
                 return;
             if (_remoteServerTimeout == RemoteTimeoutType.Disabled)
                 return;
-#if DEVELOPMENT
+            #if DEVELOPMENT
             // If development but not set to development return.
             else if (_remoteServerTimeout != RemoteTimeoutType.Development)
                 return;
-#endif
+            #endif
             // Wait two timing intervals to give packets a chance to come through.
             if (NetworkManager.SceneManager.IsIteratingQueue(2f))
                 return;

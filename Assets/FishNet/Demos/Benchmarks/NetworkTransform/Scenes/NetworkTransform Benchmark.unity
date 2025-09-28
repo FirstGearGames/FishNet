@@ -1275,6 +1275,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _runInRelease: 0
   _networkTraffic:
+    _enableMode: 0
     _updateClient: 1
     _updateServer: 1
 --- !u!114 &7443408886575219566
@@ -1315,6 +1316,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 211a9f6ec51ddc14f908f5acc0cd0423, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _playerPrefab: {fileID: 4512293259955182956, guid: 7d413700c8c3cec4a99fad3b66e4575e, type: 3}
+  _playerPrefab: {fileID: 8576064167479792142, guid: 5dcd0d2279e5288498af3782c92e66cf, type: 3}
   _addToDefaultScene: 1
   Spawns: []

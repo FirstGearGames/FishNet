@@ -18,40 +18,47 @@ namespace FishNet.Managing.Statistic
         [Tooltip("Statistics for NetworkTraffic.")]
         [SerializeField]
         private NetworkTrafficStatistics _networkTraffic;
+        /// <summary>
+        /// NetworkManager this is for.
+        /// </summary>
+        private NetworkManager _networkManager;
 
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
-#if (!UNITY_EDITOR && !DEVELOPMENT_BUILD) || UNITY_SERVER
-            if (!_runInRelease)
-            {
-                _networkTraffic = null;
-                return;
-            }
-#endif
-            InstantiateNetworkTrafficIfNeeded();
-
-            _networkTraffic.InitializeOnce_Internal(manager);
-        }
-
-        public bool TryGetNetworkTrafficStatistics(out NetworkTrafficStatistics statistics)
-        {
-            InstantiateNetworkTrafficIfNeeded();
-
-            if (_networkTraffic.IsEnabled())
-                statistics = _networkTraffic;
-            else
-                statistics = null;
-
-            return statistics != null;
+            _networkManager = manager;
         }
 
         /// <summary>
-        /// Instantiates NetworkTraffic if currently null.
+        /// Gets NetworkTrafficStatistics reference.
         /// </summary>
-        private void InstantiateNetworkTrafficIfNeeded()
+        public bool TryGetNetworkTrafficStatistics(out NetworkTrafficStatistics statistics)
         {
+            statistics = null;
+            
+            /* Cannot run in the current build type. */
+            #if (!UNITY_EDITOR && !DEVELOPMENT_BUILD) || UNITY_SERVER
+            if (!_runInRelease)
+            {
+                _networkTraffic = null;
+                return false;
+            }
+            #endif
+            
+            //NetworkManager must be set to work.            
+            if (_networkManager == null)
+                return false;
+
+            //Hotload if needed.
             if (_networkTraffic == null)
+            {
                 _networkTraffic = new();
+                _networkTraffic.InitializeOnce_Internal(_networkManager);
+            }
+
+            if (_networkTraffic.IsEnabled())
+                statistics = _networkTraffic;
+
+            return statistics != null;
         }
     }
 }
