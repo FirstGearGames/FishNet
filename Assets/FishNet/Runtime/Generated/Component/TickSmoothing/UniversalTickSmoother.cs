@@ -118,7 +118,7 @@ namespace FishNet.Component.Transforming.Beta
         /// Buffer of fixed offsets. Size should cover interpolation window + network jitter.
         /// </summary>
         private FixedOffsetEntry[] _fixedOffsets;
-        private TransformProperties _currentAccumulatedOffset;
+        private TransformProperties _currentAccumulatedOffset = new(default, Quaternion.identity, default);
         
         /// <summary>
         /// Adds a world-space offset that must NOT be smoothed for the specified tick.
@@ -732,7 +732,7 @@ namespace FishNet.Component.Transforming.Beta
         private void ClearTransformPropertiesQueue()
         {
             _transformProperties.Clear();
-            _currentAccumulatedOffset = default;
+            _currentAccumulatedOffset = new(default, Quaternion.identity, default);
             //Also unset move rates since there is no more queue.
             _moveRates = new(MoveRates.UNSET_VALUE);
         }
