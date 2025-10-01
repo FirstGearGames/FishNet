@@ -147,8 +147,8 @@ namespace FishNet.Component.Transforming.Beta
             if (_fixedOffsets[i].Tick == tick)
             {
                 TransformProperties v = _fixedOffsets[i].Sum;
-                _fixedOffsets[i].Sum = default;
-                return v;
+                _fixedOffsets[i].Sum = new(default, Quaternion.identity, default);
+                return v.IsValid ? v : new(default, Quaternion.identity, default);
             }
             return default;
         }
