@@ -1032,7 +1032,7 @@ namespace FishNet.Component.Transforming.Beta
             _movementMultiplier = 1f;
             CollectionCaches<FixedOffsetEntry>.StoreAndDefault(ref _fixedOffsets, 128);
             CollectionCaches<TickTransformProperties>.StoreAndDefault(ref _transformProperties);
-            _currentAccumulatedOffset = default;
+            _currentAccumulatedOffset = new(default, Quaternion.identity, default);
             _moveRates = default;
             _preTicked = default;
             _queuedTrackerProperties = null;
