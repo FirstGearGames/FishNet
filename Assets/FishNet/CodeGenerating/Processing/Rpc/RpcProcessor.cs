@@ -854,8 +854,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             TypeDefinition typeDef = cr.TypeDef;
             MethodDefinition originalMd = cr.OriginalMethodDef;
 
-            
-
             //Methodname for logic methods do not use prefixes because there can be only one.
             string methodName = $"{LOGIC_PREFIX}{GetMethodNameAsParameters(originalMd)}";
 
@@ -967,8 +965,6 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * share the same originalMd so it's fine to take the first
              * entry. */
             MethodDefinition originalMd = createdRpcs[0].OriginalMethodDef;
-
-            
 
             ILProcessor processor = originalMd.Body.GetILProcessor();
             originalMd.Body.Instructions.Clear();

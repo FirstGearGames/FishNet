@@ -371,6 +371,12 @@ namespace FishNet.Component.Transforming
             Scale = AutoPackType.Unpacked
         };
         /// <summary>
+        /// True to use scaled deltaTime when smoothing.
+        /// </summary>
+        [Tooltip("True to use scaled deltaTime when smoothing.")]
+        [SerializeField]
+        private bool _useScaledTime = true;
+        /// <summary>
         /// How many ticks to interpolate.
         /// </summary>
         [Tooltip("How many ticks to interpolate.")]
@@ -761,7 +767,8 @@ namespace FishNet.Component.Transforming
 
         private void TimeManager_OnUpdate()
         {
-            MoveToTarget(Time.deltaTime);
+            float deltaTime = _useScaledTime ? Time.deltaTime : Time.unscaledDeltaTime;
+            MoveToTarget(deltaTime);
         }
 
         /// <summary>
@@ -1680,8 +1687,7 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    
-                        /* If everything matches up then end queue.
+                    /* If everything matches up then end queue.
                          * Otherwise let it play out until stuff
                          * aligns. Generally the time remaining is enough
                          * but every once in awhile something goes funky
@@ -1689,8 +1695,7 @@ namespace FishNet.Component.Transforming
                         if (!HasChanged(td))
                             _currentGoalData = null;
                         OnInterpolationComplete?.Invoke();
-                        
-                }
+                        }
             }
         }
 
@@ -2200,8 +2205,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            
-        }
+            }
 
         /// <summary>
         /// Updates a client with transform data.

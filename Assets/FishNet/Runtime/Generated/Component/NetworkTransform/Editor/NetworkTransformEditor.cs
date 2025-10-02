@@ -14,6 +14,7 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _componentConfiguration;
         private SerializedProperty _synchronizeParent;
         private SerializedProperty _packing;
+        private SerializedProperty _useScaledTime;
         private SerializedProperty _interpolation;
         private SerializedProperty _extrapolation;
         private SerializedProperty _enableTeleport;
@@ -35,6 +36,7 @@ namespace FishNet.Component.Transforming.Editing
             _componentConfiguration = serializedObject.FindProperty(nameof(_componentConfiguration));
             _synchronizeParent = serializedObject.FindProperty(nameof(_synchronizeParent));
             _packing = serializedObject.FindProperty(nameof(_packing));
+            _useScaledTime = serializedObject.FindProperty(nameof(_useScaledTime));
             _interpolation = serializedObject.FindProperty(nameof(_interpolation));
             _extrapolation = serializedObject.FindProperty(nameof(_extrapolation));
             _enableTeleport = serializedObject.FindProperty(nameof(_enableTeleport));
@@ -59,7 +61,6 @@ namespace FishNet.Component.Transforming.Editing
             LayoutTools.AddObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false, EditorLayoutEnableType.Disabled);
 
             bool isPro = false;
-            
             if (isPro)
                 EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
             else
@@ -77,6 +78,7 @@ namespace FishNet.Component.Transforming.Editing
             //Smoothing.
             EditorGUILayout.LabelField("Smoothing", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(_useScaledTime);
             EditorGUILayout.PropertyField(_interpolation);
             EditorGUILayout.PropertyField(_extrapolation, new GUIContent("* Extrapolation"));
             EditorGUILayout.PropertyField(_enableTeleport);

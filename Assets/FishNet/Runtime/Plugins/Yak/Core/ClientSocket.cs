@@ -28,25 +28,15 @@ namespace FishNet.Transporting.Yak.Client
             return true;
         }
 
-        
-
         /// <summary>
         /// Stops the local socket.
         /// </summary>
         internal bool StopConnection()
         {
-            
             return true;
         }
 
-        
-
-        
-
-        
-
         #region Local server.
-        
         #endregion
     }
 }

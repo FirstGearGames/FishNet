@@ -1,11 +1,9 @@
 using FishNet.Documenting;
-using FishNet.Object.Helping;
 using System.Collections.Generic;
 using UnityEngine;
 using GameKit.Dependencies.Utilities;
-#if UNITY_EDITOR
 using System.Text;
-using FishNet.Editing;
+#if UNITY_EDITOR
 using UnityEditor;
 #endif
 using FishNet.Object;
@@ -17,32 +15,10 @@ namespace FishNet.Managing.Object
     public class DefaultPrefabObjects : SinglePrefabObjects
     {
         /// <summary>
-        /// Instance of this class.
+        /// Used for version rebuilding.
         /// </summary>
-        /// <remarks>This is used to ensure only one copy of this class exists on disk.</remarks>
-        [System.NonSerialized]
-        internal static DefaultPrefabObjects Instance;
-
         private StringBuilder _stringBuilder = new();
-        
-        public DefaultPrefabObjects()
-        {
-            if (Instance != null)
-            {
-                string searchLiteral = "\"t: DefaultPrefabObjects\"";
-                Debug.LogError($"{nameof(DefaultPrefabObjects)} already exists. There should be only one instance of {nameof(DefaultPrefabObjects)} in memory, as well on disk. Search (without quotations) {searchLiteral} in your Project tab and delete all copies. A new file will be automatically generated after all {nameof(DefaultPrefabObjects)} are removed.");
-            
-                return;
-            }
-            
-            Instance = this;
-        }
 
-        ~DefaultPrefabObjects() 
-        {
-            if (Instance == this)
-                Instance = null;
-        }
 
         /// <summary>
         /// Sets asset path hashes for prefabs starting at index, or if missing.
