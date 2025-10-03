@@ -3,6 +3,7 @@ using FishNet.Managing.Timing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -140,12 +141,28 @@ namespace FishNet.Component.Transforming.Beta
 
         public void TimeManager_OnUpdate()
         {
-            UniversalSmoother.OnUpdate(Time.deltaTime);
+            Profiler.BeginSample("TickSmootherController.TimeManager_OnUpdate()");
+            try
+            {
+                UniversalSmoother.OnUpdate(Time.deltaTime);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         public void TimeManager_OnPreTick()
         {
-            UniversalSmoother.OnPreTick();
+            Profiler.BeginSample("TickSmootherController.TimeManager_OnPreTick()");
+            try
+            {
+                UniversalSmoother.OnPreTick();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
@@ -153,8 +170,16 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void TimeManager_OnPostTick()
         {
-            if (_timeManager != null)
-                UniversalSmoother.OnPostTick(_timeManager.LocalTick);
+            Profiler.BeginSample("TickSmootherController.TimeManager_OnPostTick()");
+            try
+            {
+                if (_timeManager != null)
+                    UniversalSmoother.OnPostTick(_timeManager.LocalTick);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)

@@ -9,6 +9,7 @@ using System;
 using System.Runtime.CompilerServices;
 using FishNet.Managing.Statistic;
 using UnityEngine;
+using UnityEngine.Profiling;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
 
 namespace FishNet.Managing.Timing
@@ -283,7 +284,7 @@ namespace FishNet.Managing.Timing
 
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         #region Const.
@@ -318,7 +319,16 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
-            OnFixedUpdate?.Invoke();
+            Profiler.BeginSample("TimeManager.OnFixedUpdate()");
+            try
+            {
+                OnFixedUpdate?.Invoke();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
+            
             /* Invoke onsimulation if using Unity time.
              * Otherwise let the tick cycling part invoke. */
             if (PhysicsMode == PhysicsMode.Unity)
@@ -329,10 +339,28 @@ namespace FishNet.Managing.Timing
                  * This can only happen if a FixedUpdate occurs
                  * multiple times per frame. */
                 if (_fixedUpdateTimeStep)
-                    OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                {
+                    Profiler.BeginSample("TimeManager.OnPostPhysicsSimulation(float)");
+                    try
+                    {
+                        OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
+                }
 
                 _fixedUpdateTimeStep = true;
-                OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                Profiler.BeginSample("TimeManager.OnPrePhysicsSimulation(float)");
+                try
+                {
+                    OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                }
+                finally
+                {
+                    Profiler.EndSample();
+                }
             }
         }
 
@@ -349,13 +377,30 @@ namespace FishNet.Managing.Timing
             bool beforeTick = _updateOrder == UpdateOrder.BeforeTick;
             if (beforeTick)
             {
-                OnUpdate?.Invoke();
+                Profiler.BeginSample("TimeManager.OnUpdate()");
+                try
+                {
+                    OnUpdate?.Invoke();
+                }
+                finally
+                {
+                    Profiler.EndSample();
+                }
+                
                 MethodLogic();
             }
             else
             {
                 MethodLogic();
-                OnUpdate?.Invoke();
+                Profiler.BeginSample("TimeManager.OnUpdate()");
+                try
+                {
+                    OnUpdate?.Invoke();
+                }
+                finally
+                {
+                    Profiler.EndSample();
+                }
             }
 
             void MethodLogic()
@@ -366,7 +411,15 @@ namespace FishNet.Managing.Timing
                 if (PhysicsMode == PhysicsMode.Unity && _fixedUpdateTimeStep)
                 {
                     _fixedUpdateTimeStep = false;
-                    OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                    Profiler.BeginSample("TimeManager.OnPostPhysicsSimulation(float)");
+                    try
+                    {
+                        OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
                 }
             }
         }
@@ -376,7 +429,15 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickLateUpdate()
         {
-            OnLateUpdate?.Invoke();
+            Profiler.BeginSample("TimeManager.OnLateUpdate(float)");
+            try
+            {
+                OnLateUpdate?.Invoke();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
@@ -578,7 +639,15 @@ namespace FishNet.Managing.Timing
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
 
-            OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
+            Profiler.BeginSample("TimeManager.OnRoundTripTimeUpdated(float)");
+            try
+            {
+                OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
@@ -687,7 +756,17 @@ namespace FishNet.Managing.Timing
             do
             {
                 if (frameTicked)
-                    OnPreTick?.Invoke();
+                {
+                    Profiler.BeginSample("TimeManager.OnPreTick()");
+                    try
+                    {
+                        OnPreTick?.Invoke();
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
+                }
 
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
@@ -700,17 +779,69 @@ namespace FishNet.Managing.Timing
                 {
                     // Tell predicted objecs to reconcile before OnTick.
                     NetworkManager.PredictionManager.ReconcileToStates();
-                    OnTick?.Invoke();
+                    Profiler.BeginSample("TimeManager.OnTick()");
+                    try
+                    {
+                        OnTick?.Invoke();
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
 
                     if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
                     {
-                        OnPrePhysicsSimulation?.Invoke(tickDelta);
-                        Physics.Simulate(tickDelta);
-                        Physics2D.Simulate(tickDelta);
-                        OnPostPhysicsSimulation?.Invoke(tickDelta);
+                        Profiler.BeginSample("TimeManager.OnPrePhysicsSimulation(float)");
+                        try
+                        {
+                            OnPrePhysicsSimulation?.Invoke(tickDelta);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("TimeManager.Physics.Simulate(float)");
+                        try
+                        {
+                            Physics.Simulate(tickDelta);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("TimeManager.Physics2D.Simulate(float)");
+                        try
+                        {
+                            Physics2D.Simulate(tickDelta);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("TimeManager.OnPostPhysicsSimulation(float)");
+                        try
+                        {
+                            OnPostPhysicsSimulation?.Invoke(tickDelta);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
                     }
-
-                    OnPostTick?.Invoke();
+                    
+                    Profiler.BeginSample("TimeManager.OnPostTick()");
+                    try
+                    {
+                        OnPostTick?.Invoke();
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
+                    
                     // After post tick send states.
                     NetworkManager.PredictionManager.SendStateUpdate();
 

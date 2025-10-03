@@ -6,6 +6,7 @@ using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace FishNet.Component.Transforming
 {
@@ -170,18 +171,26 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPostTick()
         {
-            if (!_initialized)
-                return;
+            Profiler.BeginSample("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
+            try
+            {
+                if (!_initialized)
+                    return;
 
-            _postTickFollowObjectWorldProperties.Update(_followObject);
-            // Unset values if not following the transform property.
-            if (!_synchronizePosition)
-                _postTickFollowObjectWorldProperties.Position = transform.position;
-            if (!_synchronizeRotation)
-                _postTickFollowObjectWorldProperties.Rotation = transform.rotation;
-            if (!_synchronizeScale)
-                _postTickFollowObjectWorldProperties.Scale = transform.localScale;
-            SetMoveRates();
+                _postTickFollowObjectWorldProperties.Update(_followObject);
+                // Unset values if not following the transform property.
+                if (!_synchronizePosition)
+                    _postTickFollowObjectWorldProperties.Position = transform.position;
+                if (!_synchronizeRotation)
+                    _postTickFollowObjectWorldProperties.Rotation = transform.rotation;
+                if (!_synchronizeScale)
+                    _postTickFollowObjectWorldProperties.Scale = transform.localScale;
+                SetMoveRates();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
