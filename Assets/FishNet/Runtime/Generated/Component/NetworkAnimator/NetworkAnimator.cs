@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
 using UnityEngine;
+using UnityEngine.Profiling;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Animating
@@ -333,6 +334,9 @@ namespace FishNet.Component.Animating
         [Tooltip("True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.")]
         [SerializeField]
         private bool _sendToOwner;
+
+        public bool SendToOwner => _sendToOwner;
+        
         #endregion
 
         #region Private.
@@ -565,28 +569,36 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPreTick()
         {
-            if (!_canSynchronizeAnimator)
+            Profiler.BeginSample("NetworkAnimator.TimeManager_OnPreTick()");
+            try
             {
-                _fromServerBuffer.Clear();
-                return;
-            }
-            //Disabled/cannot start.
-            if (_startTick == 0)
-                return;
-            //Nothing in queue.
-            if (_fromServerBuffer.Count == 0)
-            {
-                _startTick = 0;
-                return;
-            }
-            //Not enough time has passed to start queue.
-            if (TimeManager.LocalTick < _startTick)
-                return;
+                if (!_canSynchronizeAnimator)
+                {
+                    _fromServerBuffer.Clear();
+                    return;
+                }
+                //Disabled/cannot start.
+                if (_startTick == 0)
+                    return;
+                //Nothing in queue.
+                if (_fromServerBuffer.Count == 0)
+                {
+                    _startTick = 0;
+                    return;
+                }
+                //Not enough time has passed to start queue.
+                if (TimeManager.LocalTick < _startTick)
+                    return;
 
-            ReceivedServerData rd = _fromServerBuffer.Dequeue();
-            ArraySegment<byte> segment = rd.GetArraySegment();
-            ApplyParametersUpdated(ref segment);
-            rd.Dispose();
+                ReceivedServerData rd = _fromServerBuffer.Dequeue();
+                ArraySegment<byte> segment = rd.GetArraySegment();
+                ApplyParametersUpdated(ref segment);
+                rd.Dispose();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /* Use post tick values are checked after
@@ -596,21 +608,37 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            //One check rather than per each method.
-            if (!_canSynchronizeAnimator)
-                return;
+            Profiler.BeginSample("NetworkAnimator.TimeManager_OnPostTick()");
+            try
+            {
+                //One check rather than per each method.
+                if (!_canSynchronizeAnimator)
+                    return;
 
-            CheckSendToServer();
-            CheckSendToClients();
+                CheckSendToServer();
+                CheckSendToClients();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         private void TimeManager_OnUpdate()
         {
-            if (!_canSynchronizeAnimator)
-                return;
+            Profiler.BeginSample("NetworkAnimator.TimeManager_OnUpdate()");
+            try
+            {
+                if (!_canSynchronizeAnimator)
+                    return;
 
-            if (IsClientStarted)
-                SmoothFloats();
+                if (IsClientStarted)
+                    SmoothFloats();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>

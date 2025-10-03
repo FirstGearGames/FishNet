@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using FishNet.Managing.Statistic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace FishNet.Managing.Client
 {
@@ -142,7 +143,7 @@ namespace FishNet.Managing.Client
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         private void OnDestroy()
@@ -670,7 +671,15 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            CheckServerTimeout();
+            Profiler.BeginSample("ClientManager.TimeManager_OnPostTick()");
+            try
+            {
+                CheckServerTimeout();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>

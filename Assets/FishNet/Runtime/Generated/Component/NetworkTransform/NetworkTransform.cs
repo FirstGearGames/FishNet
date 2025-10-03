@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using FishNet.Managing.Timing;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 using static FishNet.Object.NetworkObject;
 
@@ -767,8 +768,16 @@ namespace FishNet.Component.Transforming
 
         private void TimeManager_OnUpdate()
         {
-            float deltaTime = _useScaledTime ? Time.deltaTime : Time.unscaledDeltaTime;
-            MoveToTarget(deltaTime);
+            Profiler.BeginSample("NetworkTransform.TimeManager_OnUpdate()");
+            try
+            {
+                float deltaTime = _useScaledTime ? Time.deltaTime : Time.unscaledDeltaTime;
+                MoveToTarget(deltaTime);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
@@ -900,59 +909,67 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            //If to force send via tick delay do so and reset force send tick.
-            if (_forceSendTick != TimeManager.UNSET_TICK && _timeManager.LocalTick > _forceSendTick)
+            Profiler.BeginSample("NetworkTransform.TimeManager_OnPostTick()");
+            try
             {
-                _forceSendTick = TimeManager.UNSET_TICK;
-                ForceSend();
-            }
-
-            UpdateParentBehaviour();
-
-            /* Intervals remaining is only used when the interval value
-             * is set higher than 1. An interval of 1 indicates to send
-             * every tick. Only check to wait more ticks if interval
-             * is larger than 1. */
-            if (_interval > 1)
-            {
-                /* If intervalsRemaining is unset then that means the transform
-                 * did not change last tick. See if transform changed and if so then
-                 * update remaining to _interval. */
-                if (_intervalsRemaining == -1)
+                //If to force send via tick delay do so and reset force send tick.
+                if (_forceSendTick != TimeManager.UNSET_TICK && _timeManager.LocalTick > _forceSendTick)
                 {
-                    //Transform didn't change, no reason to start remaining.
-                    if (!_cachedTransform.hasChanged)
-                        return;
-
-                    _intervalsRemaining = _interval;
+                    _forceSendTick = TimeManager.UNSET_TICK;
+                    ForceSend();
                 }
 
-                //If here then intervalsRemaining can be deducted.
-                _intervalsRemaining--;
-                //Interval not met yet.
-                if (_intervalsRemaining > 0)
-                    return;
-                
-                //Intervals remainin is met. Reset to -1 to await new change.
-                _intervalsRemaining = -1;
+                UpdateParentBehaviour();
+
+                /* Intervals remaining is only used when the interval value
+                 * is set higher than 1. An interval of 1 indicates to send
+                 * every tick. Only check to wait more ticks if interval
+                 * is larger than 1. */
+                if (_interval > 1)
+                {
+                    /* If intervalsRemaining is unset then that means the transform
+                     * did not change last tick. See if transform changed and if so then
+                     * update remaining to _interval. */
+                    if (_intervalsRemaining == -1)
+                    {
+                        //Transform didn't change, no reason to start remaining.
+                        if (!_cachedTransform.hasChanged)
+                            return;
+
+                        _intervalsRemaining = _interval;
+                    }
+
+                    //If here then intervalsRemaining can be deducted.
+                    _intervalsRemaining--;
+                    //Interval not met yet.
+                    if (_intervalsRemaining > 0)
+                        return;
+
+                    //Intervals remainin is met. Reset to -1 to await new change.
+                    _intervalsRemaining = -1;
+                }
+
+                bool isServerInitialized = IsServerInitialized;
+                bool isClientInitialized = IsClientInitialized;
+
+                if (isServerInitialized)
+                {
+                    /* If client is not initialized then
+                     * call a move to targe ton post tick to ensure
+                     * anything with instant rates gets moved. */
+                    if (!isClientInitialized)
+                        MoveToTarget((float)_timeManager.TickDelta);
+                    //
+                    SendToClients();
+                }
+
+                if (isClientInitialized)
+                    SendToServer(_lastSentTransformData);
             }
-
-            bool isServerInitialized = IsServerInitialized;
-            bool isClientInitialized = IsClientInitialized;
-
-            if (isServerInitialized)
+            finally
             {
-                /* If client is not initialized then
-                 * call a move to targe ton post tick to ensure
-                 * anything with instant rates gets moved. */
-                if (!isClientInitialized)
-                    MoveToTarget((float)_timeManager.TickDelta);
-                //
-                SendToClients();
+                Profiler.EndSample();
             }
-
-            if (isClientInitialized)
-                SendToServer(_lastSentTransformData);
         }
 
         /// <summary>
