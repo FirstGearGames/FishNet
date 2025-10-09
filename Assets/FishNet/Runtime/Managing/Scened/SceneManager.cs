@@ -464,8 +464,8 @@ namespace FishNet.Managing.Scened
         {
             NetworkManager = manager;
             // No need to unregister since managers are on the same object.
-            NetworkManager.ServerManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
-            NetworkManager.ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
+            _serverManager.OnRemoteConnectionState += ServerManager_OnRemoteConnectionState;
+            _serverManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
             _clientManager.RegisterBroadcast<LoadScenesBroadcast>(OnServerLoadedScenes);
             _clientManager.RegisterBroadcast<UnloadScenesBroadcast>(OnServerUnloadedScenes);
             _serverManager.RegisterBroadcast<ClientScenesLoadedBroadcast>(OnClientLoadedScenes);
@@ -550,6 +550,17 @@ namespace FishNet.Managing.Scened
                 return;
             }
 
+            void SendEmptyBroadcast()
+            {
+                _pendingClientSceneLoads.AddClientToDefaultLoad(connection);
+                /* Invoke that client had loaded the default scenes immediately,
+                 * since there are no scenes to load. */
+                // OnClientLoadedScenes(connection, new ClientScenesLoadedBroadcast());
+                // Tell the client there are no scenes to load.
+                EmptyStartScenesBroadcast emptyMsg = new();
+                connection.Broadcast(emptyMsg);
+            }
+
             //There is at least 1 global scene to send.
             SceneLoadData sld = new(sceneLookupData.ToArray());
             sld.Params = _globalSceneLoadData.Params;
@@ -564,18 +575,10 @@ namespace FishNet.Managing.Scened
                 QueueData = qd
             };
 
-            connection.Broadcast(msg, requireAuthenticated: true);
+            foreach (SceneLookupData lookupData in sceneLookupData)
+                _pendingClientSceneLoads.AddClientToScene(connection, lookupData.Handle);
 
-            void SendEmptyBroadcast()
-            {
-                _pendingClientSceneLoads.AddClientToDefaultLoad(connection);
-                /* Invoke that client had loaded the default scenes immediately,
-                 * since there are no scenes to load. */
-                // OnClientLoadedScenes(connection, new ClientScenesLoadedBroadcast());
-                // Tell the client there are no scenes to load.
-                EmptyStartScenesBroadcast emptyMsg = new();
-                connection.Broadcast(emptyMsg);
-            }
+            connection.Broadcast(msg, requireAuthenticated: true);
         }
 
         /// <summary>
@@ -690,7 +693,7 @@ namespace FishNet.Managing.Scened
                     //Make sure the sceneId is pending.
                     if (!_pendingClientSceneLoads.RemoveClientFromScene(conn, item.Handle, out _))
                     {
-                        KickClient($"Sent a scene load response for handle [{item.Handle}], but client was not sent a load for this handle.");
+                        KickClient($"Client {conn.ToString()} sent a scene load response for handle [{item.Handle}], but client was not sent a load for this handle.");
                         break;
                     }
 
@@ -704,7 +707,7 @@ namespace FishNet.Managing.Scened
 
             void KickClient(string reason)
             {
-                //  conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"{reason} Connection will be kicked immediately.");
+                conn.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"{reason} Connection will be kicked immediately.");
             }
         }
         #endregion
@@ -881,72 +884,6 @@ namespace FishNet.Managing.Scened
                 return _globalScenes;
             }
         }
-
-        // #region IsQueuedScene.
-        ///// <summary>
-        ///// Returns if this SceneManager has a scene load or unload in queue for server or client.
-        ///// </summary>
-        ///// <param name="loading">True to check loading scenes, false to check unloading.</param>
-        ///// <param name="asServer">True to check if data in queue is for server, false if for client.
-        ///// <returns></returns>
-        // public bool IsQueuedScene(string sceneName, bool loading, bool asServer)
-        // {
-        //    _sceneLookupDataCache.Update(sceneName, 0);
-        //    return IsQueuedScene(_sceneLookupDataCache, loading, asServer);
-        // }
-        ///// <summary>
-        ///// Returns if this SceneManager has a scene load or unload in queue for server or client.
-        ///// </summary>
-        ///// <param name="loading">True to check loading scenes, false to check unloading.</param>
-        ///// <param name="asServer">True to check if data in queue is for server, false if for client.
-        ///// <returns></returns>
-        // public bool IsQueuedScene(int handle, bool loading, bool asServer)
-        // {
-        //    _sceneLookupDataCache.Update(string.Empty, handle);
-        //    return IsQueuedScene(_sceneLookupDataCache, loading, asServer);
-        // }
-        ///// <summary>
-        ///// Returns if this SceneManager has a scene load or unload in queue for server or client.
-        ///// </summary>
-        ///// <param name="loading">True to check loading scenes, false to check unloading.</param>
-        ///// <param name="asServer">True to check if data in queue is for server, false if for client.
-        ///// <returns></returns>
-        // public bool IsQueuedScene(Scene scene, bool loading, bool asServer)
-        // {
-        //    _sceneLookupDataCache.Update(scene.name, scene.handle);
-        //    return IsQueuedScene(_sceneLookupDataCache, loading, asServer);
-        // }
-        ///// <summary>
-        ///// Returns if this SceneManager has a scene load or unload in queue for server or client.
-        ///// </summary>
-        ///// <param name="loading">True to check loading scenes, false to check unloading.</param>
-        ///// <param name="asServer">True to check if data in queue is for server, false if for client.
-        ///// <returns></returns>
-        // public bool IsQueuedScene(SceneLookupData sld, bool loading, bool asServer)
-        // {
-        //    foreach (object item in _queuedOperations)
-        //    {
-        //        SceneLookupData[] lookupDatas = null;
-        //        // Loading check.
-        //        if (loading && item is SceneLoadData loadData)
-        //            lookupDatas = loadData.SceneLookupDatas;
-        //        else if (!loading && item is SceneUnloadData unloadData)
-        //            lookupDatas = unloadData.SceneLookupDatas;
-
-        //        if (lookupDatas != null)
-        //        {
-        //            foreach (SceneLookupData operationSld in lookupDatas)
-        //            {
-        //                if (operationSld == sld)
-        //                    return true;
-        //            }
-        //        }
-        //    }
-
-        //    // Fall through, not found in any queue operations.
-        //    return false;
-        // }
-        // #endregion
 
         #region LoadScenes
         /// <summary>
@@ -1544,9 +1481,9 @@ namespace FishNet.Managing.Scened
                     if (data.ScopeType == SceneScopeType.Global)
                     {
                         NetworkConnection[] conns = _serverManager.Clients.Values.ToArray();
-                        
+
                         AddClientPendingLoads(conns);
-                        
+
                         _serverManager.Broadcast(msg, requireAuthenticated: true);
                     }
                     // If connections scope then only send to connections.

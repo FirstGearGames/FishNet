@@ -34,7 +34,7 @@ namespace FishNet.Managing.Statistic
         public bool TryGetNetworkTrafficStatistics(out NetworkTrafficStatistics statistics)
         {
             statistics = null;
-            
+
             /* Cannot run in the current build type. */
             #if (!UNITY_EDITOR && !DEVELOPMENT_BUILD) || UNITY_SERVER
             if (!_runInRelease)
@@ -43,17 +43,16 @@ namespace FishNet.Managing.Statistic
                 return false;
             }
             #endif
-            
+
             //NetworkManager must be set to work.            
             if (_networkManager == null)
                 return false;
 
-            //Hotload if needed.
+            //Hot-load if needed.
             if (_networkTraffic == null)
-            {
                 _networkTraffic = new();
-                _networkTraffic.InitializeOnce_Internal(_networkManager);
-            }
+
+            _networkTraffic.InitializeOnce_Internal(_networkManager);
 
             if (_networkTraffic.IsEnabled())
                 statistics = _networkTraffic;

@@ -659,7 +659,7 @@ namespace FishNet.Managing.Server
             writer.WriteNetworkConnection(conn);
             /* If predicted spawning is enabled then also send
              * reserved objectIds. */
-            ;
+            
             PredictionManager pm = NetworkManager.PredictionManager;
             if (GetAllowPredictedSpawning())
             {
@@ -862,7 +862,7 @@ namespace FishNet.Managing.Server
             }
             catch (Exception e)
             {
-                Kick(args.ConnectionId, KickReason.MalformedData, LoggingType.Error, $"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately. Message: {e.Message}.");
+                Kick(args.ConnectionId, KickReason.MalformedData, LoggingType.Error, $"Server encountered an error while parsing data for packetId {packetId} from connectionId {args.ConnectionId}. Connection will be kicked immediately. Message: {e}.");
             }
             finally
             {

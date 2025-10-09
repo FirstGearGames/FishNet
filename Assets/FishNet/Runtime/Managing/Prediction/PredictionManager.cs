@@ -632,7 +632,7 @@ namespace FishNet.Managing.Predicting
                 uint serverTick = sp.ServerTick;
 
                 //Check to throttle reconciles.
-                if (_reduceReconcilesWithFramerate && _clientReconcileThrottler.TryReconcile(_minimumClientReconcileFramerate))
+                if (_reduceReconcilesWithFramerate && !_clientReconcileThrottler.TryReconcile(_minimumClientReconcileFramerate))
                     dropReconcile = true;
 
                 if (!dropReconcile)

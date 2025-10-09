@@ -639,8 +639,9 @@ namespace FishNet.Managing.Client
                 {
                     /* If host then just read Ids, but do not
                      * enqueue as server side already did so. */
+                    int id = reader.ReadNetworkObjectId();
                     if (!isServerStarted)
-                        q.Enqueue(reader.ReadNetworkObjectId());
+                        q.Enqueue(id);
                 }
             }
 

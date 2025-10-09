@@ -60,7 +60,17 @@ namespace FishNet.Object
         /// <summary>
         /// SyncTypes within this NetworkBehaviour.
         /// </summary>
-        private Dictionary<uint, SyncBase> _syncTypes = new();
+        private Dictionary<uint, SyncBase> _syncTypes 
+        {
+            get
+            {
+                if (_syncTypesCache == null)
+                    _syncTypesCache = CollectionCaches<uint, SyncBase>.RetrieveDictionary();
+
+                return _syncTypesCache;
+            }
+        }
+        private Dictionary<uint, SyncBase> _syncTypesCache;
         /// <summary>
         /// True if at least one syncType is dirty.
         /// </summary>
@@ -92,8 +102,6 @@ namespace FishNet.Object
         /// <param name = "index"></param>
         internal void RegisterSyncType(SyncBase sb, uint index)
         {
-            if (_syncTypes == null)
-                _syncTypes = CollectionCaches<uint, SyncBase>.RetrieveDictionary();
             if (!_syncTypes.TryAdd(index, sb))
                 NetworkManager.LogError($"SyncType key {index} has already been added for {GetType().FullName} on {gameObject.name}");
         }
@@ -540,7 +548,7 @@ namespace FishNet.Object
 
         private void SyncTypes_OnDestroy()
         {
-            CollectionCaches<uint, SyncBase>.StoreAndDefault(ref _syncTypes);
+            CollectionCaches<uint, SyncBase>.StoreAndDefault(ref _syncTypesCache);
         }
     }
 }

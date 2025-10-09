@@ -341,7 +341,12 @@ namespace FishNet.Object
         /// <summary>
         /// Sets that InitializedValues have not yet been set. This can be used to force objects to reinitialize which may have changed since the prefab was initialized, such as placed scene objects.
         /// </summary>
-        internal void UnsetInitializedValuesSet() => _initializedValusSet = false;
+        internal void UnsetInitializedValuesSet()
+        {
+            if (gameObject.name.Contains("XYZ"))
+                Debug.Log("Unset!!" + gameObject.name);
+            _initializedValusSet = false;
+        }
         #endregion
 
         #region Const.
@@ -381,9 +386,10 @@ namespace FishNet.Object
                 bool isNested = false;
                 // Make sure there are no networkObjects above this since initializing will trickle down.
                 Transform parent = transform.parent;
+                NetworkObject parentNetworkObject = null;
                 while (parent != null)
                 {
-                    if (parent.TryGetComponent<NetworkObject>(out _))
+                    if (parent.TryGetComponent(out parentNetworkObject))
                     {
                         isNested = true;
                         break;
@@ -394,7 +400,25 @@ namespace FishNet.Object
 
                 // If not nested then init
                 if (!isNested)
+                {
                     SetInitializedValues(parentNob: null, force: false);
+                }
+                else
+                {
+                    /* If parent is initialized then nothing needs to be done; when the
+                     * parent initializes it will get the nested as well.
+                     *
+                     * However, is the parent is initialized then we need to
+                     * initialize this now, otherwise it may never occur. */
+                    if (parentNetworkObject._initializedValusSet)
+                    {
+                        /* This condition only occurs when the user sets parent at runtime.
+                         * Because of this, do not pass parent into SetInitializedValues, otherwise
+                         * this nob will assume the provided parent is from a prefab. */
+                        SetInitializedValues(parentNob: null, force: true);
+                        SetParent(parentNetworkObject);
+                    }
+                }
             }
 
             SetChildDespawnedState();
@@ -471,7 +495,7 @@ namespace FishNet.Object
 
             SetDeinitializedStatus();
 
-            NetworkBehaviour_OnDestroy();
+            NetworkBehaviour_OnDestroy(); 
 
             ResetState(asServer: true);
             ResetState(asServer: false);
@@ -875,12 +899,11 @@ namespace FishNet.Object
                 StoreCollections();
 
                 RetrieveCollections();
-
                 _initializedValusSet = true;
             }
 
             SerializeTransformProperties();
-            SetIsNestedThroughTraversal();
+            NetworkObject parentNetworkObject = SetIsNestedThroughTraversal();
             /* This method can be called by the developer initializing prefabs, the prefab collection doing it automatically,
              * or when the networkobject is modified or added to an object.
              *
@@ -899,7 +922,7 @@ namespace FishNet.Object
                 /* It's not possible to be nested while also having a componentIndex of 0.
                  * This would mean that the networkObject is being initialized outside of a
                  * recursive check. We only want to initialize recursively, or when not nested. */
-                if (IsNested)
+                if (IsNested && parentNetworkObject.InitializedNestedNetworkObjects.Contains(this))
                     return;
 
                 if (GetComponentsInChildren<NetworkObject>(true).Length > NetworkBehaviour.MAXIMUM_NETWORKBEHAVIOURS)
@@ -908,7 +931,7 @@ namespace FishNet.Object
                     return;
                 }
             }
-
+            
             NetworkBehaviours.Clear();
 
             if (TryGetComponent(out PredictedSpawn ps))
@@ -934,7 +957,7 @@ namespace FishNet.Object
                 else
                     InitializedParentNetworkBehaviour = parentNb;
             }
-
+            
             // Transforms which can be searched for networkbehaviours.
             List<Transform> transformCache = CollectionCaches<Transform>.RetrieveList();
             InitializedNestedNetworkObjects.Clear();
@@ -977,7 +1000,7 @@ namespace FishNet.Object
                 transformCache[i].GetNetworkBehavioursNonAlloc(ref nbCache2);
                 nbCache.AddRange(nbCache2);
             }
-
+            
             /* If there's no NBs then add an empty one.
              * All NetworkObjects must have at least 1 NetworkBehaviour
              * to allow nesting. */
@@ -1321,19 +1344,20 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Sets IsNested and returns the result.
+        /// Sets IsNested and returns the parent if IsNested.
         /// </summary>
         /// <returns></returns>
-        internal bool SetIsNestedThroughTraversal()
+        internal NetworkObject SetIsNestedThroughTraversal()
         {
             Transform parent = transform.parent;
             // Iterate long as parent isn't null, and isnt self.
             while (parent != null && parent != transform)
             {
-                if (parent.TryGetComponent<NetworkObject>(out _))
+                if (parent.TryGetComponent(out NetworkObject parentNetworkObject))
                 {
                     IsNested = true;
-                    return IsNested;
+                    
+                    return parentNetworkObject;
                 }
 
                 parent = parent.parent;
@@ -1341,7 +1365,8 @@ namespace FishNet.Object
 
             // No NetworkObject found in parents, meaning this is not nested.
             IsNested = false;
-            return IsNested;
+
+            return null;
         }
 
         /// <summary>

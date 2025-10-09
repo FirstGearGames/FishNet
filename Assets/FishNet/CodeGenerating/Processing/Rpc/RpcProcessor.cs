@@ -160,7 +160,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         /// </summary>
         private string GetRpcMethodName(RpcType rpcType, MethodDefinition originalMd)
         {
-            return $"{GetMethodNameAsParameters(originalMd)}";
+            return $"{rpcType.ToString()}_{GetMethodNameAsParameters(originalMd)}";
         }
 
         /// <summary>

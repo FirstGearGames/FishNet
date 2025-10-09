@@ -102,6 +102,10 @@ namespace FishNet.Managing.Statistic
         /// Size suffixes as text.
         /// </summary>
         private static readonly string[] _sizeSuffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB" };
+        /// <summary>
+        /// True if initialized.
+        /// </summary>
+        private bool _initializedOnce;
         #endregion
 
         #region Consts.
@@ -113,6 +117,9 @@ namespace FishNet.Managing.Statistic
 
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
+            if (_initializedOnce)
+                return;
+            
             _networkManager = manager;
 
             /* Do not bother caching once destroyed. Losing a single instance of each
