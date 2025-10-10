@@ -75,10 +75,16 @@ namespace FishNet.Component.Transforming.Beta
             _initializedOffline = initializationSettings.InitializingNetworkBehaviour == null;
 
             _isInitialized = true;
+
+            // Register in NetworkObject by target when online.
+            RegisterInNetworkObject();
+
         }
 
         public void OnDestroy()
         {
+            UnregisterInNetworkObject();
+
             ChangeSubscriptions(false);
             StoreSmoother();
             _destroyed = true;
@@ -272,8 +278,43 @@ namespace FishNet.Component.Transforming.Beta
             }
         }
 
+        /// <summary>
+        /// Registers this controller into its NetworkObject index by target transform.
+        /// Only when initialized online (_initializingNetworkBehaviour != null) and _isInitialized == true.
+        /// </summary>
+        private void RegisterInNetworkObject()
+        {
+            if (!_isInitialized || _initializingNetworkBehaviour == null)
+                return;
+            var no = _initializingNetworkBehaviour.NetworkObject;
+            if (no == null)
+                return;
+            var target = _initializationSettings.TargetTransform;
+            if (target == null)
+                return;
+            no.RegisterTickSmootherController(target, this);
+        }
+
+        /// <summary>
+        /// Unregisters this controller from its NetworkObject index by target transform.
+        /// </summary>
+        private void UnregisterInNetworkObject()
+        {
+            if (_initializingNetworkBehaviour == null)
+                return;
+            var no = _initializingNetworkBehaviour.NetworkObject;
+            if (no == null)
+                return;
+            var target = _initializationSettings.TargetTransform;
+            if (target == null)
+                return;
+            no.UnregisterTickSmootherController(target, this);
+        }
+        
         public void ResetState()
         {
+            UnregisterInNetworkObject();
+
             _initializationSettings = default;
             _ownerMovementSettings = default;
             _spectatorMovementSettings = default;
