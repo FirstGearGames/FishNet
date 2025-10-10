@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using FishNet.Managing.Statistic;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace FishNet.Managing.Server
 {
@@ -221,7 +222,7 @@ namespace FishNet.Managing.Server
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
 #if DEVELOPMENT
         /// <summary>
         /// Logs data about parser to help debug.
@@ -438,7 +439,15 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            CheckClientTimeout();
+            Profiler.BeginSample("ServerManager.TimeManager_OnPostTick()");
+            try
+            {
+                CheckClientTimeout();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>

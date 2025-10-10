@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -136,7 +137,15 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPreTick()
         {
-            _tickSmoother.OnPreTick();
+            Profiler.BeginSample("MonoTickSmoother._timeManager_OnPreTick()");
+            try
+            {
+                _tickSmoother.OnPreTick();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
@@ -144,7 +153,15 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPostTick()
         {
-            _tickSmoother.OnPostTick();
+            Profiler.BeginSample("MonoTickSmoother._timeManager_OnPostTick()");
+            try
+            {
+                _tickSmoother.OnPostTick();
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
     }
 }

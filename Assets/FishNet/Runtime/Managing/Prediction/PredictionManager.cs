@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using FishNet.Managing.Statistic;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.Serialization;
 
 namespace FishNet.Managing.Predicting
@@ -539,15 +540,23 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         private void TimeManager_OnLateUpdate()
         {
-            /* Do not throttle nor count frames if scene manager has performed actions recently. */
-            if (_networkManager.SceneManager.HasProcessedScenesRecently(timeFrame: 2f)) 
+            Profiler.BeginSample("PredictionManager.TimeManager_OnLateUpdate()");
+            try
             {
-                _clientReconcileThrottler.ResetState();
-                return;
-            }
+                /* Do not throttle nor count frames if scene manager has performed actions recently. */
+                if (_networkManager.SceneManager.HasProcessedScenesRecently(timeFrame: 2f)) 
+                {
+                    _clientReconcileThrottler.ResetState();
+                    return;
+                }
             
-            if (_reduceReconcilesWithFramerate)
-                _clientReconcileThrottler.AddFrame(Time.unscaledDeltaTime);
+                if (_reduceReconcilesWithFramerate)
+                    _clientReconcileThrottler.AddFrame(Time.unscaledDeltaTime);
+            }
+            finally
+            {
+                Profiler.EndSample();
+            }
         }
 
         /// <summary>
@@ -662,18 +671,81 @@ namespace FishNet.Managing.Predicting
                     bool timeManagerPhysics = tm.PhysicsMode == PhysicsMode.TimeManager;
                     float tickDelta = (float)tm.TickDelta * _networkManager.TimeManager.GetPhysicsTimeScale();
 
-                    OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
-                    OnReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                    
+                    Profiler.BeginSample("PredictionManager.OnPreReconcile(uint, uint)");
+                    try
+                    {
+                        OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
+                    
+                    Profiler.BeginSample("PredictionManager.OnReconcile(uint, uint)");
+                    try
+                    {
+
+                        OnReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
 
                     if (timeManagerPhysics)
                     {
-                        OnPrePhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
-                        Physics.SyncTransforms();
-                        Physics2D.SyncTransforms();
-                        OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
+                        Profiler.BeginSample("PredictionManager.OnPrePhysicsTransformSync(uint, uint)");
+                        try
+                        {
+                            OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("PredictionManager.Physics.SyncTransforms()");
+                        try
+                        {
+                            Physics.SyncTransforms();
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("PredictionManager.Physics2D.SyncTransforms()");
+                        try
+                        {
+                            Physics2D.SyncTransforms();
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("PredictionManager.OnPostPhysicsTransformSync(uint, uint)");
+                        try
+                        {
+                            OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
                     }
 
-                    OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
+                    Profiler.BeginSample("PredictionManager.OnPostReconcileSyncTransforms(uint, uint)");
+                    try
+                    {
+                        OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
+                    
                     /* Set first replicate to be the 1 tick
                      * after reconcile. This is because reconcile calcs
                      * should be performed after replicate has run.
@@ -694,19 +766,72 @@ namespace FishNet.Managing.Predicting
                      * will fire for 100.                     */
                     while (ClientReplayTick < localTick)
                     {
-                        OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+                        Profiler.BeginSample("PredictionManager.OnPreReplicateReplay(uint, uint)");
+                        try
+                        {
+                            OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
+                        Profiler.BeginSample("PredictionManager.OnReplicateReplay(uint, uint)");
+                        try
+                        {
+                            OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
                         if (timeManagerPhysics && tickDelta > 0f)
                         {
-                            Physics.Simulate(tickDelta);
-                            Physics2D.Simulate(tickDelta);
+                            Profiler.BeginSample("PredictionManager.Physics.Simulate(float)");
+                            try
+                            {
+                                Physics.Simulate(tickDelta);
+                            }
+                            finally
+                            {
+                                Profiler.EndSample();
+                            }
+                        
+                            Profiler.BeginSample("PredictionManager.Physics2D.Simulate(float)");
+                            try
+                            {
+                                Physics2D.Simulate(tickDelta);
+                            }
+                            finally
+                            {
+                                Profiler.EndSample();
+                            }
                         }
-                        OnPostReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+                        
+                        Profiler.BeginSample("PredictionManager.OnPostReplicateReplay(uint, uint)");
+                        try
+                        {
+                            OnPostReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+                        }
+                        finally
+                        {
+                            Profiler.EndSample();
+                        }
+                        
                         ClientReplayTick++;
                         ServerReplayTick++;
                     }
-
-                    OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                    
+                    Profiler.BeginSample("PredictionManager.OnPostReconcile(uint, uint)");
+                    try
+                    {
+                        OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                    }
+                    finally
+                    {
+                        Profiler.EndSample();
+                    }
 
                     // ClientStateTick = TimeManager.UNSET_TICK;
                     // ServerStateTick = TimeManager.UNSET_TICK;
