@@ -22,6 +22,7 @@ using System.Text;
 using FishNet.Managing.Statistic;
 using UnityEngine;
 using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace FishNet.Managing.Server
 {
@@ -208,6 +209,13 @@ namespace FishNet.Managing.Server
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("ServerManager.TimeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// The last index checked to see if a client has not sent a packet in awhile.
         /// </summary>
@@ -439,14 +447,9 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            Profiler.BeginSample("ServerManager.TimeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 CheckClientTimeout();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

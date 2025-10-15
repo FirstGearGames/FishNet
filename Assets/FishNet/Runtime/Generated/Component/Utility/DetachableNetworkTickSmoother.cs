@@ -6,7 +6,7 @@ using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace FishNet.Component.Transforming
 {
@@ -69,6 +69,13 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// TimeManager subscribed to.
         /// </summary>
@@ -171,8 +178,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPostTick()
         {
-            Profiler.BeginSample("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 if (!_initialized)
                     return;
@@ -186,10 +192,6 @@ namespace FishNet.Component.Transforming
                 if (!_synchronizeScale)
                     _postTickFollowObjectWorldProperties.Scale = transform.localScale;
                 SetMoveRates();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

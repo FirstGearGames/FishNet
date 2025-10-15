@@ -6,6 +6,8 @@ using FishNet.Editing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace FishNet.Managing.Statistic
 {
@@ -86,6 +88,13 @@ namespace FishNet.Managing.Statistic
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("NetworkTrafficStatistics.TimeManager_OnPreTick()");
+        
+        #endregion
+        
         /// <summary>
         /// NetworkManager for this statistics.
         /// </summary>
@@ -129,22 +138,25 @@ namespace FishNet.Managing.Statistic
         /// </summary>
         private void TimeManager_OnPreTick()
         {
-            /* Since we are sending last ticks data at the end of the tick,
-             * the tick used will always be 1 less than current tick. */
-            long trafficTick = _networkManager.TimeManager.LocalTick - 1;
-            //Invalid tick.
-            if (trafficTick <= 0)
-                return;
+            using (PM_OnPreTick.Auto())
+            {
+                /* Since we are sending last ticks data at the end of the tick,
+                 * the tick used will always be 1 less than current tick. */
+                long trafficTick = _networkManager.TimeManager.LocalTick - 1;
+                //Invalid tick.
+                if (trafficTick <= 0)
+                    return;
 
-            if (_networkManager.IsClientStarted || _networkManager.IsServerStarted)
-                OnNetworkTraffic?.Invoke((uint)trafficTick, _serverTraffic, _clientTraffic);
+                if (_networkManager.IsClientStarted || _networkManager.IsServerStarted)
+                    OnNetworkTraffic?.Invoke((uint)trafficTick, _serverTraffic, _clientTraffic);
 
-            /* It's important to remember that after actions are invoked
-             * the traffic stat fields are reset. Each listener should use
-             * the MultiwayTrafficCollection.Clone method to get a copy,
-             * and should cache that copy when done. */
-            _clientTraffic.Reinitialize();
-            _serverTraffic.Reinitialize();
+                /* It's important to remember that after actions are invoked
+                 * the traffic stat fields are reset. Each listener should use
+                 * the MultiwayTrafficCollection.Clone method to get a copy,
+                 * and should cache that copy when done. */
+                _clientTraffic.Reinitialize();
+                _serverTraffic.Reinitialize();
+            }
         }
 
         /// <summary>

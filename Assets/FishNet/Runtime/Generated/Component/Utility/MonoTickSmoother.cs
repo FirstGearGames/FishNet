@@ -4,7 +4,7 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -50,6 +50,14 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("MonoTickSmoother._timeManager_OnPreTick()");
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("MonoTickSmoother._timeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// TimeManager subscribed to.
         /// </summary>
@@ -137,14 +145,9 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPreTick()
         {
-            Profiler.BeginSample("MonoTickSmoother._timeManager_OnPreTick()");
-            try
+            using (PM_OnPreTick.Auto())
             {
                 _tickSmoother.OnPreTick();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
@@ -153,14 +156,9 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPostTick()
         {
-            Profiler.BeginSample("MonoTickSmoother._timeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 _tickSmoother.OnPostTick();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
     }

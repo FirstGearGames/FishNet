@@ -12,6 +12,7 @@ using FishNet.Connection;
 using FishNet.Managing.Server;
 using UnityEngine;
 using UnityEngine.Profiling;
+using Unity.Profiling;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -156,6 +157,18 @@ namespace FishNet.Object
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("NetworkObject.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker PM_OnPostReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("NetworkObject.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker PM_OnPreReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
+        private static readonly ProfilerMarker PM_OnReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
+        private static readonly ProfilerMarker PM_OnPostReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
+        private static readonly ProfilerMarker PM_OnReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
+        
+        #endregion
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
@@ -319,64 +332,43 @@ namespace FishNet.Object
 
         private void TimeManager_OnPreTick()
         {
-            Profiler.BeginSample("NetworkObject.TimeManager_OnPreTick()");
-            try
+            using (PM_OnPreTick.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPreTick();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
-            Profiler.BeginSample("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
-            try
+            using (PM_OnPostReplicateReplay.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPostReplicateReplay(clientTick);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
         private void TimeManager_OnPostTick()
         {
-            Profiler.BeginSample("NetworkObject.TimeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPostTick(NetworkManager.TimeManager.LocalTick);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
         private void PredictionManager_OnPreReconcile(uint clientTick, uint serverTick)
         {
-            Profiler.BeginSample("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
-            try
+            using (PM_OnPreReconcile.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPreReconcile();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            Profiler.BeginSample("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
-            try
+            using (PM_OnReconcile.Auto())
             {
                 /* Tell all prediction behaviours to set/validate their
                  * reconcile data now. This will use reconciles from the server
@@ -394,16 +386,11 @@ namespace FishNet.Object
                         _rigidbodyPauser.Pause();
                 }
             }
-            finally
-            {
-                Profiler.EndSample();
-            }
         }
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            Profiler.BeginSample("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
-            try
+            using (PM_OnPostReconcile.Auto())
             {
                 for (int i = 0; i < _predictionBehaviours.Count; i++)
                     _predictionBehaviours[i].Reconcile_Client_End();
@@ -416,24 +403,15 @@ namespace FishNet.Object
                     _rigidbodyPauser.Unpause();
                 IsObjectReconciling = false;
             }
-            finally
-            {
-                Profiler.EndSample();
-            }
         }
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
-            Profiler.BeginSample("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
-            try
+            using (PM_OnReplicateReplay.Auto())
             {
                 uint replayTick = IsOwner ? clientTick : serverTick;
                 for (int i = 0; i < _predictionBehaviours.Count; i++)
                     _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

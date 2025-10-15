@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using FishNet.Managing.Statistic;
 using UnityEngine;
 using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace FishNet.Managing.Client
 {
@@ -133,6 +134,12 @@ namespace FishNet.Managing.Client
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("ClientManager.TimeManager_OnPostTick()");
+        
+        #endregion
         /// <summary>
         /// Last unscaled time client got a packet.
         /// </summary>
@@ -671,14 +678,9 @@ namespace FishNet.Managing.Client
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            Profiler.BeginSample("ClientManager.TimeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 CheckServerTimeout();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

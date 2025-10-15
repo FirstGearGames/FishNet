@@ -14,7 +14,7 @@ using System;
 using System.Collections.Generic;
 using FishNet.Managing.Timing;
 using UnityEngine;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 using static FishNet.Object.NetworkObject;
 
@@ -371,12 +371,12 @@ namespace FishNet.Component.Transforming
             Rotation = AutoPackType.Packed,
             Scale = AutoPackType.Unpacked
         };
-        /// <summary>
         /// True to use scaled deltaTime when smoothing.
         /// </summary>
         [Tooltip("True to use scaled deltaTime when smoothing.")]
         [SerializeField]
         private bool _useScaledTime = true;
+        /// <summary>
         /// <summary>
         /// How many ticks to interpolate.
         /// </summary>
@@ -536,6 +536,14 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("NetworkTransform.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("NetworkTransform.TimeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// Packing data with all values set to uncompressed.
         /// </summary>
@@ -768,15 +776,10 @@ namespace FishNet.Component.Transforming
 
         private void TimeManager_OnUpdate()
         {
-            Profiler.BeginSample("NetworkTransform.TimeManager_OnUpdate()");
-            try
+            using (PM_OnUpdate.Auto())
             {
                 float deltaTime = _useScaledTime ? Time.deltaTime : Time.unscaledDeltaTime;
                 MoveToTarget(deltaTime);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
@@ -909,8 +912,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            Profiler.BeginSample("NetworkTransform.TimeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 //If to force send via tick delay do so and reset force send tick.
                 if (_forceSendTick != TimeManager.UNSET_TICK && _timeManager.LocalTick > _forceSendTick)
@@ -965,10 +967,6 @@ namespace FishNet.Component.Transforming
 
                 if (isClientInitialized)
                     SendToServer(_lastSentTransformData);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
@@ -1704,7 +1702,28 @@ namespace FishNet.Component.Transforming
                 //No more in buffer, see if can extrapolate.
                 else
                 {
-                    /* If everything matches up then end queue.
+                    //PROSTART
+                    //Can extrapolate.
+                    if (td.ExtrapolationState == TransformData.ExtrapolateState.Available)
+                    {
+                        rd.TimeRemaining = (float)(_extrapolation * _timeManager.TickDelta);
+                        td.ExtrapolationState = TransformData.ExtrapolateState.Active;
+                        if (leftOver > 0f)
+                            MoveToTarget(leftOver);
+                    }
+                    //Ran out of extrapolate.
+                    else if (td.ExtrapolationState == TransformData.ExtrapolateState.Active)
+                    {
+                        rd.TimeRemaining = (float)(_extrapolation * _timeManager.TickDelta);
+                        td.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
+                        if (leftOver > 0f)
+                            MoveToTarget(leftOver);
+                    }
+                    //Extrapolation has ended or was never enabled.
+                    else
+                    {
+                        //PROEND
+                        /* If everything matches up then end queue.
                          * Otherwise let it play out until stuff
                          * aligns. Generally the time remaining is enough
                          * but every once in awhile something goes funky
@@ -1712,7 +1731,10 @@ namespace FishNet.Component.Transforming
                         if (!HasChanged(td))
                             _currentGoalData = null;
                         OnInterpolationComplete?.Invoke();
-                        }
+                        //PROSTART
+                    }
+                    //PROEND
+                }
             }
         }
 
@@ -2222,7 +2244,16 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            }
+            //PROSTART
+            //Teleports cannot extrapolate.
+            if (_extrapolation == 0 || !_synchronizePosition || channel == Channel.Reliable || next.Position == prev.Position)
+                return;
+
+            Vector3 offet = (next.Position - prev.Position) * _extrapolation;
+            next.ExtrapolatedPosition = next.Position + offet;
+            next.ExtrapolationState = TransformData.ExtrapolateState.Available;
+            //PROEND
+        }
 
         /// <summary>
         /// Updates a client with transform data.

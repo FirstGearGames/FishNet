@@ -3,7 +3,7 @@ using FishNet.Managing.Timing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -21,6 +21,15 @@ namespace FishNet.Component.Transforming.Beta
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("TickSmootherController.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// </summary>
         private InitializationSettings _initializationSettings = new();
@@ -141,27 +150,17 @@ namespace FishNet.Component.Transforming.Beta
 
         public void TimeManager_OnUpdate()
         {
-            Profiler.BeginSample("TickSmootherController.TimeManager_OnUpdate()");
-            try
+            using (PM_OnUpdate.Auto())
             {
                 UniversalSmoother.OnUpdate(Time.deltaTime);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
         public void TimeManager_OnPreTick()
         {
-            Profiler.BeginSample("TickSmootherController.TimeManager_OnPreTick()");
-            try
+            using (PM_OnPreTick.Auto())
             {
                 UniversalSmoother.OnPreTick();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
@@ -170,15 +169,10 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void TimeManager_OnPostTick()
         {
-            Profiler.BeginSample("TickSmootherController.TimeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 if (_timeManager != null)
                     UniversalSmoother.OnPostTick(_timeManager.LocalTick);
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 

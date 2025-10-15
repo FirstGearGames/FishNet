@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
 using UnityEngine;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Animating
@@ -274,6 +274,18 @@ namespace FishNet.Component.Animating
         }
         #endregion
 
+        #region Private
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("NetworkAnimator.TimeManager_OnUpdate()");
+        
+        #endregion
+        
+        #endregion
+        
         #region Public.
         /// <summary>
         /// Parameters which will not be synchronized.
@@ -569,14 +581,14 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPreTick()
         {
-            Profiler.BeginSample("NetworkAnimator.TimeManager_OnPreTick()");
-            try
+            using (PM_OnPreTick.Auto())
             {
                 if (!_canSynchronizeAnimator)
                 {
                     _fromServerBuffer.Clear();
                     return;
                 }
+
                 //Disabled/cannot start.
                 if (_startTick == 0)
                     return;
@@ -586,6 +598,7 @@ namespace FishNet.Component.Animating
                     _startTick = 0;
                     return;
                 }
+
                 //Not enough time has passed to start queue.
                 if (TimeManager.LocalTick < _startTick)
                     return;
@@ -594,10 +607,6 @@ namespace FishNet.Component.Animating
                 ArraySegment<byte> segment = rd.GetArraySegment();
                 ApplyParametersUpdated(ref segment);
                 rd.Dispose();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
@@ -608,8 +617,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            Profiler.BeginSample("NetworkAnimator.TimeManager_OnPostTick()");
-            try
+            using (PM_OnPostTick.Auto())
             {
                 //One check rather than per each method.
                 if (!_canSynchronizeAnimator)
@@ -618,26 +626,17 @@ namespace FishNet.Component.Animating
                 CheckSendToServer();
                 CheckSendToClients();
             }
-            finally
-            {
-                Profiler.EndSample();
-            }
         }
 
         private void TimeManager_OnUpdate()
         {
-            Profiler.BeginSample("NetworkAnimator.TimeManager_OnUpdate()");
-            try
+            using (PM_OnUpdate.Auto())
             {
                 if (!_canSynchronizeAnimator)
                     return;
 
                 if (IsClientStarted)
                     SmoothFloats();
-            }
-            finally
-            {
-                Profiler.EndSample();
             }
         }
 
@@ -675,6 +674,12 @@ namespace FishNet.Component.Animating
             foreach (AnimatorControllerParameter item in _animator.parameters)
             {
                 bool process = !_animator.IsParameterControlledByCurve(item.name);
+                //PROSTART
+                /* This is done in a weird way for processing
+                 * to work with the pro tool stripper. */
+                if (IgnoredParameters.Contains(item.name))
+                    process = false;
+                //PROEND
                 if (process)
                 {
                     //Over 250 parameters; who would do this!?
