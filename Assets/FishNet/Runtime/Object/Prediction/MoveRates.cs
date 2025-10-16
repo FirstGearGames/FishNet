@@ -170,7 +170,9 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static MoveRates GetWorldMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
         {
-            return GetMoveRates(from.position, to.position, from.rotation, to.rotation, from.localScale, to.localScale, duration, teleportThreshold);
+            from.GetPositionAndRotation(out var fromPos, out var fromRot);
+            to.GetPositionAndRotation(out var toPos, out var toRot);
+            return GetMoveRates(fromPos, toPos, fromRot, toRot, from.localScale, to.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -178,7 +180,9 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static MoveRates GetLocalMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
         {
-            return GetMoveRates(from.localPosition, to.localPosition, from.localRotation, to.localRotation, from.localScale, to.localScale, duration, teleportThreshold);
+            from.GetPositionAndRotation(out var fromPos, out var fromRot);
+            to.GetPositionAndRotation(out var toPos, out var toRot);
+            return GetMoveRates(fromPos, toPos, fromRot, toRot, from.localScale, to.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -186,7 +190,8 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static MoveRates GetWorldMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
+            t.GetPositionAndRotation(out var pos, out var rot);
+            return GetMoveRates(prevValues.Position, pos, prevValues.Rotation, rot, prevValues.Scale, t.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -194,7 +199,8 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static MoveRates GetLocalMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
+            t.GetLocalPositionAndRotation(out var pos, out var rot);
+            return GetMoveRates(prevValues.Position, pos, prevValues.Rotation, rot, prevValues.Scale, t.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
@@ -307,18 +313,22 @@ namespace FishNet.Object.Prediction
                 //World space.
                 if (useWorldSpace)
                 {
+                    t.GetPositionAndRotation(out var pos, out var rot);
+                    Vector3? finalPos = null;
+                    Quaternion? finalRot = null;
+                    
                     if (containsPosition)
                     {
                         if (posRate == INSTANT_VALUE)
                         {
-                            t.position = posGoal;
+                            finalPos = posGoal;
                         }
                         else if (posRate == UNSET_VALUE)
                         {
                         }
                         else
                         {
-                            t.position = Vector3.MoveTowards(t.position, posGoal, posRate * delta);
+                            finalPos = Vector3.MoveTowards(pos, posGoal, posRate * delta);
                         }
                     }
 
@@ -326,32 +336,39 @@ namespace FishNet.Object.Prediction
                     {
                         if (rotRate == INSTANT_VALUE)
                         {
-                            t.rotation = rotGoal;
+                            finalRot = rotGoal;
                         }
                         else if (rotRate == UNSET_VALUE)
                         {
                         }
                         else
                         {
-                            t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, rotRate * delta);
+                            finalRot = Quaternion.RotateTowards(rot, rotGoal, rotRate * delta);
                         }
                     }
+
+                    if (finalPos.HasValue || finalRot.HasValue)
+                        t.SetPositionAndRotation(finalPos ?? pos, finalRot ?? rot);
                 }
                 //Local space.
                 else
                 {
+                    t.GetLocalPositionAndRotation(out var pos, out var rot);
+                    Vector3? finalPos = null;
+                    Quaternion? finalRot = null;
+                    
                     if (containsPosition)
                     {
                         if (posRate == INSTANT_VALUE)
                         {
-                            t.localPosition = posGoal;
+                            finalPos = posGoal;
                         }
                         else if (posRate == UNSET_VALUE)
                         {
                         }
                         else
                         {
-                            t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, posRate * delta);
+                            finalPos = Vector3.MoveTowards(pos, posGoal, posRate * delta);
                         }
                     }
 
@@ -359,16 +376,19 @@ namespace FishNet.Object.Prediction
                     {
                         if (rotRate == INSTANT_VALUE)
                         {
-                            t.localRotation = rotGoal;
+                            finalRot = rotGoal;
                         }
                         else if (rotRate == UNSET_VALUE)
                         {
                         }
                         else
                         {
-                            t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, rotRate * delta);
+                            finalRot = Quaternion.RotateTowards(rot, rotGoal, rotRate * delta);
                         }
                     }
+                    
+                    if (finalPos.HasValue || finalRot.HasValue)
+                        t.SetLocalPositionAndRotation(finalPos ?? pos, finalRot ?? rot);
                 }
 
                 //Scale always uses local.
