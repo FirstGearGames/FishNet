@@ -13,9 +13,9 @@ namespace FishNet.Object.Prediction
     {
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_GetMoveRatesFull = new ProfilerMarker("MoveRates.GetMoveRates(Vector3, Vector3, Quaternion, Quaternion, Vector3, Vector3, float, float)");
-        private static readonly ProfilerMarker PM_GetMoveRatesVec = new ProfilerMarker("MoveRates.GetMoveRates(Vector3, Vector3, float, float)");
-        private static readonly ProfilerMarker PM_Move = new ProfilerMarker("MoveRates.Move(Transform, TransformPropertiesFlag, Vector3, float, Quaternion, float, Vector3, float, float, bool)");
+        private static readonly ProfilerMarker _pm_GetMoveRatesFull = new ProfilerMarker("MoveRates.GetMoveRates(Vector3, Vector3, Quaternion, Quaternion, Vector3, Vector3, float, float)");
+        private static readonly ProfilerMarker _pm_GetMoveRatesVec = new ProfilerMarker("MoveRates.GetMoveRates(Vector3, Vector3, float, float)");
+        private static readonly ProfilerMarker _pm_Move = new ProfilerMarker("MoveRates.Move(Transform, TransformPropertiesFlag, Vector3, float, Quaternion, float, Vector3, float, float, bool)");
         
         #endregion
         
@@ -216,7 +216,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static MoveRates GetMoveRates(Vector3 fromPosition, Vector3 toPosition, Quaternion fromRotation, Quaternion toRotation, Vector3 fromScale, Vector3 toScale, float duration, float teleportThreshold)
         {
-            using (PM_GetMoveRatesFull.Auto())
+            using (_pm_GetMoveRatesFull.Auto())
             {
                 float rate;
 
@@ -242,7 +242,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static float GetMoveRate(Vector3 fromPosition, Vector3 toPosition, float duration, float teleportThreshold)
         {
-            using (PM_GetMoveRatesVec.Auto())
+            using (_pm_GetMoveRatesVec.Auto())
             {
                 float rate;
                 float distance;
@@ -302,7 +302,7 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public static void Move(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta, bool useWorldSpace)
         {
-            using (PM_Move.Auto())
+            using (_pm_Move.Auto())
             {
                 Transform t = movingTransform;
 

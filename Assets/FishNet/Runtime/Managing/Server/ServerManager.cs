@@ -212,7 +212,7 @@ namespace FishNet.Managing.Server
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("ServerManager.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("ServerManager.TimeManager_OnPostTick()");
         
         #endregion
         
@@ -447,7 +447,7 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 CheckClientTimeout();
             }

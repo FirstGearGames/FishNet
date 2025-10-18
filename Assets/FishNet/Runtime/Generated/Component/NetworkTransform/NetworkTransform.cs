@@ -540,14 +540,14 @@ namespace FishNet.Component.Transforming
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("NetworkTransform.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("NetworkTransform.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker PM_MoveToTarget = new ProfilerMarker("NetworkTransform.MoveToTarget(float)");
-        private static readonly ProfilerMarker PM_UpdateTransformData = new ProfilerMarker("NetworkTransform.UpdateTransformData(ArraySegment<byte>, TransformData, TransformData, ref ChangedFull)");
-        private static readonly ProfilerMarker PM_ForceSend0 = new ProfilerMarker("NetworkTransform.ForceSend()");
-        private static readonly ProfilerMarker PM_ForceSend1 = new ProfilerMarker("NetworkTransform.ForceSend(uint)");
-        private static readonly ProfilerMarker PM_SendToClients = new ProfilerMarker("NetworkTransform.SendToClients()");
-        private static readonly ProfilerMarker PM_SendToServer = new ProfilerMarker("NetworkTransform.SendToServer(TransformData)");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("NetworkTransform.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkTransform.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_MoveToTarget = new ProfilerMarker("NetworkTransform.MoveToTarget(float)");
+        private static readonly ProfilerMarker _pm_UpdateTransformData = new ProfilerMarker("NetworkTransform.UpdateTransformData(ArraySegment<byte>, TransformData, TransformData, ref ChangedFull)");
+        private static readonly ProfilerMarker _pm_ForceSend0 = new ProfilerMarker("NetworkTransform.ForceSend()");
+        private static readonly ProfilerMarker _pm_ForceSend1 = new ProfilerMarker("NetworkTransform.ForceSend(uint)");
+        private static readonly ProfilerMarker _pm_SendToClients = new ProfilerMarker("NetworkTransform.SendToClients()");
+        private static readonly ProfilerMarker _pm_SendToServer = new ProfilerMarker("NetworkTransform.SendToServer(TransformData)");
         
         #endregion
         
@@ -783,7 +783,7 @@ namespace FishNet.Component.Transforming
 
         private void TimeManager_OnUpdate()
         {
-            using (PM_OnUpdate.Auto())
+            using (_pm_OnUpdate.Auto())
             {
                 float deltaTime = _useScaledTime ? Time.deltaTime : Time.unscaledDeltaTime;
                 MoveToTarget(deltaTime);
@@ -919,7 +919,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 //If to force send via tick delay do so and reset force send tick.
                 if (_forceSendTick != TimeManager.UNSET_TICK && _timeManager.LocalTick > _forceSendTick)
@@ -1066,7 +1066,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         public void ForceSend(uint ticks)
         {
-            using (PM_ForceSend1.Auto())
+            using (_pm_ForceSend1.Auto())
             {
                 /* If there is a pending delayed force send then queue it
                  * immediately and set a new delay tick. */
@@ -1081,7 +1081,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         public void ForceSend()
         {
-            using (PM_ForceSend0.Auto())
+            using (_pm_ForceSend0.Auto())
             {
                 _lastSentTransformData.ResetState();
                 if (_authoritativeClientData.Writer != null)
@@ -1617,7 +1617,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void MoveToTarget(float delta)
         {
-            using (PM_MoveToTarget.Auto())
+            using (_pm_MoveToTarget.Auto())
             {
                 if (_currentGoalData == null)
                     return;
@@ -1748,7 +1748,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void SendToClients()
         {
-            using (PM_SendToClients.Auto())
+            using (_pm_SendToClients.Auto())
             {
                 //True if clientAuthoritative and there is an owner.
                 bool clientAuthoritativeWithOwner = _clientAuthoritative && Owner.IsValid;
@@ -1837,7 +1837,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void SendToServer(TransformData lastSentTransformData)
         {
-            using (PM_SendToServer.Auto())
+            using (_pm_SendToServer.Auto())
             {
                 /* ClientHost does not need to send to the server.
                  * Ideally this would still occur and the data be ignored
@@ -2452,7 +2452,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void UpdateTransformData(ArraySegment<byte> packetData, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull)
         {
-            using (PM_UpdateTransformData.Auto())
+            using (_pm_UpdateTransformData.Auto())
             {
                 DeserializePacket(packetData, prevTransformData, nextTransformData, ref changedFull);
                 nextTransformData.Tick = _timeManager.LastPacketTick.LastRemoteTick;

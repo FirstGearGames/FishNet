@@ -91,7 +91,7 @@ namespace FishNet.Managing.Statistic
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("NetworkTrafficStatistics.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkTrafficStatistics.TimeManager_OnPreTick()");
         
         #endregion
         
@@ -138,7 +138,7 @@ namespace FishNet.Managing.Statistic
         /// </summary>
         private void TimeManager_OnPreTick()
         {
-            using (PM_OnPreTick.Auto())
+            using (_pm_OnPreTick.Auto())
             {
                 /* Since we are sending last ticks data at the end of the tick,
                  * the tick used will always be 1 less than current tick. */

@@ -279,14 +279,14 @@ namespace FishNet.Component.Animating
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("NetworkAnimator.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker PM_CheckSendToServer = new ProfilerMarker("NetworkAnimator.CheckSendToServer()");
-        private static readonly ProfilerMarker PM_CheckSendToClients = new ProfilerMarker("NetworkAnimator.CheckSendToClients()");
-        private static readonly ProfilerMarker PM_SmoothFloats = new ProfilerMarker("NetworkAnimator.SmoothFloats()");
-        private static readonly ProfilerMarker PM_AnimatorUpdated = new ProfilerMarker("NetworkAnimator.AnimatorUpdated(ref ArraySegment<byte>, bool)");
-        private static readonly ProfilerMarker PM_ApplyParametersUpdated = new ProfilerMarker("NetworkAnimator.ApplyParametersUpdated(ref ArraySegment<byte>)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("NetworkAnimator.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_CheckSendToServer = new ProfilerMarker("NetworkAnimator.CheckSendToServer()");
+        private static readonly ProfilerMarker _pm_CheckSendToClients = new ProfilerMarker("NetworkAnimator.CheckSendToClients()");
+        private static readonly ProfilerMarker _pm_SmoothFloats = new ProfilerMarker("NetworkAnimator.SmoothFloats()");
+        private static readonly ProfilerMarker _pm_AnimatorUpdated = new ProfilerMarker("NetworkAnimator.AnimatorUpdated(ref ArraySegment<byte>, bool)");
+        private static readonly ProfilerMarker _pm_ApplyParametersUpdated = new ProfilerMarker("NetworkAnimator.ApplyParametersUpdated(ref ArraySegment<byte>)");
         
         #endregion
         
@@ -589,7 +589,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPreTick()
         {
-            using (PM_OnPreTick.Auto())
+            using (_pm_OnPreTick.Auto())
             {
                 if (!_canSynchronizeAnimator)
                 {
@@ -625,7 +625,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void TimeManager_OnPostTick()
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 //One check rather than per each method.
                 if (!_canSynchronizeAnimator)
@@ -638,7 +638,7 @@ namespace FishNet.Component.Animating
 
         private void TimeManager_OnUpdate()
         {
-            using (PM_OnUpdate.Auto())
+            using (_pm_OnUpdate.Auto())
             {
                 if (!_canSynchronizeAnimator)
                     return;
@@ -761,7 +761,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void CheckSendToServer()
         {
-            using (PM_CheckSendToServer.Auto())
+            using (_pm_CheckSendToServer.Auto())
             {
                 //Cannot send to server if is server or not client.
                 if (IsServerStarted || !IsClientInitialized)
@@ -787,7 +787,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void CheckSendToClients()
         {
-            using (PM_CheckSendToClients.Auto())
+            using (_pm_CheckSendToClients.Auto())
             {
                 //Cannot send to clients if not server initialized.
                 if (!IsServerInitialized)
@@ -895,7 +895,7 @@ namespace FishNet.Component.Animating
         /// </summary>
         private void SmoothFloats()
         {
-            using (PM_SmoothFloats.Auto())
+            using (_pm_SmoothFloats.Auto())
             {
                 //Don't need to smooth on authoritative client.
                 if (!_canSmoothFloats)
@@ -932,7 +932,7 @@ namespace FishNet.Component.Animating
         /// <returns></returns>
         private bool AnimatorUpdated(out ArraySegment<byte> updatedBytes, bool forceAll = false)
         {
-            using (PM_AnimatorUpdated.Auto())
+            using (_pm_AnimatorUpdated.Auto())
             {
                 updatedBytes = default;
                 //Something isn't setup right.
@@ -1104,7 +1104,7 @@ namespace FishNet.Component.Animating
         /// <param name = "changedParameters"></param>
         private void ApplyParametersUpdated(ref ArraySegment<byte> updatedParameters)
         {
-            using (PM_ApplyParametersUpdated.Auto())
+            using (_pm_ApplyParametersUpdated.Auto())
             {
                 if (!_canSynchronizeAnimator)
                     return;

@@ -211,17 +211,17 @@ namespace FishNet.Managing.Timing
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnFixedUpdate = new ProfilerMarker("TimeManager.OnFixedUpdate()");
-        private static readonly ProfilerMarker PM_OnPostPhysicsSimulation = new ProfilerMarker("TimeManager.OnPostPhysicsSimulation(float)");
-        private static readonly ProfilerMarker PM_OnPrePhysicsSimulation = new ProfilerMarker("TimeManager.OnPrePhysicsSimulation(float)");
-        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("TimeManager.OnUpdate()");
-        private static readonly ProfilerMarker PM_OnLateUpdate = new ProfilerMarker("TimeManager.OnLateUpdate(float)");
-        private static readonly ProfilerMarker PM_OnRoundTripTimeUpdated = new ProfilerMarker("TimeManager.OnRoundTripTimeUpdated(float)");
-        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("TimeManager.OnPreTick()");
-        private static readonly ProfilerMarker PM_OnTick = new ProfilerMarker("TimeManager.OnTick()");
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("TimeManager.OnPostTick()");
-        private static readonly ProfilerMarker PM_PhysicsSimulate = new ProfilerMarker("TimeManager.Physics.Simulate(float)");
-        private static readonly ProfilerMarker PM_Physics2DSimulate = new ProfilerMarker("TimeManager.Physics2D.Simulate(float)");
+        private static readonly ProfilerMarker _pm_OnFixedUpdate = new ProfilerMarker("TimeManager.OnFixedUpdate()");
+        private static readonly ProfilerMarker _pm_OnPostPhysicsSimulation = new ProfilerMarker("TimeManager.OnPostPhysicsSimulation(float)");
+        private static readonly ProfilerMarker _pm_OnPrePhysicsSimulation = new ProfilerMarker("TimeManager.OnPrePhysicsSimulation(float)");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("TimeManager.OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnLateUpdate = new ProfilerMarker("TimeManager.OnLateUpdate(float)");
+        private static readonly ProfilerMarker _pm_OnRoundTripTimeUpdated = new ProfilerMarker("TimeManager.OnRoundTripTimeUpdated(float)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("TimeManager.OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnTick = new ProfilerMarker("TimeManager.OnTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("TimeManager.OnPostTick()");
+        private static readonly ProfilerMarker _pm_PhysicsSimulate = new ProfilerMarker("TimeManager.Physics.Simulate(float)");
+        private static readonly ProfilerMarker _pm_Physics2DSimulate = new ProfilerMarker("TimeManager.Physics2D.Simulate(float)");
         
         #endregion
         
@@ -336,7 +336,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
-            using (PM_OnFixedUpdate.Auto())
+            using (_pm_OnFixedUpdate.Auto())
             {
                 OnFixedUpdate?.Invoke();
             }
@@ -352,14 +352,14 @@ namespace FishNet.Managing.Timing
                  * multiple times per frame. */
                 if (_fixedUpdateTimeStep)
                 {
-                    using (PM_OnPostPhysicsSimulation.Auto())
+                    using (_pm_OnPostPhysicsSimulation.Auto())
                     {
                         OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
                     }
                 }
 
                 _fixedUpdateTimeStep = true;
-                using (PM_OnPrePhysicsSimulation.Auto())
+                using (_pm_OnPrePhysicsSimulation.Auto())
                 {
                     OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
                 }
@@ -379,7 +379,7 @@ namespace FishNet.Managing.Timing
             bool beforeTick = _updateOrder == UpdateOrder.BeforeTick;
             if (beforeTick)
             {
-                using (PM_OnUpdate.Auto())
+                using (_pm_OnUpdate.Auto())
                 {
                     OnUpdate?.Invoke();
                 }
@@ -389,7 +389,7 @@ namespace FishNet.Managing.Timing
             else
             {
                 MethodLogic();
-                using (PM_OnUpdate.Auto())
+                using (_pm_OnUpdate.Auto())
                 {
                     OnUpdate?.Invoke();
                 }
@@ -403,7 +403,7 @@ namespace FishNet.Managing.Timing
                 if (PhysicsMode == PhysicsMode.Unity && _fixedUpdateTimeStep)
                 {
                     _fixedUpdateTimeStep = false;
-                    using (PM_OnPostPhysicsSimulation.Auto())
+                    using (_pm_OnPostPhysicsSimulation.Auto())
                     {
                         OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
                     }
@@ -416,7 +416,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickLateUpdate()
         {
-            using (PM_OnLateUpdate.Auto())
+            using (_pm_OnLateUpdate.Auto())
             {
                 OnLateUpdate?.Invoke();
             }
@@ -621,7 +621,7 @@ namespace FishNet.Managing.Timing
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
 
-            using (PM_OnRoundTripTimeUpdated.Auto())
+            using (_pm_OnRoundTripTimeUpdated.Auto())
             {
                 OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
             }
@@ -734,7 +734,7 @@ namespace FishNet.Managing.Timing
             {
                 if (frameTicked)
                 {
-                    using (PM_OnPreTick.Auto())
+                    using (_pm_OnPreTick.Auto())
                     {
                         OnPreTick?.Invoke();
                     }
@@ -751,35 +751,35 @@ namespace FishNet.Managing.Timing
                 {
                     // Tell predicted objecs to reconcile before OnTick.
                     NetworkManager.PredictionManager.ReconcileToStates();
-                    using (PM_OnTick.Auto())
+                    using (_pm_OnTick.Auto())
                     {
                         OnTick?.Invoke();
                     }
 
                     if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
                     {
-                        using (PM_OnPrePhysicsSimulation.Auto())
+                        using (_pm_OnPrePhysicsSimulation.Auto())
                         {
                             OnPrePhysicsSimulation?.Invoke(tickDelta);
                         }
                         
-                        using (PM_PhysicsSimulate.Auto())
+                        using (_pm_PhysicsSimulate.Auto())
                         {
                             Physics.Simulate(tickDelta);
                         }
                         
-                        using (PM_Physics2DSimulate.Auto())
+                        using (_pm_Physics2DSimulate.Auto())
                         {
                             Physics2D.Simulate(tickDelta);
                         }
                         
-                        using (PM_OnPostPhysicsSimulation.Auto())
+                        using (_pm_OnPostPhysicsSimulation.Auto())
                         {
                             OnPostPhysicsSimulation?.Invoke(tickDelta);
                         }
                     }
                     
-                    using (PM_OnPostTick.Auto())
+                    using (_pm_OnPostTick.Auto())
                     {
                         OnPostTick?.Invoke();
                     }

@@ -160,13 +160,13 @@ namespace FishNet.Object
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("NetworkObject.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker PM_OnPostReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("NetworkObject.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker PM_OnPreReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
-        private static readonly ProfilerMarker PM_OnReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
-        private static readonly ProfilerMarker PM_OnPostReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
-        private static readonly ProfilerMarker PM_OnReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkObject.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkObject.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnPreReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
         
         #endregion
         /// <summary>
@@ -332,7 +332,7 @@ namespace FishNet.Object
 
         private void TimeManager_OnPreTick()
         {
-            using (PM_OnPreTick.Auto())
+            using (_pm_OnPreTick.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPreTick();
@@ -341,7 +341,7 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
-            using (PM_OnPostReplicateReplay.Auto())
+            using (_pm_OnPostReplicateReplay.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPostReplicateReplay(clientTick);
@@ -350,7 +350,7 @@ namespace FishNet.Object
 
         private void TimeManager_OnPostTick()
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPostTick(NetworkManager.TimeManager.LocalTick);
@@ -359,7 +359,7 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPreReconcile(uint clientTick, uint serverTick)
         {
-            using (PM_OnPreReconcile.Auto())
+            using (_pm_OnPreReconcile.Auto())
             {
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPreReconcile();
@@ -368,7 +368,7 @@ namespace FishNet.Object
 
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            using (PM_OnReconcile.Auto())
+            using (_pm_OnReconcile.Auto())
             {
                 /* Tell all prediction behaviours to set/validate their
                  * reconcile data now. This will use reconciles from the server
@@ -390,7 +390,7 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            using (PM_OnPostReconcile.Auto())
+            using (_pm_OnPostReconcile.Auto())
             {
                 for (int i = 0; i < _predictionBehaviours.Count; i++)
                     _predictionBehaviours[i].Reconcile_Client_End();
@@ -407,7 +407,7 @@ namespace FishNet.Object
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
-            using (PM_OnReplicateReplay.Auto())
+            using (_pm_OnReplicateReplay.Auto())
             {
                 uint replayTick = IsOwner ? clientTick : serverTick;
                 for (int i = 0; i < _predictionBehaviours.Count; i++)

@@ -24,9 +24,9 @@ namespace FishNet.Component.Transforming.Beta
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("TickSmootherController.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("TickSmootherController.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPostTick()");
         
         #endregion
         
@@ -150,7 +150,7 @@ namespace FishNet.Component.Transforming.Beta
 
         public void TimeManager_OnUpdate()
         {
-            using (PM_OnUpdate.Auto())
+            using (_pm_OnUpdate.Auto())
             {
                 UniversalSmoother.OnUpdate(Time.deltaTime);
             }
@@ -158,7 +158,7 @@ namespace FishNet.Component.Transforming.Beta
 
         public void TimeManager_OnPreTick()
         {
-            using (PM_OnPreTick.Auto())
+            using (_pm_OnPreTick.Auto())
             {
                 UniversalSmoother.OnPreTick();
             }
@@ -169,7 +169,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void TimeManager_OnPostTick()
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 if (_timeManager != null)
                     UniversalSmoother.OnPostTick(_timeManager.LocalTick);

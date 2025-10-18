@@ -72,7 +72,7 @@ namespace FishNet.Component.Transforming
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
         
         #endregion
         
@@ -178,7 +178,7 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPostTick()
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 if (!_initialized)
                     return;

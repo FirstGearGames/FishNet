@@ -62,19 +62,19 @@ namespace FishNet.Component.Transforming.Beta
         
         #region Private Profiler Markers
         
-        private static readonly ProfilerMarker PM_ConsumeFixedOffset = new ProfilerMarker("UniversalTickSmoother.ConsumeFixedOffset(uint)");
-        private static readonly ProfilerMarker PM_AxiswiseClamp = new ProfilerMarker("UniversalTickSmoother.AxiswiseClamp(TransformProperties, TransformProperties)");
-        private static readonly ProfilerMarker PM_UpdateRealtimeInterpolation = new ProfilerMarker("UniversalTickSmoother.UpdateRealtimeInterpolation()");
-        private static readonly ProfilerMarker PM_OnUpdate = new ProfilerMarker("UniversalTickSmoother.OnUpdate(float)");
-        private static readonly ProfilerMarker PM_OnPreTick = new ProfilerMarker("UniversalTickSmoother.OnPreTick()");
-        private static readonly ProfilerMarker PM_OnPostReplicateReplay = new ProfilerMarker("UniversalTickSmoother.OnPostReplicateReplay(uint)");
-        private static readonly ProfilerMarker PM_OnPostTick = new ProfilerMarker("UniversalTickSmoother.OnPostTick(uint)");
-        private static readonly ProfilerMarker PM_ClearTPQ = new ProfilerMarker("UniversalTickSmoother.ClearTransformPropertiesQueue()");
-        private static readonly ProfilerMarker PM_DiscardTPQ = new ProfilerMarker("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
-        private static readonly ProfilerMarker PM_AddTP = new ProfilerMarker("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
-        private static readonly ProfilerMarker PM_ModifyTP = new ProfilerMarker("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
-        private static readonly ProfilerMarker PM_SetMoveRates = new ProfilerMarker("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
-        private static readonly ProfilerMarker PM_MoveToTarget = new ProfilerMarker("UniversalTickSmoother.MoveToTarget(float)");
+        private static readonly ProfilerMarker _pm_ConsumeFixedOffset = new ProfilerMarker("UniversalTickSmoother.ConsumeFixedOffset(uint)");
+        private static readonly ProfilerMarker _pm_AxiswiseClamp = new ProfilerMarker("UniversalTickSmoother.AxiswiseClamp(TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_UpdateRealtimeInterpolation = new ProfilerMarker("UniversalTickSmoother.UpdateRealtimeInterpolation()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("UniversalTickSmoother.OnUpdate(float)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("UniversalTickSmoother.OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("UniversalTickSmoother.OnPostReplicateReplay(uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("UniversalTickSmoother.OnPostTick(uint)");
+        private static readonly ProfilerMarker _pm_ClearTPQ = new ProfilerMarker("UniversalTickSmoother.ClearTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_DiscardTPQ = new ProfilerMarker("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_AddTP = new ProfilerMarker("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_ModifyTP = new ProfilerMarker("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
+        private static readonly ProfilerMarker _pm_SetMoveRates = new ProfilerMarker("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
+        private static readonly ProfilerMarker _pm_MoveToTarget = new ProfilerMarker("UniversalTickSmoother.MoveToTarget(float)");
         
         #endregion
         
@@ -454,7 +454,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void UpdateRealtimeInterpolation()
         {
-            using (PM_UpdateRealtimeInterpolation.Auto())
+            using (_pm_UpdateRealtimeInterpolation.Auto())
             {
                 /*  If not networked, server is started, or if not
                  * using adaptive interpolation then use
@@ -523,7 +523,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void OnUpdate(float delta)
         {
-            using (PM_OnUpdate.Auto())
+            using (_pm_OnUpdate.Auto())
             {
                 if (!CanSmooth())
                     return;
@@ -537,7 +537,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void OnPreTick()
         {
-            using (PM_OnPreTick.Auto())
+            using (_pm_OnPreTick.Auto())
             {
                 if (!CanSmooth())
                     return;
@@ -558,7 +558,7 @@ namespace FishNet.Component.Transforming.Beta
         /// <remarks>This is dependent on the initializing NetworkBehaviour being set.</remarks>
         public void OnPostReplicateReplay(uint clientTick)
         {
-            using (PM_OnPostReplicateReplay.Auto())
+            using (_pm_OnPostReplicateReplay.Auto())
             {
                 if (!NetworkObjectIsReconciling())
                     return;
@@ -582,7 +582,7 @@ namespace FishNet.Component.Transforming.Beta
         /// <param name = "clientTick">Local tick of the client.</param>
         public void OnPostTick(uint clientTick)
         {
-            using (PM_OnPostTick.Auto())
+            using (_pm_OnPostTick.Auto())
             {
                 if (!CanSmooth())
                     return;
@@ -667,7 +667,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void ClearTransformPropertiesQueue()
         {
-            using (PM_ClearTPQ.Auto())
+            using (_pm_ClearTPQ.Auto())
             {
                 _transformProperties.Clear();
                 //Also unset move rates since there is no more queue.
@@ -680,7 +680,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void DiscardExcessiveTransformPropertiesQueue()
         {
-            using (PM_DiscardTPQ.Auto())
+            using (_pm_DiscardTPQ.Auto())
             {
                 int propertiesCount = _transformProperties.Count;
                 int dequeueCount = propertiesCount - (_realtimeInterpolation + MAXIMUM_QUEUED_OVER_INTERPOLATION);
@@ -702,7 +702,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void AddTransformProperties(uint tick, TransformProperties properties, TransformProperties fixedOffset)
         {
-            using (PM_AddTP.Auto())
+            using (_pm_AddTP.Auto())
             {
                 TickTransformProperties tpp = new(tick, GetTrackerWorldProperties());
                 _transformProperties.Enqueue(tpp);
@@ -722,7 +722,7 @@ namespace FishNet.Component.Transforming.Beta
         /// <param name = "firstTick">First tick in the queue. If 0 this will be looked up.</param>
         private void ModifyTransformProperties(uint clientTick, uint firstTick)
         {
-            using (PM_ModifyTP.Auto())
+            using (_pm_ModifyTP.Auto())
             {
                 int queueCount = _transformProperties.Count;
             uint tick = clientTick;
@@ -803,7 +803,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void SetMoveRates(in TransformProperties prevValues)
         {
-            using (PM_SetMoveRates.Auto())
+            using (_pm_SetMoveRates.Auto())
             {
                 if (_transformProperties.Count == 0)
                 {
@@ -860,7 +860,7 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void MoveToTarget(float delta)
         {
-            using (PM_MoveToTarget.Auto())
+            using (_pm_MoveToTarget.Auto())
             {
                 int tpCount = _transformProperties.Count;
 
