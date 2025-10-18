@@ -7,9 +7,12 @@ using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using FishNet.Component.Transforming.Beta;
 using FishNet.Connection;
 using FishNet.Managing.Server;
 using UnityEngine;
+using UnityEngine.Profiling;
+using Unity.Profiling;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -154,6 +157,18 @@ namespace FishNet.Object
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkObject.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkObject.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnPreReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
+        
+        #endregion
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
@@ -317,66 +332,87 @@ namespace FishNet.Object
 
         private void TimeManager_OnPreTick()
         {
-            if (PredictionSmoother != null)
-                PredictionSmoother.OnPreTick();
+            using (_pm_OnPreTick.Auto())
+            {
+                if (PredictionSmoother != null)
+                    PredictionSmoother.OnPreTick();
+            }
         }
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
         {
-            if (PredictionSmoother != null)
-                PredictionSmoother.OnPostReplicateReplay(clientTick);
+            using (_pm_OnPostReplicateReplay.Auto())
+            {
+                if (PredictionSmoother != null)
+                    PredictionSmoother.OnPostReplicateReplay(clientTick);
+            }
         }
 
         private void TimeManager_OnPostTick()
         {
-            if (PredictionSmoother != null)
-                PredictionSmoother.OnPostTick(NetworkManager.TimeManager.LocalTick);
+            using (_pm_OnPostTick.Auto())
+            {
+                if (PredictionSmoother != null)
+                    PredictionSmoother.OnPostTick(NetworkManager.TimeManager.LocalTick);
+            }
         }
 
         private void PredictionManager_OnPreReconcile(uint clientTick, uint serverTick)
         {
-            if (PredictionSmoother != null)
-                PredictionSmoother.OnPreReconcile();
+            using (_pm_OnPreReconcile.Auto())
+            {
+                if (PredictionSmoother != null)
+                    PredictionSmoother.OnPreReconcile();
+            }
         }
 
         private void PredictionManager_OnReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            /* Tell all prediction behaviours to set/validate their
-             * reconcile data now. This will use reconciles from the server
-             * whenever possible, and local reconciles if a server reconcile
-             * is not available. */
-            for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].Reconcile_Client_Start();
-
-            /* If still not reconciling then pause rigidbody.
-             * This shouldn't happen unless the user is not calling
-             * reconcile at all. */
-            if (!IsObjectReconciling)
+            using (_pm_OnReconcile.Auto())
             {
-                if (_rigidbodyPauser != null)
-                    _rigidbodyPauser.Pause();
+                /* Tell all prediction behaviours to set/validate their
+                 * reconcile data now. This will use reconciles from the server
+                 * whenever possible, and local reconciles if a server reconcile
+                 * is not available. */
+                for (int i = 0; i < _predictionBehaviours.Count; i++)
+                    _predictionBehaviours[i].Reconcile_Client_Start();
+
+                /* If still not reconciling then pause rigidbody.
+                 * This shouldn't happen unless the user is not calling
+                 * reconcile at all. */
+                if (!IsObjectReconciling)
+                {
+                    if (_rigidbodyPauser != null)
+                        _rigidbodyPauser.Pause();
+                }
             }
         }
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].Reconcile_Client_End();
+            using (_pm_OnPostReconcile.Auto())
+            {
+                for (int i = 0; i < _predictionBehaviours.Count; i++)
+                    _predictionBehaviours[i].Reconcile_Client_End();
 
-            /* Unpause rigidbody pauser. It's okay to do that here rather
-             * than per NB, where the pausing occurs, because once here
-             * the entire object is out of the replay cycle so there's
-             * no reason to try and unpause per NB. */
-            if (_rigidbodyPauser != null)
-                _rigidbodyPauser.Unpause();
-            IsObjectReconciling = false;
+                /* Unpause rigidbody pauser. It's okay to do that here rather
+                 * than per NB, where the pausing occurs, because once here
+                 * the entire object is out of the replay cycle so there's
+                 * no reason to try and unpause per NB. */
+                if (_rigidbodyPauser != null)
+                    _rigidbodyPauser.Unpause();
+                IsObjectReconciling = false;
+            }
         }
 
         private void PredictionManager_OnReplicateReplay(uint clientTick, uint serverTick)
         {
-            uint replayTick = IsOwner ? clientTick : serverTick;
-            for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
+            using (_pm_OnReplicateReplay.Auto())
+            {
+                uint replayTick = IsOwner ? clientTick : serverTick;
+                for (int i = 0; i < _predictionBehaviours.Count; i++)
+                    _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
+            }
         }
 
         /// <summary>
