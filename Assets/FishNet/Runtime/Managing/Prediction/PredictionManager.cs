@@ -702,7 +702,7 @@ namespace FishNet.Managing.Predicting
                     {
                         using (_pm_OnPrePhysicsTransformSync.Auto())
                         {
-                            OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                            OnPrePhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
                         }
                         
                         using (_pm_PhysicsSyncTransforms.Auto())
