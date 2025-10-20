@@ -101,7 +101,7 @@ namespace FishNet.Component.Scenes
             _networkManager = GetComponentInParent<NetworkManager>();
             if (_networkManager == null)
             {
-                NetworkManagerExtensions.LogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
+                _networkManager.LogError($"NetworkManager not found on {gameObject.name} or any parent objects. DefaultScene will not work.");
                 return;
             }
             // A NetworkManager won't be initialized if it's being destroyed.
@@ -109,7 +109,7 @@ namespace FishNet.Component.Scenes
                 return;
             if (_onlineScene == string.Empty || _offlineScene == string.Empty)
             {
-                NetworkManagerExtensions.LogWarning("Online or Offline scene is not specified. Default scenes will not load.");
+                _networkManager.LogWarning("Online or Offline scene is not specified. Default scenes will not load.");
                 return;
             }
 

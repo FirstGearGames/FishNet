@@ -66,6 +66,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
+  _initializedTimestamp: -8584407652857706740
   NetworkObserver: {fileID: 0}
   _enablePrediction: 0
   _predictionType: 0
@@ -80,7 +81,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 31
+  <PrefabId>k__BackingField: 0
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 2903053101402871766
   <SceneId>k__BackingField: 0
@@ -110,7 +111,7 @@ MonoBehaviour:
   _axes: 3
   _chancePerAxes: 0.8
   _rotationChance: 0.33
-  _delayBetweenMovements: 1.5
+  _delayBetweenMovements: 0
   _yOffsetPerInstance: 0
   _randomMovement: 1
   _goalDatas: []
@@ -139,6 +140,7 @@ MonoBehaviour:
     Position: 1
     Rotation: 1
     Scale: 0
+  _useScaledTime: 1
   _interpolation: 3
   _extrapolation: 2
   _enableTeleport: 0

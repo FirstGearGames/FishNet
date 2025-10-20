@@ -2,6 +2,7 @@
 #define DEVELOPMENT
 #endif
 using System;
+using System.Collections.Generic;
 using FishNet.Editing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
@@ -127,8 +128,10 @@ namespace FishNet.Managing.Statistic
              * shutting down anyway. */
             _serverTraffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
             _clientTraffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
-
+            
             manager.TimeManager.OnPreTick += TimeManager_OnPreTick;
+            
+            _initializedOnce = true;
         }
 
         /// <summary>
@@ -193,7 +196,7 @@ namespace FishNet.Managing.Statistic
         {
             if (bytes <= 0)
                 return;
- 
+
             GetBidirectionalNetworkTraffic(asServer).InboundTraffic.AddPacketIdData(typeSource, details, (ulong)bytes, gameObject);
         }
 
@@ -215,42 +218,21 @@ namespace FishNet.Managing.Statistic
         /// </summary>
         private BidirectionalNetworkTraffic GetBidirectionalNetworkTraffic(bool asServer) => asServer ? _serverTraffic : _clientTraffic;
 
-        // Attribution: https://stackoverflow.com/questions/14488796/does-net-provide-an-easy-way-convert-bytes-to-kb-mb-gb-etc
         /// <summary>
         /// Formats passed in bytes value to the largest possible data type with 2 decimals.
         /// </summary>
         public static string FormatBytesToLargest(float bytes)
         {
-            int decimalPlaces = 2;
-            if (bytes < 1f || float.IsInfinity(bytes) || float.IsNaN(bytes))
-                return ReturnZero();
+            string[] units = { "B", "kB", "MB", "GB", "TB", "PB" };
+            int unitIndex = 0;
 
-            string ReturnZero()
+            while (bytes >= 1024 && unitIndex < units.Length - 1)
             {
-                decimalPlaces = 0;
-                return string.Format("{0:n" + decimalPlaces + "} B/s", 0);
+                bytes /= 1024;
+                unitIndex++;
             }
 
-            // mag is 0 for bytes, 1 for KB, 2, for MB, etc.
-            int mag = (int)Math.Log(bytes, 1024);
-
-            // 1L << (mag * 10) == 2 ^ (10 * mag) 
-            // [i.e. the number of bytes in the unit corresponding to mag]
-            decimal adjustedSize = (decimal)bytes / (1L << (mag * 10));
-
-            // make adjustment when the value is large enough that
-            // it would round up to 1000 or more
-            if (Math.Round(adjustedSize, decimalPlaces) >= 1000)
-            {
-                mag += 1;
-                adjustedSize /= 1024;
-            }
-
-            // Don't show decimals for bytes.
-            if (mag == 0)
-                decimalPlaces = 0;
-
-            return string.Format("{0:n" + decimalPlaces + "} {1}", adjustedSize, _sizeSuffixes[mag]);
+            return $"{bytes:0.00} {units[unitIndex]}";
         }
 
         /// <summary>
@@ -259,20 +241,20 @@ namespace FishNet.Managing.Statistic
         public bool IsEnabled()
         {
             //Never enabled for server builds.
-#if UNITY_SERVER
+            #if UNITY_SERVER
             return false;
-#endif
+            #endif
 
             if (_enableMode == EnabledMode.Disabled)
                 return false;
 
             // If not in dev mode then return true if to run in release.
-#if !DEVELOPMENT
+            #if !DEVELOPMENT
             return _enableMode == EnabledMode.Release;
             // Always run in dev mode if not disabled.
-#else
+            #else
             return true;
-#endif
+            #endif
         }
     }
 }

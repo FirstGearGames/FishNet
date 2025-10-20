@@ -79,10 +79,10 @@ namespace FishNet.Demo.Benchmarks.NetworkTransforms
                 _displayText.text += Environment.NewLine + "Tick Rate: " + TimeManager.TickRate;
 
                 BandwidthDisplay bd = NetworkManager.gameObject.GetComponent<BandwidthDisplay>();
-                ulong serverOutAverage = bd.ServerAverages.GetAverage(inAverage: false);
+                float serverOutAverage = bd.ServerAverages.GetAverage(inBuffer: false);
 
-                float perTransformAverage = (float)serverOutAverage / _count;
-                _displayText.text += Environment.NewLine + "Average Per Transform: " + $"{NetworkTrafficStatistics.FormatBytesToLargest(perTransformAverage)}/s";
+                float perTransformAverage = serverOutAverage / _count;
+                _displayText.text += Environment.NewLine + "Average Per Transform: " + $"{NetworkTrafficStatistics.FormatBytesToLargest(perTransformAverage)}/send";
             }
         }
     }

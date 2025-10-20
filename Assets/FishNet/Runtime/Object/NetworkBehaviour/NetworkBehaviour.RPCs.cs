@@ -307,7 +307,7 @@ namespace FishNet.Object
             if (_targetRpcDelegates.TryGetValueIL2CPP(hash, out ClientRpcDelegate del))
                 del.Invoke(reader, channel);
             else
-                _networkObjectCache.NetworkManager.LogError($"TargetRpc not found for hash {hash} on object {gameObject.name} [id {ObjectId}] . Remainder of packet may become corrupt.");
+                _networkObjectCache.NetworkManager.LogError($"TargetRpc not found for hash [{hash}] on gameObject [{gameObject.name}] ObjectId [{ObjectId}] NetworkBehaviour [{this.GetType().Name}]. The remainder of the packet may become corrupt.");
 
 #if !UNITY_SERVER
             if (_networkTrafficStatistics != null)

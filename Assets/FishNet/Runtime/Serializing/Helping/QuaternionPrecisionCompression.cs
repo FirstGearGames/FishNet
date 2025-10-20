@@ -131,7 +131,7 @@ namespace FishNet.Serializing.Helping
             // Unset flags mean something went wrong in writing.
             if (flags == QuaternionPrecisionFlag.Unset)
             {
-                NetworkManagerExtensions.LogError($"Unset flags were returned.");
+                reader.NetworkManager.LogError($"Unset flags were returned.");
                 return default;
             }
 
@@ -180,7 +180,7 @@ namespace FishNet.Serializing.Helping
                 float magnitude = (float)Math.Sqrt(GetMagnitude(aValue, bValue, cValue, dValue));
                 if (magnitude < float.Epsilon)
                 {
-                    NetworkManagerExtensions.LogError($"Magnitude cannot be normalized.");
+                    reader.NetworkManager.LogError($"Magnitude cannot be normalized.");
                     return false;
                 }
 
@@ -195,14 +195,14 @@ namespace FishNet.Serializing.Helping
             /* Add onto the previous value. */
             if (flags.FastContains(QuaternionPrecisionFlag.LargestIsX))
                 return new(dValue, aValue, bValue, cValue);
-            else if (flags.FastContains(QuaternionPrecisionFlag.LargestIsY))
+            if (flags.FastContains(QuaternionPrecisionFlag.LargestIsY))
                 return new(aValue, dValue, bValue, cValue);
-            else if (flags.FastContains(QuaternionPrecisionFlag.LargestIsZ))
+            if (flags.FastContains(QuaternionPrecisionFlag.LargestIsZ))
                 return new(aValue, bValue, dValue, cValue);
-            else if (flags.FastContains(QuaternionPrecisionFlag.LargestIsW))
+            if (flags.FastContains(QuaternionPrecisionFlag.LargestIsW))
                 return new(aValue, bValue, cValue, dValue);
-            else
-                NetworkManagerExtensions.LogError($"Unhandled Largest flag. Received flags are {flags}.");
+
+            reader.NetworkManager.LogError($"Unhandled Largest flag. Received flags are {flags}.");
 
             return default;
         }

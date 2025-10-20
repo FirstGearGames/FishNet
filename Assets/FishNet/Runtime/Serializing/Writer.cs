@@ -729,13 +729,12 @@ namespace FishNet.Serializing
         /// Reads a Quaternion.
         /// </summary>
         /// <returns></returns>
-        internal void WriteQuaternion(Quaternion value, AutoPackType autoPackType)
+        public void WriteQuaternion(Quaternion value, AutoPackType autoPackType)
         {
             switch (autoPackType)
             {
                 case AutoPackType.Packed:
                     WriteQuaternion32(value);
-                    ;
                     break;
                 case AutoPackType.PackedLess:
                     WriteQuaternion64(value);
@@ -935,22 +934,38 @@ namespace FishNet.Serializing
         {
             if (nob == null)
             {
-                WriteNetworkObjectId(NetworkObject.UNSET_OBJECTID_VALUE);
+                WriteNullReferenceId();
+                return;
+            }
+
+            bool spawned = nob.IsSpawned;
+
+            if (!spawned)
+            {
+                /* If not spawned and IsInitializedNested is true
+                 * we must send as a null reference rather than
+                 * the prefabId. Even though the nob might
+                 * be a prefab, it's being written as a child
+                 * in this case. */
+                if (nob.IsInitializedNested)
+                {
+                    WriteNullReferenceId();
+                    return;
+                }
+
+                WriteNetworkObjectId(nob.PrefabId);
             }
             else
             {
-                bool spawned = nob.IsSpawned;
-
-                if (spawned)
-                    WriteNetworkObjectId(nob.ObjectId);
-                else
-                    WriteNetworkObjectId(nob.PrefabId);
-
-                /* Spawned is written after because it's only needed if nob
-                 * is not null. If it were written before it would also have
-                 * to be written when nob == null.*/
-                WriteBoolean(spawned);
+                WriteNetworkObjectId(nob.ObjectId);
             }
+
+            /* Spawned is written after because it's only needed if nob
+             * is not null. If it were written before it would also have
+             * to be written when nob == null.*/
+            WriteBoolean(spawned);
+
+            void WriteNullReferenceId() => WriteNetworkObjectId(NetworkObject.UNSET_OBJECTID_VALUE);
         }
 
         /// <summary>

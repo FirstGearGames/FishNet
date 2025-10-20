@@ -232,8 +232,9 @@ namespace FishNet.Object
                 NetworkManager.LogWarning($"An invalid connection was used when rebuilding observers.");
                 return ObserverStateChange.Unchanged;
             }
+            
             // Valid not not active.
-            else if (!connection.IsActive)
+            if (!connection.IsActive)
             {
                 /* Just remove from observers since connection isn't active
                  * and return unchanged because nothing should process
@@ -241,7 +242,8 @@ namespace FishNet.Object
                 Observers.Remove(connection);
                 return ObserverStateChange.Unchanged;
             }
-            else if (IsDeinitializing)
+            
+            if (IsDeinitializing)
             {
                 /* If object is deinitializing it's either being despawned
                  * this frame or it's not spawned. If we've made it this far,

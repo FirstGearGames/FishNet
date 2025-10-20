@@ -8,7 +8,6 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
-using FishNet.Serializing.Helping;
 
 namespace FishNet.Managing.Client
 {

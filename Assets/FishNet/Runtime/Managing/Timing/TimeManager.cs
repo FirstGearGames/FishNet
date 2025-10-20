@@ -659,7 +659,7 @@ namespace FishNet.Managing.Timing
             double timePerSimulation = isServer ? TickDelta : _adjustedTickDelta;
             if (timePerSimulation == 0d)
             {
-                NetworkManagerExtensions.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
+                NetworkManager.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
                 return;
             }
 

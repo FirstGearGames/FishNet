@@ -136,7 +136,7 @@ namespace FishNet.Managing
         #endregion
 
         #region Internal.
-#if DEVELOPMENT && !UNITY_SERVER
+        #if DEVELOPMENT && !UNITY_SERVER
         /// <summary>
         /// Names of broadcasts.
         /// Key: Broadcast key.
@@ -167,28 +167,32 @@ namespace FishNet.Managing
             if (!_broadcastNames.ContainsKey(key))
                 _broadcastNames[key] = typeof(T).Name;
         }
-#endif
+        #endif
         /// <summary>
         /// Starting index for RpcLinks.
         /// </summary>
         internal static ushort StartingRpcLinkIndex;
-#if DEVELOPMENT
+        #if DEVELOPMENT
         /// <summary>
         /// Logs data about parser to help debug.
         /// </summary>
         internal PacketIdHistory PacketIdHistory = new();
-#endif
+        #endif
+        /// <summary>
+        /// Timestamp when the first NetworkManager instance was launched.
+        /// </summary>
+        internal static long LaunchTimestamp;
         #endregion
 
         #region Serialized.
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         /// <summary>
         /// True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.
         /// </summary>
         [Tooltip("True to refresh the DefaultPrefabObjects collection whenever the editor enters play mode. This is an attempt to alleviate the DefaultPrefabObjects scriptable object not refreshing when using multiple editor applications such as ParrelSync.")]
         [SerializeField]
         private bool _refreshDefaultPrefabs = false;
-#endif
+        #endif
         /// <summary>
         /// True to have your application run while in the background.
         /// </summary>
@@ -216,22 +220,23 @@ namespace FishNet.Managing
         private PersistenceType _persistence = PersistenceType.DestroyNewest;
         #endregion
 
-        #region Private.
-        /// <summary>
-        /// True if this NetworkManager can persist after Awake checks.
-        /// </summary>
-        private bool _canPersist;
-        #endregion
-
         #region Const.
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.15";
+        public const string FISHNET_VERSION = "4.6.15.1";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
         internal const ushort MAXIMUM_FRAMERATE = 500;
+        /// <summary>
+        /// Timestamp to use when value is not set.
+        /// </summary>
+        internal const long UNSET_LAUNCH_TIMESTAMP = 0;
+        /// <summary>
+        /// Value to use when the launch timestamp is calculated, but happens to be the unset value.
+        /// </summary>
+        private const long REPAIR_LAUNCH_TIMESTAMP_CONFLICT_VALUE = UNSET_LAUNCH_TIMESTAMP + 1;
         #endregion
 
         private void Awake()
@@ -243,10 +248,22 @@ namespace FishNet.Managing
             if (StartingRpcLinkIndex == 0)
                 StartingRpcLinkIndex = (ushort)(Enums.GetHighestValue<PacketId>() + 1);
 
-            bool isDefaultPrefabs = SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects;
-            CloneChecker.IsMultiplayerClone(out EditorCloneType cloneType); 
+            if (!CanPersist())
+                return;
+            
+            //If is the first instance then set launch timestamp.
+            if (_instances.Count == 0)
+            {
+                LaunchTimestamp = DateTime.Now.ToBinary();
+                //What are the odds fo this happening!
+                if (LaunchTimestamp == UNSET_LAUNCH_TIMESTAMP)
+                    LaunchTimestamp = REPAIR_LAUNCH_TIMESTAMP_CONFLICT_VALUE;
+            }
 
-#if UNITY_EDITOR
+            bool isDefaultPrefabs = SpawnablePrefabs != null && SpawnablePrefabs is DefaultPrefabObjects;
+            CloneChecker.IsMultiplayerClone(out EditorCloneType cloneType);
+
+            #if UNITY_EDITOR
             /* If first instance then force
              * default prefabs to repopulate.
              * This is only done in editor because
@@ -265,7 +282,7 @@ namespace FishNet.Managing
                 Generator.GenerateFull(initializeAdded: false);
                 Generator.IgnorePostProcess = false;
             }
-#endif
+            #endif
             // If default prefabs then also make a new instance and sort them.
             if (isDefaultPrefabs)
             {
@@ -276,11 +293,7 @@ namespace FishNet.Managing
                 instancedDpo.Sort();
                 SpawnablePrefabs = instancedDpo;
             }
-
-            _canPersist = CanInitialize();
-            if (!_canPersist)
-                return;
-
+            
             if (TryGetComponent<NetworkObject>(out _))
                 InternalLogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
 
@@ -306,6 +319,7 @@ namespace FishNet.Managing
             InitializeComponents();
 
             _instances.Add(this);
+
             Initialized = true;
         }
 
@@ -359,13 +373,13 @@ namespace FishNet.Managing
             /* Make sure framerate isn't set to max on server.
              * If it is then default to tick rate. If framerate is
              * less than tickrate then also set to tickrate. */
-#if UNITY_SERVER && !UNITY_EDITOR
+            #if UNITY_SERVER && !UNITY_EDITOR
             ushort minimumServerFramerate = (ushort)(TimeManager.TickRate + 15);
             if (frameRate == MAXIMUM_FRAMERATE)
                 frameRate = minimumServerFramerate;
             else if (frameRate < TimeManager.TickRate)
                 frameRate = minimumServerFramerate;
-#endif
+            #endif
             // If there is a framerate to set.
             if (frameRate > 0)
                 Application.targetFrameRate = frameRate;
@@ -388,8 +402,9 @@ namespace FishNet.Managing
         /// <summary>
         /// Returns if this NetworkManager can initialize.
         /// </summary>
+        /// <param name="instanceRetained">True if this instance will be retained/kept.</param>
         /// <returns></returns>
-        private bool CanInitialize()
+        private bool CanPersist()
         {
             /* If allow multiple then any number of
              * NetworkManagers are allowed. Don't
@@ -404,6 +419,15 @@ namespace FishNet.Managing
 
             // First instance of NM.
             NetworkManager firstInstance = instances[0];
+            
+            // If to destroy the oldest.
+            if (_persistence == PersistenceType.DestroyOldest)
+            {
+                InternalLog($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
+                DestroyImmediate(firstInstance.gameObject);
+                // This being the new one will persist, allow initialization.
+                return true;
+            }
 
             // If to destroy the newest.
             if (_persistence == PersistenceType.DestroyNewest)
@@ -413,20 +437,11 @@ namespace FishNet.Managing
                 // This one is being destroyed because its the newest.
                 return false;
             }
-            // If to destroy the oldest.
-            else if (_persistence == PersistenceType.DestroyOldest)
-            {
-                InternalLog($"NetworkManager on object {firstInstance.name} is being destroyed due to persistence type {_persistence}. A NetworkManager instance has been created on {gameObject.name}.");
-                DestroyImmediate(firstInstance.gameObject);
-                // This being the new one will persist, allow initialization.
-                return true;
-            }
+
             // Unhandled.
-            else
-            {
-                InternalLog($"Persistance type of {_persistence} is unhandled on {gameObject.name}. Initialization will not proceed.");
-                return false;
-            }
+            InternalLog($"Persistence type of {_persistence} is unhandled on {gameObject.name}. Initialization will not proceed, and this NetworkManager instance will be destroyed.");
+            DestroyImmediate(gameObject);
+            return false;
         }
 
         /// <summary>
@@ -439,7 +454,7 @@ namespace FishNet.Managing
             if (SpawnablePrefabs == null && !string.IsNullOrEmpty(gameObject.scene.name))
             {
                 //First try to fetch the file, only if editor and not in play mode.
-#if UNITY_EDITOR
+                #if UNITY_EDITOR
                 if (!ApplicationState.IsPlaying())
                 {
                     SpawnablePrefabs = Generator.GetDefaultPrefabObjects();
@@ -450,7 +465,7 @@ namespace FishNet.Managing
                         return true;
                     }
                 }
-#endif
+                #endif
                 //Always throw an error as this would cause failure.
                 if (print)
                     Debug.LogError($"SpawnablePrefabs is null on {gameObject.name}. Select the NetworkManager in scene {gameObject.scene.name} and choose a prefabs file. Choosing DefaultPrefabObjects will automatically populate prefabs for you.");
@@ -539,7 +554,7 @@ namespace FishNet.Managing
         }
 
         #region Editor.
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         private void OnValidate()
         {
             if (SpawnablePrefabs == null)
@@ -551,7 +566,7 @@ namespace FishNet.Managing
             ValidateSpawnablePrefabs(true);
         }
 
-#endif
+        #endif
         #endregion
     }
 }

@@ -25,7 +25,7 @@ namespace FishNet.Editing
             IsValid = true;
         }
     }
-    
+
     /// <summary>
     /// Used to store Inbound and Outbound traffic details.
     /// </summary>
@@ -46,14 +46,14 @@ namespace FishNet.Editing
         /// <returns></returns>
         public BidirectionalNetworkTraffic CloneUsingCache()
         {
-            if (InboundTraffic == null) 
+            if (InboundTraffic == null)
             {
                 NetworkManagerExtensions.LogError($"One or more NetworkTraffic values is null. {nameof(BidirectionalNetworkTraffic)} cannot be cloned.");
                 return null;
             }
-            
+
             BidirectionalNetworkTraffic traffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
-            
+
             traffic.InboundTraffic = InboundTraffic;
             traffic.OutboundTraffic = OutboundTraffic;
 
@@ -63,7 +63,7 @@ namespace FishNet.Editing
         /// <summary>
         /// Re-initializes by calling ResetState, then InitializeState.
         /// </summary>
-        public void Reinitialize() 
+        public void Reinitialize()
         {
             ResetState();
             InitializeState();
@@ -74,7 +74,7 @@ namespace FishNet.Editing
             ResettableObjectCaches<NetworkTraffic>.StoreAndDefault(ref InboundTraffic);
             ResettableObjectCaches<NetworkTraffic>.StoreAndDefault(ref OutboundTraffic);
         }
-        
+
         public void InitializeState()
         {
             InboundTraffic = ResettableObjectCaches<NetworkTraffic>.Retrieve();
@@ -104,10 +104,10 @@ namespace FishNet.Editing
             /// </summary>
             /// <remarks>GameObject is used rather than a script reference because we do not want to risk unintentionally holding a script in memory. Unity will automatically clean up GameObjects, so they are safe to reference.</remarks>
             public GameObject GameObject;
-            
             public Packet(ulong bytes) : this(details: string.Empty, bytes, gameObject: null) { }
             public Packet(string details, ulong bytes) : this(details, bytes, gameObject: null) { }
             public Packet(ulong bytes, GameObject gameObject) : this(details: string.Empty, bytes, gameObject) { }
+
             public Packet(string details, ulong bytes, GameObject gameObject)
             {
                 Details = details;
@@ -196,7 +196,7 @@ namespace FishNet.Editing
         /// </summary>
         private Dictionary<PacketId, PacketGroup> _packetGroups;
         /// <summary>
-        /// Total bytes for all PacketGroups.
+        /// Total bytes for all packets.
         /// </summary>
         public ulong Bytes;
 
@@ -208,7 +208,11 @@ namespace FishNet.Editing
         /// <summary>
         /// Adds traffic from a specified packetId.
         /// </summary>
-        public void AddSocketData( ulong bytes) => LAddPacketId(NetworkTrafficStatistics.UNSPECIFIED_PACKETID, details: string.Empty, bytes, gameObject: null);
+        public void AddSocketData(ulong bytes)
+        {
+            LAddPacketId(NetworkTrafficStatistics.UNSPECIFIED_PACKETID, details: string.Empty, bytes, gameObject: null);
+            Bytes += bytes;
+        }
 
         /// <summary>
         /// Adds traffic to a PackerGroup.
@@ -222,8 +226,6 @@ namespace FishNet.Editing
 
                 _packetGroups[packetId] = packetGroup;
             }
-
-            Bytes += bytes;
 
             packetGroup.AddPacket(details, bytes, gameObject);
         }
@@ -252,7 +254,7 @@ namespace FishNet.Editing
             _packetGroups = ResettableT2CollectionCaches<PacketId, PacketGroup>.RetrieveDictionary();
         }
     }
-    
+
     /// <summary>
     /// Data for a profiled tick. 
     /// </summary>
@@ -270,7 +272,7 @@ namespace FishNet.Editing
         /// Traffic collection for the client.
         /// </summary>
         public BidirectionalNetworkTraffic ClientTraffic;
-        
+
         /// <summary>
         /// Initializes and returns if successful.
         /// </summary>
@@ -280,10 +282,10 @@ namespace FishNet.Editing
 
             ServerTraffic = serverTraffic.CloneUsingCache();
             ClientTraffic = clientTraffic.CloneUsingCache();
-            
+
             return ServerTraffic != null && ClientTraffic != null;
         }
-        
+
         /// <summary>
         /// Resets all values and stores to caches as needed.
         /// </summary>

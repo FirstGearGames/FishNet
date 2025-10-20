@@ -46,7 +46,10 @@ namespace FishNet.Managing.Statistic
 
             //NetworkManager must be set to work.            
             if (_networkManager == null)
-                return false;
+            {
+                if (!TryGetComponent(out _networkManager))
+                    return false;
+            }
 
             //Hot-load if needed.
             if (_networkTraffic == null)
@@ -56,7 +59,7 @@ namespace FishNet.Managing.Statistic
 
             if (_networkTraffic.IsEnabled())
                 statistics = _networkTraffic;
-
+            
             return statistics != null;
         }
     }

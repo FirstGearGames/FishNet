@@ -109,9 +109,12 @@ namespace FishNet.Managing
         public void StorePooledOrDestroyInstantiated(NetworkObject instantiated, bool asServer)
         {
             if (instantiated.GetDefaultDespawnType() == DespawnType.Destroy)
+            {
                 Destroy(instantiated.gameObject);
-            else
-                _objectPool.StoreObject(instantiated, asServer);
+                return;
+            }
+
+            _objectPool.StoreObject(instantiated, asServer);
         }
 
         /// <summary>

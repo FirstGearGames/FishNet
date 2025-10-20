@@ -113,12 +113,12 @@ namespace FishNet.Component.Transforming
             bool error = false;
             if (transform.parent == null)
             {
-                NetworkManagerExtensions.LogError($"{GetType().Name} on gameObject {gameObject.name} requires a parent to detach from.");
+                NetworkManager.LogError($"{GetType().Name} on gameObject {gameObject.name} requires a parent to detach from.");
                 error = true;
             }
             if (_followObject == null)
             {
-                NetworkManagerExtensions.LogError($"{GetType().Name} on gameObject {gameObject}, root {transform.root} requires followObject to be set.");
+                NetworkManager.LogError($"{GetType().Name} on gameObject {gameObject}, root {transform.root} requires followObject to be set.");
                 error = true;
             }
 

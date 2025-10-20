@@ -52,12 +52,13 @@ namespace FishNet.Object
 
         #region Internal.
         /// <summary>
-        /// Network Id for this scene object.
+        /// NetworkId for this scene object.
         /// </summary>
         [field: SerializeField]
         [field: HideInInspector]
-        internal ulong SceneId { get; private set; }
+        internal ulong SceneId;
         /// <summary>
+        /// Local properties of the transform during serialization.
         /// </summary>
         [SerializeField]
         [HideInInspector]
@@ -80,7 +81,7 @@ namespace FishNet.Object
         {
             if (!Application.isPlaying)
             {
-                NetworkManagerExtensions.LogError($"ClearRuntimeSceneObject may only be called at runtime.");
+                NetworkManager.LogError($"ClearRuntimeSceneObject may only be called at runtime.");
                 return;
             }
 

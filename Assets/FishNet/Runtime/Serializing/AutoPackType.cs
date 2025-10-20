@@ -3,7 +3,7 @@ namespace FishNet.Serializing
     /// <summary>
     /// How to pack data when using serialization.
     /// </summary>
-    public enum AutoPackType
+    public enum AutoPackType : byte
     {
         /// <summary>
         /// Data will not be compressed.

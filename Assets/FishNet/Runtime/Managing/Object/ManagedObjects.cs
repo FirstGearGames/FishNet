@@ -300,7 +300,7 @@ namespace FishNet.Managing.Object
             if (collectionId != null)
                 prefab.SpawnableCollectionId = collectionId.Value;
 
-            prefab.SetInitializedValues(null, force: true);
+            prefab.SetInitializedValues(null, ignoreSerializedTimestamp: true);
         }
 
         /// <summary>

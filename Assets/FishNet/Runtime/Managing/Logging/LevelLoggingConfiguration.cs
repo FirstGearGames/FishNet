@@ -145,9 +145,7 @@ namespace FishNet.Managing.Logging
         public override void LogError(string value)
         {
             if (CanLog(LoggingType.Error))
-            {
                 Debug.LogError(AddSettingsToLog(value));
-            }
         }
 
         /// <summary>

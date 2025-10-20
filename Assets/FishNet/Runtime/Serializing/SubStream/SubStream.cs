@@ -124,7 +124,7 @@ namespace FishNet.Serializing
         {
             if (subStreamLength < 0)
             {
-                NetworkManagerExtensions.LogError("SubStream length cannot be less than 0");
+                originalReader.NetworkManager.LogError("SubStream length cannot be less than 0");
                 return default;
             }
 

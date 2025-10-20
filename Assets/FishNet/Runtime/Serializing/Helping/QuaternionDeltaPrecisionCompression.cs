@@ -73,7 +73,7 @@ namespace FishNet.Serializing.Helping
             {
                 // Write that flags are unset and error.
                 writer.InsertUInt8Unpacked((byte)flags, startPosition);
-                NetworkManagerExtensions.LogError($"Flags should not be unset.");
+                writer.NetworkManager.LogError($"Flags should not be unset.");
                 return;
             }
 
@@ -139,7 +139,7 @@ namespace FishNet.Serializing.Helping
             // Unset flags mean something went wrong in writing.
             if (flags == QuaternionDeltaPrecisionFlag.Unset)
             {
-                NetworkManagerExtensions.LogError($"Unset flags were returned.");
+                reader.NetworkManager.LogError($"Unset flags were returned.");
                 return default;
             }
 
@@ -203,7 +203,7 @@ namespace FishNet.Serializing.Helping
             }
             else
             {
-                NetworkManagerExtensions.LogError($"Largest axes was not handled. Flags {flags}.");
+                reader.NetworkManager.LogError($"Largest axes was not handled. Flags {flags}.");
                 return default;
             }
 
@@ -233,7 +233,7 @@ namespace FishNet.Serializing.Helping
                 float magnitude = (float)Math.Sqrt(GetMagnitude(nextA, nextB, nextC, nextD));
                 if (magnitude < float.Epsilon)
                 {
-                    NetworkManagerExtensions.LogError($"Magnitude cannot be normalized.");
+                    reader.NetworkManager.LogError($"Magnitude cannot be normalized.");
                     return false;
                 }
 
@@ -248,14 +248,14 @@ namespace FishNet.Serializing.Helping
             /* Add onto the previous value. */
             if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsX))
                 return new(nextD, nextA, nextB, nextC);
-            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsY))
+            if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsY))
                 return new(nextA, nextD, nextB, nextC);
-            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsZ))
+            if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsZ))
                 return new(nextA, nextB, nextD, nextC);
-            else if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsW))
+            if (flags.FastContains(QuaternionDeltaPrecisionFlag.LargestIsW))
                 return new(nextA, nextB, nextC, nextD);
-            else
-                NetworkManagerExtensions.LogError($"Unhandled Largest flag. Received flags are {flags}.");
+
+            reader.NetworkManager.LogError($"Unhandled Largest flag. Received flags are {flags}.");
 
             return default;
         }

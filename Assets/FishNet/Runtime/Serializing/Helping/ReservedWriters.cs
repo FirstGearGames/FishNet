@@ -76,11 +76,8 @@ namespace FishNet.Serializing.Helping
                     _writer.InsertUInt32Unpacked((uint)written, _startPosition - _reservedBytes);
                     break;
                 default:
-                    string errorMsg = $"Reserved bytes value of {_reservedBytes} is unhandled.";
-                    if (_writer != null)
-                        _writer.NetworkManager.LogError(errorMsg);
-                    else
-                        NetworkManagerExtensions.LogError(errorMsg);
+                    NetworkManager nm = _writer == null ? null : _writer.NetworkManager;
+                    nm.LogError($"Reserved bytes value of {_reservedBytes} is unhandled.");
                     break;
             }
 
@@ -125,11 +122,8 @@ namespace FishNet.Serializing.Helping
                     result = reader.ReadUInt32Unpacked();
                     break;
                 default:
-                    string errorMsg = $"Reserved bytes value of {reservedBytes} is unhandled.";
-                    if (reader != null)
-                        reader.NetworkManager.LogError(errorMsg);
-                    else
-                        NetworkManagerExtensions.LogError(errorMsg);
+                    NetworkManager nm = reader == null ? null : reader.NetworkManager;
+                    nm.LogError($"Reserved bytes value of {reservedBytes} is unhandled.");
                     return 0;
             }
 

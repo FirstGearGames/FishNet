@@ -3,6 +3,7 @@ using FishNet.Managing.Object;
 using FishNet.Object;
 using System;
 using System.Collections.Generic;
+using FishNet.Utility.Extension;
 using UnityEngine;
 
 namespace FishNet.Utility.Performance
@@ -84,5 +85,13 @@ namespace FishNet.Utility.Performance
         /// <param name = "asServer">True if storing prefabs for the server collection. This is only applicable when using DualPrefabObjects.</param>
         /// <returns>Prefabs instantiated and added to cache.</returns>
         public virtual List<NetworkObject> StorePrefabObjects(NetworkObject prefab, int count, bool asServer) => default;
+
+        /// <summary>
+        /// Sets the transform of a NetworkObject to it's values during serialization.
+        /// </summary>
+        public static void SetTransformToSerializedValues(NetworkObject nob)
+        {
+            nob.transform.SetLocalPositionRotationAndScale(nob.SerializedTransformProperties.Position, nob.SerializedTransformProperties.Rotation, nob.SerializedTransformProperties.Scale);
+        }
     }
 }

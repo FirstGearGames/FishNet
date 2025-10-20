@@ -42,7 +42,7 @@ namespace FishNet.Object.Prediction
                     w.WriteInt32((byte)data.Mode);
                     break;
                 default:
-                    NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
+                    w.NetworkManager.LogError($"ForceApplicationType of {appType} is not supported.");
                     break;
             }
         }
@@ -79,7 +79,7 @@ namespace FishNet.Object.Prediction
                     data.Mode = (ForceMode)r.ReadInt32();
                     break;
                 default:
-                    NetworkManagerExtensions.LogError($"ForceApplicationType of {appType} is not supported.");
+                    r.NetworkManager.LogError($"ForceApplicationType of {appType} is not supported.");
                     break;
             }
 

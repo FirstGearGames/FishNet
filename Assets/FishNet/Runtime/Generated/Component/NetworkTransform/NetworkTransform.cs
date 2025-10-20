@@ -1183,7 +1183,7 @@ namespace FishNet.Component.Transforming
             //Compressed axis value.
             float compressed;
             //Multiplier for compression.
-            float multiplier = 100f;
+            float multiplier = 100f; 
             /* Maximum value compressed may be
              * to send as compressed. */
             float maxValue = short.MaxValue - 1;
