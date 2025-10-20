@@ -6,6 +6,7 @@ using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace FishNet.Component.Transforming
 {
@@ -68,6 +69,13 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// TimeManager subscribed to.
         /// </summary>
@@ -170,18 +178,21 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private void _timeManager_OnPostTick()
         {
-            if (!_initialized)
-                return;
+            using (_pm_OnPostTick.Auto())
+            {
+                if (!_initialized)
+                    return;
 
-            _postTickFollowObjectWorldProperties.Update(_followObject);
-            // Unset values if not following the transform property.
-            if (!_synchronizePosition)
-                _postTickFollowObjectWorldProperties.Position = transform.position;
-            if (!_synchronizeRotation)
-                _postTickFollowObjectWorldProperties.Rotation = transform.rotation;
-            if (!_synchronizeScale)
-                _postTickFollowObjectWorldProperties.Scale = transform.localScale;
-            SetMoveRates();
+                _postTickFollowObjectWorldProperties.Update(_followObject);
+                // Unset values if not following the transform property.
+                if (!_synchronizePosition)
+                    _postTickFollowObjectWorldProperties.Position = transform.position;
+                if (!_synchronizeRotation)
+                    _postTickFollowObjectWorldProperties.Rotation = transform.rotation;
+                if (!_synchronizeScale)
+                    _postTickFollowObjectWorldProperties.Scale = transform.localScale;
+                SetMoveRates();
+            }
         }
 
         /// <summary>

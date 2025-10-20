@@ -6,6 +6,7 @@ using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 
 namespace FishNet.Component.Transforming.Beta
@@ -21,6 +22,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             public readonly uint Tick;
             public readonly TransformProperties Properties;
+
 
             public TickTransformProperties(uint tick, Transform t)
             {
@@ -49,7 +51,7 @@ namespace FishNet.Component.Transforming.Beta
         }
         #endregion
 
-        #region public.
+        #region Public.
         /// <summary>
         /// True if currently initialized.
         /// </summary>
@@ -57,6 +59,25 @@ namespace FishNet.Component.Transforming.Beta
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_ConsumeFixedOffset = new ProfilerMarker("UniversalTickSmoother.ConsumeFixedOffset(uint)");
+        private static readonly ProfilerMarker _pm_AxiswiseClamp = new ProfilerMarker("UniversalTickSmoother.AxiswiseClamp(TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_UpdateRealtimeInterpolation = new ProfilerMarker("UniversalTickSmoother.UpdateRealtimeInterpolation()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("UniversalTickSmoother.OnUpdate(float)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("UniversalTickSmoother.OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("UniversalTickSmoother.OnPostReplicateReplay(uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("UniversalTickSmoother.OnPostTick(uint)");
+        private static readonly ProfilerMarker _pm_ClearTPQ = new ProfilerMarker("UniversalTickSmoother.ClearTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_DiscardTPQ = new ProfilerMarker("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_AddTP = new ProfilerMarker("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_ModifyTP = new ProfilerMarker("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
+        private static readonly ProfilerMarker _pm_SetMoveRates = new ProfilerMarker("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
+        private static readonly ProfilerMarker _pm_MoveToTarget = new ProfilerMarker("UniversalTickSmoother.MoveToTarget(float)");
+        
+        #endregion
+        
         /// <summary>
         /// How quickly to move towards goal values.
         /// </summary>
@@ -433,47 +454,50 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void UpdateRealtimeInterpolation()
         {
-            /*  If not networked, server is started, or if not
-             * using adaptive interpolation then use
-             * flat interpolation.*/
-            if (!GetUseAdaptiveInterpolation())
+            using (_pm_UpdateRealtimeInterpolation.Auto())
             {
-                _realtimeInterpolation = _cachedInterpolationValue;
-                return;
+                /*  If not networked, server is started, or if not
+                 * using adaptive interpolation then use
+                 * flat interpolation.*/
+                if (!GetUseAdaptiveInterpolation())
+                {
+                    _realtimeInterpolation = _cachedInterpolationValue;
+                    return;
+                }
+
+                /* If here then adaptive interpolation is being calculated. */
+
+                TimeManager tm = _initializingTimeManager;
+
+                //Calculate roughly what client state tick would be.
+                uint localTick = tm.LocalTick;
+                //This should never be the case; this is a precautionary against underflow.
+                if (localTick == TimeManager.UNSET_TICK)
+                    return;
+
+                //Ensure at least 1 tick.
+                long rttTime = tm.RoundTripTime;
+                uint rttTicks = tm.TimeToTicks(rttTime) + 1;
+
+                uint clientStateTick = localTick - rttTicks;
+                float interpolation = localTick - clientStateTick;
+
+                //Minimum interpolation is that of adaptive interpolation level.
+                interpolation += (byte)_cachedAdaptiveInterpolationValue;
+
+                //Ensure interpolation is not more than a second.
+                if (interpolation > tm.TickRate)
+                    interpolation = tm.TickRate;
+                else if (interpolation > byte.MaxValue)
+                    interpolation = byte.MaxValue;
+
+                /* Only update realtime interpolation if it changed more than 1
+                 * tick. This is to prevent excessive changing of interpolation value, which
+                 * could result in noticeable speed ups/slow downs given movement multiplier
+                 * may change when buffer is too full or short. */
+                if (_realtimeInterpolation == 0 || Math.Abs(_realtimeInterpolation - interpolation) > 1)
+                    _realtimeInterpolation = (byte)Math.Ceiling(interpolation);
             }
-
-            /* If here then adaptive interpolation is being calculated. */
-
-            TimeManager tm = _initializingTimeManager;
-
-            //Calculate roughly what client state tick would be.
-            uint localTick = tm.LocalTick;
-            //This should never be the case; this is a precautionary against underflow.
-            if (localTick == TimeManager.UNSET_TICK)
-                return;
-
-            //Ensure at least 1 tick.
-            long rttTime = tm.RoundTripTime;
-            uint rttTicks = tm.TimeToTicks(rttTime) + 1;
-
-            uint clientStateTick = localTick - rttTicks;
-            float interpolation = localTick - clientStateTick;
-
-            //Minimum interpolation is that of adaptive interpolation level.
-            interpolation += (byte)_cachedAdaptiveInterpolationValue;
-
-            //Ensure interpolation is not more than a second.
-            if (interpolation > tm.TickRate)
-                interpolation = tm.TickRate;
-            else if (interpolation > byte.MaxValue)
-                interpolation = byte.MaxValue;
-
-            /* Only update realtime interpolation if it changed more than 1
-             * tick. This is to prevent excessive changing of interpolation value, which
-             * could result in noticeable speed ups/slow downs given movement multiplier
-             * may change when buffer is too full or short. */
-            if (_realtimeInterpolation == 0 || Math.Abs(_realtimeInterpolation - interpolation) > 1)
-                _realtimeInterpolation = (byte)Math.Ceiling(interpolation);
         }
 
         /// <summary>
@@ -499,10 +523,13 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void OnUpdate(float delta)
         {
-            if (!CanSmooth())
-                return;
+            using (_pm_OnUpdate.Auto())
+            {
+                if (!CanSmooth())
+                    return;
 
-            MoveToTarget(delta);
+                MoveToTarget(delta);
+            }
         }
 
         /// <summary>
@@ -510,15 +537,18 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void OnPreTick()
         {
-            if (!CanSmooth())
-                return;
+            using (_pm_OnPreTick.Auto())
+            {
+                if (!CanSmooth())
+                    return;
 
-            SetUseOwnerSettings(GetUseOwnerSettings());
+                SetUseOwnerSettings(GetUseOwnerSettings());
 
-            _preTicked = true;
-            DiscardExcessiveTransformPropertiesQueue();
-            _graphicsPreTickWorldValues = _graphicalTransform.GetWorldProperties();
-            _trackerPreTickWorldValues = GetTrackerWorldProperties();
+                _preTicked = true;
+                DiscardExcessiveTransformPropertiesQueue();
+                _graphicsPreTickWorldValues = _graphicalTransform.GetWorldProperties();
+                _trackerPreTickWorldValues = GetTrackerWorldProperties();
+            }
         }
 
         /// <summary>
@@ -528,19 +558,22 @@ namespace FishNet.Component.Transforming.Beta
         /// <remarks>This is dependent on the initializing NetworkBehaviour being set.</remarks>
         public void OnPostReplicateReplay(uint clientTick)
         {
-            if (!NetworkObjectIsReconciling())
-                return;
+            using (_pm_OnPostReplicateReplay.Auto())
+            {
+                if (!NetworkObjectIsReconciling())
+                    return;
 
-            if (_transformProperties.Count == 0)
-                return;
-            if (clientTick <= _teleportedTick)
-                return;
-            uint firstTick = _transformProperties.Peek().Tick;
-            //Already in motion to first entry, or first entry passed tick.
-            if (clientTick <= firstTick)
-                return;
+                if (_transformProperties.Count == 0)
+                    return;
+                if (clientTick <= _teleportedTick)
+                    return;
+                uint firstTick = _transformProperties.Peek().Tick;
+                //Already in motion to first entry, or first entry passed tick.
+                if (clientTick <= firstTick)
+                    return;
 
-            ModifyTransformProperties(clientTick, firstTick);
+                ModifyTransformProperties(clientTick, firstTick);
+            }
         }
 
         /// <summary>
@@ -549,29 +582,32 @@ namespace FishNet.Component.Transforming.Beta
         /// <param name = "clientTick">Local tick of the client.</param>
         public void OnPostTick(uint clientTick)
         {
-            if (!CanSmooth())
-                return;
-            if (clientTick <= _teleportedTick)
-                return;
-
-            //If preticked then previous transform values are known.
-            if (_preTicked)
+            using (_pm_OnPostTick.Auto())
             {
-                DiscardExcessiveTransformPropertiesQueue();
+                if (!CanSmooth())
+                    return;
+                if (clientTick <= _teleportedTick)
+                    return;
 
-                //Only needs to be put to pretick position if not detached.
-                if (!_detachOnStart)
-                    _graphicalTransform.SetWorldProperties(_graphicsPreTickWorldValues);
+                //If preticked then previous transform values are known.
+                if (_preTicked)
+                {
+                    DiscardExcessiveTransformPropertiesQueue();
 
-                //SnapNonSmoothedProperties();
-                AddTransformProperties(clientTick);
-            }
-            //If did not pretick then the only thing we can do is snap to instantiated values.
-            else
-            {
-                //Only set to position if not to detach.
-                if (!_detachOnStart)
-                    _graphicalTransform.SetWorldProperties(GetTrackerWorldProperties());
+                    //Only needs to be put to pretick position if not detached.
+                    if (!_detachOnStart)
+                        _graphicalTransform.SetWorldProperties(_graphicsPreTickWorldValues);
+
+                    //SnapNonSmoothedProperties();
+                    AddTransformProperties(clientTick);
+                }
+                //If did not pretick then the only thing we can do is snap to instantiated values.
+                else
+                {
+                    //Only set to position if not to detach.
+                    if (!_detachOnStart)
+                        _graphicalTransform.SetWorldProperties(GetTrackerWorldProperties());
+                }
             }
         }
 
@@ -631,9 +667,12 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void ClearTransformPropertiesQueue()
         {
-            _transformProperties.Clear();
-            //Also unset move rates since there is no more queue.
-            _moveRates = new(MoveRates.UNSET_VALUE);
+            using (_pm_ClearTPQ.Auto())
+            {
+                _transformProperties.Clear();
+                //Also unset move rates since there is no more queue.
+                _moveRates = new(MoveRates.UNSET_VALUE);
+            }
         }
 
         /// <summary>
@@ -641,33 +680,39 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void DiscardExcessiveTransformPropertiesQueue()
         {
-            int propertiesCount = _transformProperties.Count;
-            int dequeueCount = propertiesCount - (_realtimeInterpolation + MAXIMUM_QUEUED_OVER_INTERPOLATION);
-
-            //If there are entries to dequeue.
-            if (dequeueCount > 0)
+            using (_pm_DiscardTPQ.Auto())
             {
-                TickTransformProperties tpp = default;
-                for (int i = 0; i < dequeueCount; i++)
-                    tpp = _transformProperties.Dequeue();
+                int propertiesCount = _transformProperties.Count;
+                int dequeueCount = propertiesCount - (_realtimeInterpolation + MAXIMUM_QUEUED_OVER_INTERPOLATION);
 
-                SetMoveRates(tpp.Properties);
+                //If there are entries to dequeue.
+                if (dequeueCount > 0)
+                {
+                    TickTransformProperties tpp = default;
+                    for (int i = 0; i < dequeueCount; i++)
+                        tpp = _transformProperties.Dequeue();
+
+                    SetMoveRates(tpp.Properties);
+                }
             }
         }
 
         /// <summary>
         /// Adds a new transform properties and sets move rates if needed.
         /// </summary>
-        private void AddTransformProperties(uint tick)
+        private void AddTransformProperties(uint tick, TransformProperties properties, TransformProperties fixedOffset)
         {
-            TickTransformProperties tpp = new(tick, GetTrackerWorldProperties());
-            _transformProperties.Enqueue(tpp);
-
-            //If first entry then set move rates.
-            if (_transformProperties.Count == 1)
+            using (_pm_AddTP.Auto())
             {
-                TransformProperties gfxWorldProperties = _graphicalTransform.GetWorldProperties();
-                SetMoveRates(gfxWorldProperties);
+                TickTransformProperties tpp = new(tick, GetTrackerWorldProperties());
+                _transformProperties.Enqueue(tpp);
+
+                //If first entry then set move rates.
+                if (_transformProperties.Count == 1)
+                {
+                    TransformProperties gfxWorldProperties = _graphicalTransform.GetWorldProperties();
+                    SetMoveRates(gfxWorldProperties);
+                }
             }
         }
 
@@ -677,7 +722,9 @@ namespace FishNet.Component.Transforming.Beta
         /// <param name = "firstTick">First tick in the queue. If 0 this will be looked up.</param>
         private void ModifyTransformProperties(uint clientTick, uint firstTick)
         {
-            int queueCount = _transformProperties.Count;
+            using (_pm_ModifyTP.Auto())
+            {
+                int queueCount = _transformProperties.Count;
             uint tick = clientTick;
             /*Ticks will always be added incremental by 1 so it's safe to jump ahead the difference
              * of tick and firstTick. */
@@ -722,6 +769,7 @@ namespace FishNet.Component.Transforming.Beta
             {
                 //This should never happen.
             }
+            }
         }
 
         /// <summary>
@@ -755,20 +803,24 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void SetMoveRates(in TransformProperties prevValues)
         {
-            if (_transformProperties.Count == 0)
+            using (_pm_SetMoveRates.Auto())
             {
-                _moveRates = new(MoveRates.UNSET_VALUE);
-                return;
+                if (_transformProperties.Count == 0)
+                {
+                    _moveRates = new(MoveRates.UNSET_VALUE);
+                    return;
+                }
+
+                TickTransformProperties ttp = _transformProperties.Peek();
+                TransformProperties nextValues = ttp.Properties + ttp.FixedOffset;
+
+                float duration = _tickDelta;
+
+                _moveRates = MoveRates.GetMoveRates(prevValues, nextValues, duration, _cachedTeleportThreshold);
+                _moveRates.TimeRemaining = duration;
+
+                SetMovementMultiplier();
             }
-
-            TransformProperties nextValues = _transformProperties.Peek().Properties;
-
-            float duration = _tickDelta;
-
-            _moveRates = MoveRates.GetMoveRates(prevValues, nextValues, duration, _cachedTeleportThreshold);
-            _moveRates.TimeRemaining = duration;
-
-            SetMovementMultiplier();
         }
 
         private void SetMovementMultiplier()
@@ -808,61 +860,64 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private void MoveToTarget(float delta)
         {
-            int tpCount = _transformProperties.Count;
-
-            //No data.
-            if (tpCount == 0)
-                return;
-
-            if (_moveImmediately)
+            using (_pm_MoveToTarget.Auto())
             {
-                _isMoving = true;
-            }
-            else
-            {
-                //Enough in buffer to move.
-                if (tpCount >= _realtimeInterpolation)
+                int tpCount = _transformProperties.Count;
+
+                //No data.
+                if (tpCount == 0)
+                    return;
+
+                if (_moveImmediately)
                 {
                     _isMoving = true;
                 }
-                else if (!_isMoving)
-                {
-                    return;
-                }
-                /* If buffer is considerably under goal then halt
-                 * movement. This will allow the buffer to grow. */
-                else if (tpCount - _realtimeInterpolation < -4)
-                {
-                    _isMoving = false;
-                    return;
-                }
-            }
-
-            TickTransformProperties ttp = _transformProperties.Peek();
-
-            TransformPropertiesFlag smoothedProperties = _cachedSmoothedProperties;
-
-            _moveRates.Move(_graphicalTransform, ttp.Properties, smoothedProperties, delta * _movementMultiplier, useWorldSpace: true);
-
-            float tRemaining = _moveRates.TimeRemaining;
-            //if TimeLeft is <= 0f then transform is at goal. Grab a new goal if possible.
-            if (tRemaining <= 0f)
-            {
-                //Dequeue current entry and if there's another call a move on it.
-                _transformProperties.Dequeue();
-
-                //If there are entries left then setup for the next.
-                if (_transformProperties.Count > 0)
-                {
-                    SetMoveRates(ttp.Properties);
-                    //If delta is negative then call move again with abs.
-                    if (tRemaining < 0f)
-                        MoveToTarget(Mathf.Abs(tRemaining));
-                }
-                //No remaining, set to snap.
                 else
                 {
-                    ClearTransformPropertiesQueue();
+                    //Enough in buffer to move.
+                    if (tpCount >= _realtimeInterpolation)
+                    {
+                        _isMoving = true;
+                    }
+                    else if (!_isMoving)
+                    {
+                        return;
+                    }
+                    /* If buffer is considerably under goal then halt
+                     * movement. This will allow the buffer to grow. */
+                    else if (tpCount - _realtimeInterpolation < -4)
+                    {
+                        _isMoving = false;
+                        return;
+                    }
+                }
+
+                TickTransformProperties ttp = _transformProperties.Peek();
+
+                TransformPropertiesFlag smoothedProperties = _cachedSmoothedProperties;
+
+                _moveRates.Move(_graphicalTransform, ttp.Properties, smoothedProperties, delta * _movementMultiplier, useWorldSpace: true);
+
+                float tRemaining = _moveRates.TimeRemaining;
+                //if TimeLeft is <= 0f then transform is at goal. Grab a new goal if possible.
+                if (tRemaining <= 0f)
+                {
+                    //Dequeue current entry and if there's another call a move on it.
+                    _transformProperties.Dequeue();
+
+                    //If there are entries left then setup for the next.
+                    if (_transformProperties.Count > 0)
+                    {
+                        SetMoveRates(ttp.Properties);
+                        //If delta is negative then call move again with abs.
+                        if (tRemaining < 0f)
+                            MoveToTarget(Mathf.Abs(tRemaining));
+                    }
+                    //No remaining, set to snap.
+                    else
+                    {
+                        ClearTransformPropertiesQueue();
+                    }
                 }
             }
         }
