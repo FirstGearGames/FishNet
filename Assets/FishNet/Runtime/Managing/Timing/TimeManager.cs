@@ -9,6 +9,7 @@ using System;
 using System.Runtime.CompilerServices;
 using FishNet.Managing.Statistic;
 using UnityEngine;
+using Unity.Profiling;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
 
 namespace FishNet.Managing.Timing
@@ -207,6 +208,23 @@ namespace FishNet.Managing.Timing
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnFixedUpdate = new ProfilerMarker("TimeManager.OnFixedUpdate()");
+        private static readonly ProfilerMarker _pm_OnPostPhysicsSimulation = new ProfilerMarker("TimeManager.OnPostPhysicsSimulation(float)");
+        private static readonly ProfilerMarker _pm_OnPrePhysicsSimulation = new ProfilerMarker("TimeManager.OnPrePhysicsSimulation(float)");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("TimeManager.OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnLateUpdate = new ProfilerMarker("TimeManager.OnLateUpdate(float)");
+        private static readonly ProfilerMarker _pm_OnRoundTripTimeUpdated = new ProfilerMarker("TimeManager.OnRoundTripTimeUpdated(float)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("TimeManager.OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnTick = new ProfilerMarker("TimeManager.OnTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("TimeManager.OnPostTick()");
+        private static readonly ProfilerMarker _pm_PhysicsSimulate = new ProfilerMarker("TimeManager.Physics.Simulate(float)");
+        private static readonly ProfilerMarker _pm_Physics2DSimulate = new ProfilerMarker("TimeManager.Physics2D.Simulate(float)");
+        
+        #endregion
+        
         /// <summary>
         /// </summary>
         private uint _localTick;
@@ -283,7 +301,7 @@ namespace FishNet.Managing.Timing
 
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         #region Const.
@@ -318,7 +336,11 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickFixedUpdate()
         {
-            OnFixedUpdate?.Invoke();
+            using (_pm_OnFixedUpdate.Auto())
+            {
+                OnFixedUpdate?.Invoke();
+            }
+            
             /* Invoke onsimulation if using Unity time.
              * Otherwise let the tick cycling part invoke. */
             if (PhysicsMode == PhysicsMode.Unity)
@@ -329,10 +351,18 @@ namespace FishNet.Managing.Timing
                  * This can only happen if a FixedUpdate occurs
                  * multiple times per frame. */
                 if (_fixedUpdateTimeStep)
-                    OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                {
+                    using (_pm_OnPostPhysicsSimulation.Auto())
+                    {
+                        OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                    }
+                }
 
                 _fixedUpdateTimeStep = true;
-                OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                using (_pm_OnPrePhysicsSimulation.Auto())
+                {
+                    OnPrePhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                }
             }
         }
 
@@ -349,13 +379,20 @@ namespace FishNet.Managing.Timing
             bool beforeTick = _updateOrder == UpdateOrder.BeforeTick;
             if (beforeTick)
             {
-                OnUpdate?.Invoke();
+                using (_pm_OnUpdate.Auto())
+                {
+                    OnUpdate?.Invoke();
+                }
+                
                 MethodLogic();
             }
             else
             {
                 MethodLogic();
-                OnUpdate?.Invoke();
+                using (_pm_OnUpdate.Auto())
+                {
+                    OnUpdate?.Invoke();
+                }
             }
 
             void MethodLogic()
@@ -366,7 +403,10 @@ namespace FishNet.Managing.Timing
                 if (PhysicsMode == PhysicsMode.Unity && _fixedUpdateTimeStep)
                 {
                     _fixedUpdateTimeStep = false;
-                    OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                    using (_pm_OnPostPhysicsSimulation.Auto())
+                    {
+                        OnPostPhysicsSimulation?.Invoke(Time.fixedDeltaTime);
+                    }
                 }
             }
         }
@@ -376,7 +416,10 @@ namespace FishNet.Managing.Timing
         /// </summary>
         internal void TickLateUpdate()
         {
-            OnLateUpdate?.Invoke();
+            using (_pm_OnLateUpdate.Auto())
+            {
+                OnLateUpdate?.Invoke();
+            }
         }
 
         /// <summary>
@@ -578,7 +621,10 @@ namespace FishNet.Managing.Timing
             RoundTripTime = (long)Math.Round(averageInTime);
             _receivedPong = true;
 
-            OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
+            using (_pm_OnRoundTripTimeUpdated.Auto())
+            {
+                OnRoundTripTimeUpdated?.Invoke(RoundTripTime);
+            }
         }
 
         /// <summary>
@@ -687,7 +733,12 @@ namespace FishNet.Managing.Timing
             do
             {
                 if (frameTicked)
-                    OnPreTick?.Invoke();
+                {
+                    using (_pm_OnPreTick.Auto())
+                    {
+                        OnPreTick?.Invoke();
+                    }
+                }
 
                 /* This has to be called inside the loop because
                  * OnPreTick promises data hasn't been read yet.
@@ -700,17 +751,39 @@ namespace FishNet.Managing.Timing
                 {
                     // Tell predicted objecs to reconcile before OnTick.
                     NetworkManager.PredictionManager.ReconcileToStates();
-                    OnTick?.Invoke();
+                    using (_pm_OnTick.Auto())
+                    {
+                        OnTick?.Invoke();
+                    }
 
                     if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
                     {
-                        OnPrePhysicsSimulation?.Invoke(tickDelta);
-                        Physics.Simulate(tickDelta);
-                        Physics2D.Simulate(tickDelta);
-                        OnPostPhysicsSimulation?.Invoke(tickDelta);
+                        using (_pm_OnPrePhysicsSimulation.Auto())
+                        {
+                            OnPrePhysicsSimulation?.Invoke(tickDelta);
+                        }
+                        
+                        using (_pm_PhysicsSimulate.Auto())
+                        {
+                            Physics.Simulate(tickDelta);
+                        }
+                        
+                        using (_pm_Physics2DSimulate.Auto())
+                        {
+                            Physics2D.Simulate(tickDelta);
+                        }
+                        
+                        using (_pm_OnPostPhysicsSimulation.Auto())
+                        {
+                            OnPostPhysicsSimulation?.Invoke(tickDelta);
+                        }
                     }
-
-                    OnPostTick?.Invoke();
+                    
+                    using (_pm_OnPostTick.Auto())
+                    {
+                        OnPostTick?.Invoke();
+                    }
+                    
                     // After post tick send states.
                     NetworkManager.PredictionManager.SendStateUpdate();
 

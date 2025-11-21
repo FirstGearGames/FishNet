@@ -3,6 +3,7 @@ using FishNet.Managing.Timing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -20,6 +21,15 @@ namespace FishNet.Component.Transforming.Beta
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("TickSmootherController.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// </summary>
         private InitializationSettings _initializationSettings = new();
@@ -140,12 +150,18 @@ namespace FishNet.Component.Transforming.Beta
 
         public void TimeManager_OnUpdate()
         {
-            UniversalSmoother.OnUpdate(Time.deltaTime);
+            using (_pm_OnUpdate.Auto())
+            {
+                UniversalSmoother.OnUpdate(Time.deltaTime);
+            }
         }
 
         public void TimeManager_OnPreTick()
         {
-            UniversalSmoother.OnPreTick();
+            using (_pm_OnPreTick.Auto())
+            {
+                UniversalSmoother.OnPreTick();
+            }
         }
 
         /// <summary>
@@ -153,8 +169,11 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         public void TimeManager_OnPostTick()
         {
-            if (_timeManager != null)
-                UniversalSmoother.OnPostTick(_timeManager.LocalTick);
+            using (_pm_OnPostTick.Auto())
+            {
+                if (_timeManager != null)
+                    UniversalSmoother.OnPostTick(_timeManager.LocalTick);
+            }
         }
 
         private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
