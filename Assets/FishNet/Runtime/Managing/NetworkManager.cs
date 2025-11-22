@@ -220,11 +220,19 @@ namespace FishNet.Managing
         private PersistenceType _persistence = PersistenceType.DestroyNewest;
         #endregion
 
+        #region Private.
+        /// <summary>
+        /// Value of Application.RunInBackground before starting any network connection.
+        /// </summary>
+        /// <remarks>A null value indicates not yet set.</remarks>
+        private bool? _offlineApplicationRunInBackground;
+        #endregion
+
         #region Const.
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.15.1";
+        public const string FISHNET_VERSION = "4.6.16";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -250,12 +258,12 @@ namespace FishNet.Managing
 
             if (!CanPersist())
                 return;
-            
-            //If is the first instance then set launch timestamp.
+
+            // If is the first instance then set launch timestamp.
             if (_instances.Count == 0)
             {
                 LaunchTimestamp = DateTime.Now.ToBinary();
-                //What are the odds fo this happening!
+                // What are the odds fo this happening!
                 if (LaunchTimestamp == UNSET_LAUNCH_TIMESTAMP)
                     LaunchTimestamp = REPAIR_LAUNCH_TIMESTAMP_CONFLICT_VALUE;
             }
@@ -293,7 +301,7 @@ namespace FishNet.Managing
                 instancedDpo.Sort();
                 SpawnablePrefabs = instancedDpo;
             }
-            
+
             if (TryGetComponent<NetworkObject>(out _))
                 InternalLogError($"NetworkObject component found on the NetworkManager object {gameObject.name}. This is not allowed and will cause problems. Remove the NetworkObject component from this object.");
 
@@ -342,8 +350,15 @@ namespace FishNet.Managing
             TimeManager.OnLateUpdate += TimeManager_OnLateUpdate;
             TransportManager.InitializeOnce_Internal(this);
 
+            /* There is no need to unsubscribe to either of the connection
+             * state events below since components
+             * will be destroyed with the NetworkManager. */
+            
             ClientManager.InitializeOnce_Internal(this);
+            ClientManager.OnClientConnectionState+= ClientManager_OnClientConnectionState;
+            
             ServerManager.InitializeOnce_Internal(this);
+            ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
 
             SceneManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
@@ -352,6 +367,16 @@ namespace FishNet.Managing
             StatisticsManager.InitializeOnce_Internal(this);
             _objectPool.InitializeOnce(this);
         }
+
+        /// <summary>
+        /// Called when the local server connection changes.
+        /// </summary>
+        private void ServerManager_OnServerConnectionState(ServerConnectionStateArgs obj) => UpdateRunInBackgroundIfApplicable();
+
+        /// <summary>
+        /// Called when the local client connection changes.
+        /// </summary>
+        private void ClientManager_OnClientConnectionState(ClientConnectionStateArgs obj) => UpdateRunInBackgroundIfApplicable();
 
         /// <summary>
         /// Updates the frame rate based on server and client status.
@@ -419,7 +444,7 @@ namespace FishNet.Managing
 
             // First instance of NM.
             NetworkManager firstInstance = instances[0];
-            
+
             // If to destroy the oldest.
             if (_persistence == PersistenceType.DestroyOldest)
             {
@@ -450,10 +475,10 @@ namespace FishNet.Managing
         /// <returns></returns>
         private bool ValidateSpawnablePrefabs(bool print)
         {
-            //If null and object is in a scene.
+            // If null and object is in a scene.
             if (SpawnablePrefabs == null && !string.IsNullOrEmpty(gameObject.scene.name))
             {
-                //First try to fetch the file, only if editor and not in play mode.
+                // First try to fetch the file, only if editor and not in play mode.
                 #if UNITY_EDITOR
                 if (!ApplicationState.IsPlaying())
                 {
@@ -466,7 +491,7 @@ namespace FishNet.Managing
                     }
                 }
                 #endif
-                //Always throw an error as this would cause failure.
+                // Always throw an error as this would cause failure.
                 if (print)
                     Debug.LogError($"SpawnablePrefabs is null on {gameObject.name}. Select the NetworkManager in scene {gameObject.scene.name} and choose a prefabs file. Choosing DefaultPrefabObjects will automatically populate prefabs for you.");
                 return false;
@@ -498,7 +523,7 @@ namespace FishNet.Managing
         /// <param name = "presetValue">Value which may already be set. When not null this is returned instead.</param>
         private T GetOrCreateComponent<T>(T presetValue = null) where T : UnityEngine.Component
         {
-            //If already set then return set value.
+            // If already set then return set value.
             if (presetValue != null)
                 return presetValue;
 
@@ -514,36 +539,42 @@ namespace FishNet.Managing
         /// <param name = "clients"></param>
         internal void ClearClientsCollection(Dictionary<int, NetworkConnection> clients, int transportIndex = -1)
         {
-            //True to dispose all connections.
+            // True to dispose all connections.
             bool disposeAll = transportIndex < 0;
             List<int> cache = CollectionCaches<int>.RetrieveList();
 
+            /* Only reset NetworkConnections if server is also not started.
+             * Otherwise, this would reset connections for the server side
+             * as well. */
+            bool canResetState = !IsServerStarted;
 
             foreach (KeyValuePair<int, NetworkConnection> kvp in clients)
             {
                 NetworkConnection value = kvp.Value;
-                //If to check transport index.
+                // If to check transport index.
                 if (!disposeAll)
                 {
                     if (value.TransportIndex == transportIndex)
                     {
                         cache.Add(kvp.Key);
-                        value.ResetState();
+                        if (canResetState)
+                            value.ResetState();
                     }
                 }
-                //Not using transport index, no check required.
+                // Not using transport index, no check required.
                 else
                 {
-                    value.ResetState();
+                    if (canResetState)
+                        value.ResetState();
                 }
             }
 
-            //If all are being disposed the collection can be cleared.
+            // If all are being disposed the collection can be cleared.
             if (disposeAll)
             {
                 clients.Clear();
             }
-            //Otherwise, only remove those which were disposed.
+            // Otherwise, only remove those which were disposed.
             else
             {
                 foreach (int item in cache)
@@ -551,6 +582,40 @@ namespace FishNet.Managing
             }
 
             CollectionCaches<int>.Store(cache);
+        }
+
+        /// <summary>
+        /// Updates Application.RunInBackground to NetworkManager setting when connected, and application setting when not connected.
+        /// </summary>
+        private void UpdateRunInBackgroundIfApplicable()
+        {
+            // Not configured to update values.
+            if (!_runInBackground)
+                return;
+
+            bool anythingStarted = ServerManager.IsAnyServerStarted() || ClientManager.Started;
+
+            // Check to set values.
+            if (anythingStarted)
+            {
+                // Already set.
+                if (_offlineApplicationRunInBackground != null)
+                    return;
+                
+                //Update run in background after caching current value.
+                _offlineApplicationRunInBackground = Application.runInBackground;
+                Application.runInBackground = true;
+            }
+            else
+            {
+                // Already unset.
+                if (_offlineApplicationRunInBackground == null)
+                    return;
+                
+                //Update run in background then unset cached value.
+                Application.runInBackground = _offlineApplicationRunInBackground.Value;
+                _offlineApplicationRunInBackground = null;
+            }
         }
 
         #region Editor.

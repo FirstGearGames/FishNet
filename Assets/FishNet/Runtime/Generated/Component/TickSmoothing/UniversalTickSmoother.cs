@@ -5,8 +5,8 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
-using UnityEngine;
 using Unity.Profiling;
+using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace FishNet.Component.Transforming.Beta
@@ -22,7 +22,6 @@ namespace FishNet.Component.Transforming.Beta
         {
             public readonly uint Tick;
             public readonly TransformProperties Properties;
-
 
             public TickTransformProperties(uint tick, Transform t)
             {
@@ -51,7 +50,7 @@ namespace FishNet.Component.Transforming.Beta
         }
         #endregion
 
-        #region Public.
+        #region public.
         /// <summary>
         /// True if currently initialized.
         /// </summary>
@@ -59,25 +58,6 @@ namespace FishNet.Component.Transforming.Beta
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_ConsumeFixedOffset = new ProfilerMarker("UniversalTickSmoother.ConsumeFixedOffset(uint)");
-        private static readonly ProfilerMarker _pm_AxiswiseClamp = new ProfilerMarker("UniversalTickSmoother.AxiswiseClamp(TransformProperties, TransformProperties)");
-        private static readonly ProfilerMarker _pm_UpdateRealtimeInterpolation = new ProfilerMarker("UniversalTickSmoother.UpdateRealtimeInterpolation()");
-        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("UniversalTickSmoother.OnUpdate(float)");
-        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("UniversalTickSmoother.OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("UniversalTickSmoother.OnPostReplicateReplay(uint)");
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("UniversalTickSmoother.OnPostTick(uint)");
-        private static readonly ProfilerMarker _pm_ClearTPQ = new ProfilerMarker("UniversalTickSmoother.ClearTransformPropertiesQueue()");
-        private static readonly ProfilerMarker _pm_DiscardTPQ = new ProfilerMarker("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
-        private static readonly ProfilerMarker _pm_AddTP = new ProfilerMarker("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
-        private static readonly ProfilerMarker _pm_ModifyTP = new ProfilerMarker("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
-        private static readonly ProfilerMarker _pm_SetMoveRates = new ProfilerMarker("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
-        private static readonly ProfilerMarker _pm_MoveToTarget = new ProfilerMarker("UniversalTickSmoother.MoveToTarget(float)");
-        
-        #endregion
-        
         /// <summary>
         /// How quickly to move towards goal values.
         /// </summary>
@@ -185,6 +165,22 @@ namespace FishNet.Component.Transforming.Beta
         /// True if moving has started and has not been stopped.
         /// </summary>
         private bool _isMoving;
+        #endregion
+
+        #region Private Profiler Markers
+        // private static readonly ProfilerMarker _pm_ConsumeFixedOffset = new("UniversalTickSmoother.ConsumeFixedOffset(uint)");
+        // private static readonly ProfilerMarker _pm_AxiswiseClamp = new("UniversalTickSmoother.AxiswiseClamp(TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_UpdateRealtimeInterpolation = new("UniversalTickSmoother.UpdateRealtimeInterpolation()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new("UniversalTickSmoother.OnUpdate(float)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new("UniversalTickSmoother.OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new("UniversalTickSmoother.OnPostReplicateReplay(uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new("UniversalTickSmoother.OnPostTick(uint)");
+        private static readonly ProfilerMarker _pm_ClearTPQ = new("UniversalTickSmoother.ClearTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_DiscardTPQ = new("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_AddTP = new("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_ModifyTP = new("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
+        private static readonly ProfilerMarker _pm_SetMoveRates = new("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
+        private static readonly ProfilerMarker _pm_MoveToTarget = new("UniversalTickSmoother.MoveToTarget(float)");
         #endregion
 
         #region Const.
@@ -700,7 +696,7 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// Adds a new transform properties and sets move rates if needed.
         /// </summary>
-        private void AddTransformProperties(uint tick, TransformProperties properties, TransformProperties fixedOffset)
+        private void AddTransformProperties(uint tick)
         {
             using (_pm_AddTP.Auto())
             {
@@ -725,50 +721,50 @@ namespace FishNet.Component.Transforming.Beta
             using (_pm_ModifyTP.Auto())
             {
                 int queueCount = _transformProperties.Count;
-            uint tick = clientTick;
-            /*Ticks will always be added incremental by 1 so it's safe to jump ahead the difference
-             * of tick and firstTick. */
-            int index = (int)(tick - firstTick);
-            //Replace with new data.
-            if (index < queueCount)
-            {
-                if (tick != _transformProperties[index].Tick)
+                uint tick = clientTick;
+                /*Ticks will always be added incremental by 1 so it's safe to jump ahead the difference
+                 * of tick and firstTick. */
+                int index = (int)(tick - firstTick);
+                //Replace with new data.
+                if (index < queueCount)
                 {
-                    //Should not be possible.
+                    if (tick != _transformProperties[index].Tick)
+                    {
+                        //Should not be possible.
+                    }
+                    else
+                    {
+                        TransformProperties newProperties = GetTrackerWorldProperties();
+                        /* Adjust transformProperties to ease into any corrections.
+                         * The corrected value is used the more the index is to the end
+                         * of the queue. */
+                        /* We want to be fully eased in by the last entry of the queue. */
+
+                        int lastPossibleIndex = queueCount - 1;
+                        int adjustedQueueCount = lastPossibleIndex - 1;
+                        if (adjustedQueueCount < 1)
+                            adjustedQueueCount = 1;
+                        float easePercent = (float)index / adjustedQueueCount;
+
+                        //If easing.
+                        if (easePercent < 1f)
+                        {
+                            if (easePercent < 1f)
+                                easePercent = (float)Math.Pow(easePercent, adjustedQueueCount - index);
+
+                            TransformProperties oldProperties = _transformProperties[index].Properties;
+                            newProperties.Position = Vector3.Lerp(oldProperties.Position, newProperties.Position, easePercent);
+                            newProperties.Rotation = Quaternion.Lerp(oldProperties.Rotation, newProperties.Rotation, easePercent);
+                            newProperties.Scale = Vector3.Lerp(oldProperties.Scale, newProperties.Scale, easePercent);
+                        }
+
+                        _transformProperties[index] = new(tick, newProperties);
+                    }
                 }
                 else
                 {
-                    TransformProperties newProperties = GetTrackerWorldProperties();
-                    /* Adjust transformProperties to ease into any corrections.
-                     * The corrected value is used the more the index is to the end
-                     * of the queue. */
-                    /* We want to be fully eased in by the last entry of the queue. */
-
-                    int lastPossibleIndex = queueCount - 1;
-                    int adjustedQueueCount = lastPossibleIndex - 1;
-                    if (adjustedQueueCount < 1)
-                        adjustedQueueCount = 1;
-                    float easePercent = (float)index / adjustedQueueCount;
-
-                    //If easing.
-                    if (easePercent < 1f)
-                    {
-                        if (easePercent < 1f)
-                            easePercent = (float)Math.Pow(easePercent, adjustedQueueCount - index);
-
-                        TransformProperties oldProperties = _transformProperties[index].Properties;
-                        newProperties.Position = Vector3.Lerp(oldProperties.Position, newProperties.Position, easePercent);
-                        newProperties.Rotation = Quaternion.Lerp(oldProperties.Rotation, newProperties.Rotation, easePercent);
-                        newProperties.Scale = Vector3.Lerp(oldProperties.Scale, newProperties.Scale, easePercent);
-                    }
-
-                    _transformProperties[index] = new(tick, newProperties);
+                    //This should never happen.
                 }
-            }
-            else
-            {
-                //This should never happen.
-            }
             }
         }
 
@@ -811,8 +807,7 @@ namespace FishNet.Component.Transforming.Beta
                     return;
                 }
 
-                TickTransformProperties ttp = _transformProperties.Peek();
-                TransformProperties nextValues = ttp.Properties + ttp.FixedOffset;
+                TransformProperties nextValues = _transformProperties.Peek().Properties;
 
                 float duration = _tickDelta;
 

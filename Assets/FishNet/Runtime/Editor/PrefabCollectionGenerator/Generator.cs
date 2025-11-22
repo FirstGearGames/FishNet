@@ -1,4 +1,5 @@
 ﻿#if UNITY_EDITOR
+using System;
 using FishNet.Configuring;
 using FishNet.Managing;
 using FishNet.Managing.Object;
@@ -435,12 +436,15 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 {
                     for (int i = 0; i < specifiedFolders.Count; i++)
                     {
-                        //Do not check against self.
+                        // Do not check against self.
                         if (i == z)
                             continue;
 
-                        //Duplicate.
-                        if (specifiedFolders[z].Path.Equals(specifiedFolders[i].Path, System.StringComparison.OrdinalIgnoreCase))
+                        string zPath = GetPathWithSeparator(specifiedFolders[z].Path);
+                        string iPath = GetPathWithSeparator(specifiedFolders[i].Path);
+
+                        // Duplicate.
+                        if (zPath.Equals(iPath, System.StringComparison.OrdinalIgnoreCase))
                         {
                             UnityDebug.LogError($"The same path is specified multiple times in the DefaultPrefabGenerator settings. Remove the duplicate to clear this error.");
                             specifiedFolders.RemoveAt(i);
@@ -450,7 +454,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                         /* We are checking if i can be within
                          * z. This is only possible if i is longer
                          * than z. */
-                        if (specifiedFolders[i].Path.Length < specifiedFolders[z].Path.Length)
+                        if (iPath.Length < zPath.Length)
                             continue;
                         /* Do not need to check if not recursive.
                          * Only recursive needs to be checked because
@@ -459,11 +463,13 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                         if (!specifiedFolders[z].Recursive)
                             continue;
 
-                        //Compare paths.
-                        string zPath = GetPathWithSeparator(specifiedFolders[z].Path);
-                        string iPath = zPath.Substring(0, zPath.Length);
-                        //If paths match.
-                        if (iPath.Equals(zPath, System.StringComparison.OrdinalIgnoreCase))
+                        // // Compare paths.
+                        // string zPath = GetPathWithSeparator(specifiedFolders[z].Path);
+                        // string iPath = specifiedFolders[i].Path.Substring(0, zPath.Length);
+                        string iPathRecursiveCheck = iPath.Substring(0, zPath.Length);
+                        
+                        // If paths match.
+                        if (iPathRecursiveCheck.Equals(zPath, System.StringComparison.OrdinalIgnoreCase))
                         {
                             UnityDebug.LogError($"Path {specifiedFolders[i].Path} is included within recursive path {specifiedFolders[z].Path}. Remove path {specifiedFolders[i].Path} to clear this error.");
                             specifiedFolders.RemoveAt(i);
@@ -497,15 +503,15 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             if (settings == null)
                 settings = Configuration.Configurations.PrefabGenerator;
 
-            //If not using default prefabs then exit early.
+            // If not using default prefabs then exit early.
             if (!settings.Enabled)
                 return null;
 
-            //Load the prefab collection 
+            // Load the prefab collection 
             string defaultPrefabsPath = settings.DefaultPrefabObjectsPath_Platform;
             string fullDefaultPrefabsPath = defaultPrefabsPath.Length > 0 ? Path.GetFullPath(defaultPrefabsPath) : string.Empty;
 
-            //If cached prefabs is not the same path as assetPath.
+            // If cached prefabs is not the same path as assetPath.
             if (_cachedDefaultPrefabs != null)
             {
                 string unityAssetPath = AssetDatabase.GetAssetPath(_cachedDefaultPrefabs);
@@ -514,16 +520,16 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     _cachedDefaultPrefabs = null;
             }
 
-            //If cached is null try to get it.
+            // If cached is null try to get it.
             if (_cachedDefaultPrefabs == null)
             {
-                //Only try to load it if file exist.
+                // Only try to load it if file exist.
                 if (File.Exists(fullDefaultPrefabsPath))
                 {
                     _cachedDefaultPrefabs = AssetDatabase.LoadAssetAtPath<DefaultPrefabObjects>(defaultPrefabsPath);
                     if (_cachedDefaultPrefabs == null)
                     {
-                        //If already retried then throw an error.
+                        // If already retried then throw an error.
                         if (_retryRefreshDefaultPrefabs)
                         {
                             UnityDebug.LogError("DefaultPrefabObjects file exists but it could not be loaded by Unity. Use the Fish-Networking menu -> Utility -> Refresh Default Prefabs to refresh prefabs.");
@@ -538,11 +544,11 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                 }
             }
 
-            //Will be true also if not a clone.
+            // Will be true also if not a clone.
             if (CloneChecker.CanGenerateFiles())
                 CreateDefaultPrefabsAssetIfNeeded();
 
-            //Creates DefaultPrefabs asset if missing or not set.
+            // Creates DefaultPrefabs asset if missing or not set.
             void CreateDefaultPrefabsAssetIfNeeded()
             {
                 if (_cachedDefaultPrefabs == null)
@@ -588,10 +594,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         {
             if (Application.isPlaying)
                 return;
-            //If retrying next frame don't bother updating, next frame will do a full refresh.
+            // If retrying next frame don't bother updating, next frame will do a full refresh.
             if (_retryRefreshDefaultPrefabs)
                 return;
-            //Post process is being ignored. Could be temporary or user has disabled this feature.
+            // Post process is being ignored. Could be temporary or user has disabled this feature.
             if (IgnorePostProcess)
                 return;
             /* Don't iterate if updating or compiling as that could cause an infinite loop
@@ -607,22 +613,22 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
             if (prefabCollection.GetObjectCount() == 0)
             {
-                //If there are no prefabs then do a full rebuild. Odds of there being none are pretty much nill.
+                // If there are no prefabs then do a full rebuild. Odds of there being none are pretty much nill.
                 GenerateFull(settings);
             }
             else
             {
                 int totalChanges = importedAssets.Length + deletedAssets.Length + movedAssets.Length + movedFromAssetPaths.Length;
-                //Nothing has changed. This shouldn't occur but unity is funny so we're going to check anyway.
+                // Nothing has changed. This shouldn't occur but unity is funny so we're going to check anyway.
                 if (totalChanges == 0)
                     return;
 
-                //Normalizes path.
+                // Normalizes path.
                 string dpoPath = Path.GetFullPath(settings.DefaultPrefabObjectsPath_Platform);
-                //If total changes is 1 and the only changed file is the default prefab collection then do nothing.
+                // If total changes is 1 and the only changed file is the default prefab collection then do nothing.
                 if (totalChanges == 1)
                 {
-                    //Do not need to check movedFromAssetPaths because that's not possible for this check.
+                    // Do not need to check movedFromAssetPaths because that's not possible for this check.
                     if ((importedAssets.Length == 1 && Path.GetFullPath(importedAssets[0]) == dpoPath) || (deletedAssets.Length == 1 && Path.GetFullPath(deletedAssets[0]) == dpoPath) || (movedAssets.Length == 1 && Path.GetFullPath(movedAssets[0]) == dpoPath))
                         return;
 
@@ -633,17 +639,17 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     string imported = importedAssets.Length == 1 ? importedAssets[0] : null;
                     if (imported != null && imported == _lastSingleImportedAsset)
                     {
-                        //If here then the file is the same. Make sure it's already in the collection before returning.
+                        // If here then the file is the same. Make sure it's already in the collection before returning.
                         System.Type assetType = AssetDatabase.GetMainAssetTypeAtPath(imported);
-                        //Not a gameObject, no reason to continue.
+                        // Not a gameObject, no reason to continue.
                         if (assetType != typeof(GameObject))
                             return;
 
                         NetworkObject nob = AssetDatabase.LoadAssetAtPath<NetworkObject>(imported);
-                        //If is a networked object.
+                        // If is a networked object.
                         if (CanAddNetworkObject(nob, settings))
                         {
-                            //Already added!
+                            // Already added!
                             if (prefabCollection.Prefabs.Contains(nob))
                                 return;
                         }
@@ -664,7 +670,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     _ranOnce = true;
                     fullRebuild = true;
                 }
-                //Other conditions which a full rebuild may be required.
+                // Other conditions which a full rebuild may be required.
                 else if (!fullRebuild)
                 {
                     const string fishnetVersionSave = "fishnet_version";

@@ -7,12 +7,10 @@ using FishNet.Managing.Timing;
 using FishNet.Object.Prediction;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
-using FishNet.Component.Transforming.Beta;
 using FishNet.Connection;
 using FishNet.Managing.Server;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
@@ -157,22 +155,20 @@ namespace FishNet.Object
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkObject.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkObject.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker _pm_OnPreReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnPostReconcile = new ProfilerMarker("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnReplicateReplay = new ProfilerMarker("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
-        
-        #endregion
         /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
         private List<NetworkBehaviour> _predictionBehaviours = new();
+        #endregion
+
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_OnPreTick = new("NetworkObject.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new("NetworkObject.PredictionManager_OnPostReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new("NetworkObject.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnPreReconcile = new("NetworkObject.PredictionManager_OnPreReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReconcile = new("NetworkObject.PredictionManager_OnReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostReconcile = new("NetworkObject.PredictionManager_OnPostReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReplicateReplay = new("NetworkObject.PredictionManager_OnReplicateReplay(uint, uint)");
         #endregion
 
         private void TimeManager_OnUpdate_Prediction()
@@ -401,6 +397,7 @@ namespace FishNet.Object
                  * no reason to try and unpause per NB. */
                 if (_rigidbodyPauser != null)
                     _rigidbodyPauser.Unpause();
+
                 IsObjectReconciling = false;
             }
         }
@@ -410,6 +407,7 @@ namespace FishNet.Object
             using (_pm_OnReplicateReplay.Auto())
             {
                 uint replayTick = IsOwner ? clientTick : serverTick;
+
                 for (int i = 0; i < _predictionBehaviours.Count; i++)
                     _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
             }

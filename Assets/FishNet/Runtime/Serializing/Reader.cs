@@ -624,6 +624,12 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
+        /// Reads AutoPackType.
+        /// </summary>
+        [DefaultReader]
+        public AutoPackType ReadAutoPackType() => (AutoPackType)ReadUInt8Unpacked();
+
+        /// <summary>
         /// Reads a Vector2.
         /// </summary>
         /// <returns></returns>

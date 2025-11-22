@@ -33,6 +33,13 @@ namespace FishNet.Object.Prediction
                     w.WriteVector3(data.Position);
                     w.WriteInt32((byte)data.Mode);
                     break;
+                case PredictionRigidbody2D.ForceApplicationType.MovePosition:
+                    w.WriteVector3(data.Position);
+                    break;
+                case PredictionRigidbody2D.ForceApplicationType.MoveRotation:
+                    w.WriteUInt8Unpacked((byte)data.RotationPacking);
+                    w.WriteQuaternion(data.Rotation, data.RotationPacking);
+                    break;
                 default:
                     w.NetworkManager.LogError($"ForceApplicationType of {appType} is not supported.");
                     break;
@@ -54,37 +61,49 @@ namespace FishNet.Object.Prediction
                 case PredictionRigidbody2D.ForceApplicationType.AddRelativeForce:
                     data.Vector3Force = r.ReadVector3();
                     data.Mode = (ForceMode2D)r.ReadUInt8Unpacked();
-                    return fd;
+                    break;
                 case PredictionRigidbody2D.ForceApplicationType.AddTorque:
                     data.FloatForce = r.ReadSingle();
                     data.Mode = (ForceMode2D)r.ReadUInt8Unpacked();
-                    return fd;
+                    break;
                 case PredictionRigidbody2D.ForceApplicationType.AddForceAtPosition:
                     data.Vector3Force = r.ReadVector3();
                     data.Position = r.ReadVector3();
                     data.Mode = (ForceMode2D)r.ReadUInt8Unpacked();
-                    return fd;
+                    break;
+                case PredictionRigidbody2D.ForceApplicationType.MovePosition:
+                    data.Position = r.ReadVector3();
+                    break;
+                case PredictionRigidbody2D.ForceApplicationType.MoveRotation:
+                    AutoPackType apt = (AutoPackType)r.ReadUInt8Unpacked();
+                    data.Rotation = r.ReadQuaternion(apt);
+                    break;
                 default:
                     r.NetworkManager.LogError($"ForceApplicationType of {appType} is not supported.");
-                    return fd;
+                    break;
             }
+
+            fd.Data = data;
+            return fd;
         }
 
         public static void WritePredictionRigidbody2D(this Writer w, PredictionRigidbody2D pr)
         {
-            w.Write(pr.Rigidbody2D.GetState());
+            w.Write(pr.Rigidbody2D.GetState(pr.RotationPacking));
             w.WriteList(pr.GetPendingForces());
         }
 
         public static PredictionRigidbody2D ReadPredictionRigidbody2D(this Reader r)
         {
-            List<PredictionRigidbody2D.EntryData> lst = CollectionCaches<PredictionRigidbody2D.EntryData>.RetrieveList();
             Rigidbody2DState rs = r.Read<Rigidbody2DState>();
+            
+            List<PredictionRigidbody2D.EntryData> lst = CollectionCaches<PredictionRigidbody2D.EntryData>.RetrieveList();
             r.ReadList(ref lst);
-            PredictionRigidbody2D pr = ResettableObjectCaches<PredictionRigidbody2D>.Retrieve();
 
+            PredictionRigidbody2D pr = ResettableObjectCaches<PredictionRigidbody2D>.Retrieve();
             pr.SetReconcileData(rs, lst);
             pr.SetPendingForces(lst);
+            
             return pr;
         }
     }
@@ -98,10 +117,12 @@ namespace FishNet.Object.Prediction
         [System.Flags]
         public enum ForceApplicationType : byte
         {
-            AddForceAtPosition = 1,
-            AddForce = 4,
-            AddRelativeForce = 8,
-            AddTorque = 16
+            AddForceAtPosition = 1 << 0,
+            AddForce =  1 << 1,
+            AddRelativeForce =  1 << 2,
+            AddTorque =  1 << 3,
+            MovePosition =  1 << 4,
+            MoveRotation =  1 << 5,
         }
 
         public struct AllForceData
@@ -109,7 +130,21 @@ namespace FishNet.Object.Prediction
             public Vector3 Vector3Force;
             public float FloatForce;
             public Vector3 Position;
+            public Quaternion Rotation;
+            [ExcludeSerialization]
+            public readonly AutoPackType RotationPacking;
             public ForceMode2D Mode;
+
+            public AllForceData(Vector3 position) : this()
+            {
+                Position = position;
+            }
+
+            public AllForceData(Quaternion rotation, AutoPackType rotationPacking) : this()
+            {
+                Rotation = rotation;
+                RotationPacking = rotationPacking;
+            }
 
             public AllForceData(Vector3 force, ForceMode2D mode) : this()
             {
@@ -157,6 +192,11 @@ namespace FishNet.Object.Prediction
         /// </summary>
         [System.NonSerialized]
         internal Rigidbody2DState Rigidbody2DState;
+        /// <summary>
+        /// How much to pack rotation.
+        /// </summary>
+        [ExcludeSerialization]
+        internal AutoPackType RotationPacking = AutoPackType.Packed;
         #endregion
 
         #region Public.
@@ -188,6 +228,7 @@ namespace FishNet.Object.Prediction
         {
             if (_pendingForces != null)
                 CollectionCaches<EntryData>.StoreAndDefault(ref _pendingForces);
+            
             Rigidbody2D = null;
         }
 
@@ -195,9 +236,11 @@ namespace FishNet.Object.Prediction
         /// Rigidbody which force is applied.
         /// </summary>
         /// <param name = "rb"></param>
-        public void Initialize(Rigidbody2D rb)
+        public void Initialize(Rigidbody2D rb, AutoPackType rotationPacking = AutoPackType.Packed)
         {
             Rigidbody2D = rb;
+            RotationPacking = rotationPacking;
+
             if (_pendingForces == null)
                 _pendingForces = CollectionCaches<EntryData>.RetrieveList();
             else
@@ -252,6 +295,26 @@ namespace FishNet.Object.Prediction
         }
 
         /// <summary>
+        /// Moves the kinematic Rigidbody towards position.
+        /// </summary>
+        /// <param name="position">Next position.</param>
+        public void MovePosition(Vector3 position)
+        {
+            EntryData fd = new(ForceApplicationType.MovePosition, new(position));
+            _pendingForces.Add(fd);
+        }
+
+        /// <summary>
+        /// Moves the kinematic Rigidbody towards rotation.
+        /// </summary>
+        /// <param name="position">Next position.</param>
+        public void MoveRotation(Quaternion rotation)
+        {
+            EntryData fd = new(ForceApplicationType.MoveRotation, new(rotation, RotationPacking));
+            _pendingForces.Add(fd);
+        }
+
+        /// <summary>
         /// Applies pending forces to rigidbody in the order they were added.
         /// </summary>
         public void Simulate()
@@ -272,6 +335,12 @@ namespace FishNet.Object.Prediction
                         break;
                     case ForceApplicationType.AddForceAtPosition:
                         Rigidbody2D.AddForceAtPosition(data.Vector3Force, data.Position, data.Mode);
+                        break;
+                    case ForceApplicationType.MovePosition:
+                        Rigidbody2D.MovePosition(data.Position);
+                        break;
+                    case ForceApplicationType.MoveRotation:
+                        Rigidbody2D.MoveRotation(data.Rotation);
                         break;
                 }
             }
@@ -319,7 +388,6 @@ namespace FishNet.Object.Prediction
         {
             if (_pendingForces.Count > 0)
             {
-                bool shouldExist = velocity;
                 ForceApplicationType velocityApplicationTypes = ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce;
 
                 List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();

@@ -5,8 +5,8 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
-using UnityEngine;
 using Unity.Profiling;
+using UnityEngine;
 
 namespace FishNet.Component.Transforming
 {
@@ -69,13 +69,6 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
-        
-        #endregion
-        
         /// <summary>
         /// TimeManager subscribed to.
         /// </summary>
@@ -104,6 +97,8 @@ namespace FishNet.Component.Transforming
         /// Cached TickDelta of the TimeManager.
         /// </summary>
         private float _tickDelta;
+        
+        private static readonly ProfilerMarker _pm_OnPostTick = new("DetachableNetworkTickSmoother._timeManager_OnPostTick()");
         #endregion
 
         private void Awake()

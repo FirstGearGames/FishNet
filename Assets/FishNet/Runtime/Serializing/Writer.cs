@@ -553,6 +553,12 @@ namespace FishNet.Serializing
         public void WriteArraySegment(ArraySegment<byte> value) => WriteUInt8Array(value.Array, value.Offset, value.Count);
 
         /// <summary>
+        /// Writes AutoPackType.
+        /// </summary>
+        [DefaultWriter]
+        public void WriteAutoPackType(AutoPackType apt) => WriteUInt8Unpacked((byte)apt);
+        
+        /// <summary>
         /// Writes a Vector2.
         /// </summary>
         /// <param name = "value"></param>

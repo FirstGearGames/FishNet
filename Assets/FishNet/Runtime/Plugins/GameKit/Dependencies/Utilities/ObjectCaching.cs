@@ -1,7 +1,9 @@
+using System;
 using GameKit.Dependencies.Utilities.Types;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+// ReSharper disable ThreadStaticFieldHasInitializesr
 namespace GameKit.Dependencies.Utilities
 {
     /// <summary>
@@ -153,11 +155,17 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for ResettableRingBuffer.
         /// </summary>
-        private static readonly Stack<ResettableRingBuffer<T>> _resettableRingBufferCache = new();
+        [ThreadStatic]
+        private static readonly Stack<ResettableRingBuffer<T>> _resettableRingBufferCache;
         /// <summary>
         /// Maximum number of entries allowed for the cache.
         /// </summary>
         private const int MAXIMUM_CACHE_COUNT = 50;
+
+        static ResettableCollectionCaches()
+        {
+            _resettableRingBufferCache = new();
+        }
 
         /// <summary>
         /// Retrieves a collection.
@@ -457,12 +465,18 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for dictionaries.
         /// </summary>
-        private static readonly Stack<Dictionary<T1, T2>> _dictionaryCache = new();
+        [ThreadStatic]
+        private static readonly Stack<Dictionary<T1, T2>> _dictionaryCache;
         /// <summary>
         /// Maximum number of entries allowed for the cache.
         /// </summary>
         private const int MAXIMUM_CACHE_COUNT = 50;
-        
+
+        static CollectionCaches()
+        {
+            _dictionaryCache = new();
+        }
+
         /// <summary>
         /// Retrieves a collection.
         /// </summary>
@@ -511,32 +525,47 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Cache for arrays.
         /// </summary>
-        private static readonly Stack<T[]> _arrayCache = new();
+        [ThreadStatic]
+        private static readonly Stack<T[]> _arrayCache;
         /// <summary>
         /// Cache for lists.
         /// </summary>
-        private static readonly Stack<List<T>> _listCache = new();
+        [ThreadStatic]
+        private static readonly Stack<List<T>> _listCache;
         /// <summary>
         /// Cache for sortedset.
         /// </summary>
-        private static readonly Stack<SortedSet<T>> _sortedSetCache = new();
+        [ThreadStatic]
+        private static readonly Stack<SortedSet<T>> _sortedSetCache;
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private static readonly Stack<Queue<T>> _queueCache = new();
+        [ThreadStatic]
+        private static readonly Stack<Queue<T>> _queueCache;
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private static readonly Stack<BasicQueue<T>> _basicQueueCache = new();
+        [ThreadStatic]
+        private static readonly Stack<BasicQueue<T>> _basicQueueCache;
         /// <summary>
         /// Cache for hashset.
         /// </summary>
-        private static readonly Stack<HashSet<T>> _hashSetCache = new();
-        
+        [ThreadStatic]
+        private static readonly Stack<HashSet<T>> _hashSetCache;
         /// <summary>
         /// Maximum number of entries allowed for the cache.
         /// </summary>
         private const int MAXIMUM_CACHE_COUNT = 50;
+
+        static CollectionCaches()
+        {
+            _arrayCache = new();
+            _listCache = new();
+            _sortedSetCache = new();
+            _queueCache = new();
+            _basicQueueCache = new();
+            _hashSetCache = new();
+        }
 
         /// <summary>
         /// Retrieves a collection.
@@ -832,12 +861,18 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Stack to use.
         /// </summary>
-        private static readonly Stack<T> _stack = new();
+        [ThreadStatic]
+        private static readonly Stack<T> _stack;
         /// <summary>
         /// Maximum number of entries allowed for the cache.
         /// </summary>
         private const int MAXIMUM_CACHE_COUNT = 50;
-        
+
+        static ObjectCaches()
+        {
+            _stack = new();
+        }
+
         /// <summary>
         /// Returns a value from the stack or creates an instance when the stack is empty.
         /// </summary>

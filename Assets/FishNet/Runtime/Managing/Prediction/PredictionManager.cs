@@ -12,9 +12,8 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using FishNet.Managing.Statistic;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace FishNet.Managing.Predicting
@@ -388,26 +387,6 @@ namespace FishNet.Managing.Predicting
         #endregion
 
         #region Private.
-
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnLateUpdate = new ProfilerMarker("PredictionManager.TimeManager_OnLateUpdate()");
-        private static readonly ProfilerMarker _pm_OnPreReconcile = new ProfilerMarker("PredictionManager.OnPreReconcile(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnReconcile = new ProfilerMarker("PredictionManager.OnReconcile(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnPrePhysicsTransformSync = new ProfilerMarker("PredictionManager.OnPrePhysicsTransformSync(uint, uint)");
-        private static readonly ProfilerMarker _pm_PhysicsSyncTransforms = new ProfilerMarker("PredictionManager.Physics.SyncTransforms()");
-        private static readonly ProfilerMarker _pm_Physics2DSyncTransforms = new ProfilerMarker("PredictionManager.Physics2D.SyncTransforms()");
-        private static readonly ProfilerMarker _pm_OnPostPhysicsTransformSync = new ProfilerMarker("PredictionManager.OnPostPhysicsTransformSync(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnPostReconcileSyncTransforms = new ProfilerMarker("PredictionManager.OnPostReconcileSyncTransforms(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnPreReplicateReplay = new ProfilerMarker("PredictionManager.OnPreReplicateReplay(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnReplicateReplay = new ProfilerMarker("PredictionManager.OnReplicateReplay(uint, uint)");
-        private static readonly ProfilerMarker _pm_PhysicsSimulate = new ProfilerMarker("PredictionManager.Physics.Simulate(float)");
-        private static readonly ProfilerMarker _pm_Physics2DSimulate = new ProfilerMarker("PredictionManager.Physics2D.Simulate(float)");
-        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("PredictionManager.OnPostReplicateReplay(uint, uint)");
-        private static readonly ProfilerMarker _pm_OnPostReconcile = new ProfilerMarker("PredictionManager.OnPostReconcile(uint, uint)");
-        
-        #endregion
-
         /// <summary>
         /// Ticks for the last state packet to run.
         /// </summary>
@@ -442,6 +421,26 @@ namespace FishNet.Managing.Predicting
         /// NetworkManager used with this.
         /// </summary>
         private NetworkManager _networkManager;
+        #endregion
+        
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnLateUpdate = new("PredictionManager.TimeManager_OnLateUpdate()");
+        private static readonly ProfilerMarker _pm_OnPreReconcile = new("PredictionManager.OnPreReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReconcile = new("PredictionManager.OnReconcile(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPrePhysicsTransformSync = new("PredictionManager.OnPrePhysicsTransformSync(uint, uint)");
+        private static readonly ProfilerMarker _pm_PhysicsSyncTransforms = new("PredictionManager.Physics.SyncTransforms()");
+        private static readonly ProfilerMarker _pm_Physics2DSyncTransforms = new("PredictionManager.Physics2D.SyncTransforms()");
+        private static readonly ProfilerMarker _pm_OnPostPhysicsTransformSync = new("PredictionManager.OnPostPhysicsTransformSync(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostReconcileSyncTransforms = new("PredictionManager.OnPostReconcileSyncTransforms(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPreReplicateReplay = new("PredictionManager.OnPreReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnReplicateReplay = new("PredictionManager.OnReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_PhysicsSimulate = new("PredictionManager.Physics.Simulate(float)");
+        private static readonly ProfilerMarker _pm_Physics2DSimulate = new("PredictionManager.Physics2D.Simulate(float)");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new("PredictionManager.OnPostReplicateReplay(uint, uint)");
+        private static readonly ProfilerMarker _pm_OnPostReconcile = new("PredictionManager.OnPostReconcile(uint, uint)");
+        
         #endregion
 
         #region Const.
@@ -564,12 +563,12 @@ namespace FishNet.Managing.Predicting
             using (_pm_OnLateUpdate.Auto())
             {
                 /* Do not throttle nor count frames if scene manager has performed actions recently. */
-                if (_networkManager.SceneManager.HasProcessedScenesRecently(timeFrame: 2f)) 
+                if (_networkManager.SceneManager.HasProcessedScenesRecently(timeFrame: 2f))
                 {
                     _clientReconcileThrottler.ResetState();
                     return;
                 }
-            
+
                 if (_reduceReconcilesWithFramerate)
                     _clientReconcileThrottler.AddFrame(Time.unscaledDeltaTime);
             }
@@ -686,7 +685,6 @@ namespace FishNet.Managing.Predicting
 
                     bool timeManagerPhysics = tm.PhysicsMode == PhysicsMode.TimeManager;
                     float tickDelta = (float)tm.TickDelta * _networkManager.TimeManager.GetPhysicsTimeScale();
-
                     
                     using (_pm_OnPreReconcile.Auto())
                     {
@@ -701,31 +699,21 @@ namespace FishNet.Managing.Predicting
                     if (timeManagerPhysics)
                     {
                         using (_pm_OnPrePhysicsTransformSync.Auto())
-                        {
                             OnPrePhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
-                        }
                         
                         using (_pm_PhysicsSyncTransforms.Auto())
-                        {
                             Physics.SyncTransforms();
-                        }
                         
                         using (_pm_Physics2DSyncTransforms.Auto())
-                        {
                             Physics2D.SyncTransforms();
-                        }
                         
                         using (_pm_OnPostPhysicsTransformSync.Auto())
-                        {
                             OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
-                        }
                     }
 
                     using (_pm_OnPostReconcileSyncTransforms.Auto())
-                    {
                         OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
-                    }
-                    
+
                     /* Set first replicate to be the 1 tick
                      * after reconcile. This is because reconcile calcs
                      * should be performed after replicate has run.
@@ -747,42 +735,28 @@ namespace FishNet.Managing.Predicting
                     while (ClientReplayTick < localTick)
                     {
                         using (_pm_OnPreReplicateReplay.Auto())
-                        {
                             OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        }
-                        
                         using (_pm_OnReplicateReplay.Auto())
-                        {
                             OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        }
                         
                         if (timeManagerPhysics && tickDelta > 0f)
                         {
                             using (_pm_PhysicsSimulate.Auto())
-                            {
                                 Physics.Simulate(tickDelta);
-                            }
-                        
                             using (_pm_Physics2DSimulate.Auto())
-                            {
                                 Physics2D.Simulate(tickDelta);
-                            }
                         }
                         
                         using (_pm_OnPostReplicateReplay.Auto())
-                        {
                             OnPostReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        }
                         
                         ClientReplayTick++;
                         ServerReplayTick++;
                     }
-                    
-                    using (_pm_OnPostReconcile.Auto())
-                    {
-                        OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
-                    }
 
+                    using (_pm_OnPostReconcile.Auto())
+                        OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                    
                     // ClientStateTick = TimeManager.UNSET_TICK;
                     // ServerStateTick = TimeManager.UNSET_TICK;
                     ClientReplayTick = TimeManager.UNSET_TICK;

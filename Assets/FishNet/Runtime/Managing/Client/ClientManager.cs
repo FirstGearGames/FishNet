@@ -14,9 +14,8 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using FishNet.Managing.Statistic;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 
 namespace FishNet.Managing.Client
 {
@@ -134,12 +133,6 @@ namespace FishNet.Managing.Client
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("ClientManager.TimeManager_OnPostTick()");
-        
-        #endregion
         /// <summary>
         /// Last unscaled time client got a packet.
         /// </summary>
@@ -150,7 +143,11 @@ namespace FishNet.Managing.Client
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
+        private NetworkTrafficStatistics _networkTrafficStatistics;
+        #endregion
+
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_OnPostTick = new("ClientManager.TimeManager_OnPostTick()");
         #endregion
 
         private void OnDestroy()

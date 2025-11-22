@@ -21,8 +21,8 @@ namespace FishNet.Connection
         {
             if (c == null)
                 return false;
-            else
-                return c.IsValid;
+
+            return c.IsValid;
         }
     }
 

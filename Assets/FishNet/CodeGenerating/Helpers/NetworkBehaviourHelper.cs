@@ -331,12 +331,13 @@ namespace FishNet.CodeGenerating.Helping
              * Should the if check pass then code
              * jumps to this instruction. */
             ILProcessor processor = methodDef.Body.GetILProcessor();
-            Instruction endIf = processor.Create(OpCodes.Nop);
+            Instruction conditionFailedInst = processor.Create(OpCodes.Nop);
+            Instruction conditionPassedInst = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new();
 
             if (checkIsNetworked)
-                instructions.AddRange(CreateIsNetworkedCheck(methodDef, endIf));
+                instructions.AddRange(CreateIsNetworkedCheck(methodDef, OpCodes.Brtrue, conditionPassedInst));
 
             // Checking against the NetworkObject.
             if (!useStatic)
@@ -350,7 +351,10 @@ namespace FishNet.CodeGenerating.Helping
             {
                 instructions.Add(processor.Create(OpCodes.Call, GetClass<ObjectHelper>().InstanceFinder_IsClient_MethodRef));
             }
-            instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
+            
+            instructions.Add(processor.Create(OpCodes.Brtrue, conditionPassedInst));
+            instructions.Add(conditionFailedInst);
+            
             // If warning then also append warning text.
             if (loggingType != LoggingType.Off)
             {
@@ -360,7 +364,7 @@ namespace FishNet.CodeGenerating.Helping
             // Add return.
             instructions.AddRange(CreateRetDefault(methodDef));
             // After if statement, jumped to when successful check.
-            instructions.Add(endIf);
+            instructions.Add(conditionPassedInst);
 
             if (insertFirst)
             {
@@ -383,12 +387,13 @@ namespace FishNet.CodeGenerating.Helping
              * Should the if check pass then code
              * jumps to this instruction. */
             ILProcessor processor = methodDef.Body.GetILProcessor();
-            Instruction endIf = processor.Create(OpCodes.Nop);
+            Instruction conditionFailedInst = processor.Create(OpCodes.Nop);
+            Instruction conditionPassedInst = processor.Create(OpCodes.Nop);
 
             List<Instruction> instructions = new();
 
             if (checkIsNetworked)
-                instructions.AddRange(CreateIsNetworkedCheck(methodDef, endIf));
+                instructions.AddRange(CreateIsNetworkedCheck(methodDef, OpCodes.Brfalse, conditionFailedInst));
 
             if (!useStatic)
             {
@@ -401,7 +406,10 @@ namespace FishNet.CodeGenerating.Helping
             {
                 instructions.Add(processor.Create(OpCodes.Call, GetClass<ObjectHelper>().InstanceFinder_IsServer_MethodRef));
             }
-            instructions.Add(processor.Create(OpCodes.Brtrue, endIf));
+
+            instructions.Add(processor.Create(OpCodes.Brtrue, conditionPassedInst));
+            instructions.Add(conditionFailedInst);
+
             // If warning then also append warning text.
             if (loggingType != LoggingType.Off)
             {
@@ -411,7 +419,7 @@ namespace FishNet.CodeGenerating.Helping
             // Add return.
             instructions.AddRange(CreateRetDefault(methodDef));
             // After if statement, jumped to when successful check.
-            instructions.Add(endIf);
+            instructions.Add(conditionPassedInst);
 
             if (insertFirst)
             {
@@ -427,13 +435,19 @@ namespace FishNet.CodeGenerating.Helping
         /// <summary>
         /// Creates a call to base.IsNetworked and returns instructions.
         /// </summary>
-        private List<Instruction> CreateIsNetworkedCheck(MethodDefinition methodDef, Instruction endIfInst)
+        private List<Instruction> CreateIsNetworkedCheck(MethodDefinition methodDef, OpCode conditionalOpCode, Instruction endIfInst)
         {
+            if (conditionalOpCode != OpCodes.Brfalse && conditionalOpCode != OpCodes.Brtrue && conditionalOpCode != OpCodes.Brfalse_S && conditionalOpCode != OpCodes.Brtrue_S)
+            {
+                Session.LogError($"OpCode {conditionalOpCode} is not supported for method {nameof(CreateIsNetworkedCheck)}.");
+                return new();
+            }
+
             List<Instruction> insts = new();
             ILProcessor processor = methodDef.Body.GetILProcessor();
             insts.Add(processor.Create(OpCodes.Ldarg_0));
             insts.Add(processor.Create(OpCodes.Call, GetClass<NetworkBehaviourHelper>().IsNetworked_MethodRef));
-            insts.Add(processor.Create(OpCodes.Brfalse, endIfInst));
+            insts.Add(processor.Create(conditionalOpCode, endIfInst));
 
             return insts;
         }

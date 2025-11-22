@@ -20,9 +20,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using FishNet.Managing.Statistic;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 
 namespace FishNet.Managing.Server
 {
@@ -209,13 +208,6 @@ namespace FishNet.Managing.Server
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("ServerManager.TimeManager_OnPostTick()");
-        
-        #endregion
-        
         /// <summary>
         /// The last index checked to see if a client has not sent a packet in awhile.
         /// </summary>
@@ -230,13 +222,17 @@ namespace FishNet.Managing.Server
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
-#if DEVELOPMENT
+        private NetworkTrafficStatistics _networkTrafficStatistics;
+        #if DEVELOPMENT
         /// <summary>
         /// Logs data about parser to help debug.
         /// </summary>
         private PacketIdHistory _packetIdHistory = new();
-#endif
+        #endif
+        #endregion
+
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_OnPostTick = new("ServerManager.TimeManager_OnPostTick()");
         #endregion
 
         #region Const.
@@ -303,9 +299,9 @@ namespace FishNet.Managing.Server
             if (GetStartOnHeadless())
             {
                 // Wrapping logic in check instead of everything so _startOnHeadless doesnt warn as unused in editor.
-#if UNITY_SERVER && !UNITY_EDITOR
+                #if UNITY_SERVER && !UNITY_EDITOR
                 StartConnection();
-#endif
+                #endif
             }
         }
 
@@ -385,11 +381,11 @@ namespace FishNet.Managing.Server
         {
             if (_remoteClientTimeout == RemoteTimeoutType.Disabled)
                 return;
-#if DEVELOPMENT
+            #if DEVELOPMENT
             //If development but not set to development return.
             if (_remoteClientTimeout != RemoteTimeoutType.Development)
                 return;
-#endif
+            #endif
             //Wait two timing intervals to give packets a chance to come through.
             if (NetworkManager.SceneManager.IsIteratingQueue(2f))
                 return;
@@ -448,9 +444,7 @@ namespace FishNet.Managing.Server
         private void TimeManager_OnPostTick()
         {
             using (_pm_OnPostTick.Auto())
-            {
                 CheckClientTimeout();
-            }
         }
 
         /// <summary>
@@ -584,11 +578,11 @@ namespace FishNet.Managing.Server
                  * This is to allow the client to utilize some features/information
                  * received from the server only when it's in dev mode. */
                 bool isDevelopmentBuild;
-#if DEVELOPMENT
+                #if DEVELOPMENT
                 isDevelopmentBuild = true;
-#else
+                #else
                 isDevelopmentBuild = false;
-#endif
+                #endif
                 PooledWriter writer = WriterPool.Retrieve();
                 writer.WritePacketIdUnpacked(PacketId.Version);
                 writer.WriteBoolean(isDevelopmentBuild);
@@ -598,7 +592,7 @@ namespace FishNet.Managing.Server
                 /* If there is an authenticator
                  * and the transport is not a local transport. */
                 Authenticator auth = GetAuthenticator();
-                if (auth != null && !NetworkManager.TransportManager.IsLocalTransport(transportId))
+                if (auth != null)
                     auth.OnRemoteConnection(conn);
                 else
                     ClientAuthenticated(conn);
@@ -671,7 +665,7 @@ namespace FishNet.Managing.Server
             writer.WriteNetworkConnection(conn);
             /* If predicted spawning is enabled then also send
              * reserved objectIds. */
-            
+
             PredictionManager pm = NetworkManager.PredictionManager;
             if (GetAllowPredictedSpawning())
             {
@@ -714,10 +708,10 @@ namespace FishNet.Managing.Server
         /// <param name = "args"></param>
         private void ParseReceived(ServerReceivedDataArgs args)
         {
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_networkTrafficStatistics != null)
                 _networkTrafficStatistics.PacketBundleReceived(asServer: true);
-#endif
+            #endif
 
             //Not from a valid connection. Should not be possible.
             if (args.ConnectionId < 0)
@@ -748,10 +742,10 @@ namespace FishNet.Managing.Server
 
             PacketId packetId = PacketId.Unset;
             PooledReader reader = null;
-#if !DEVELOPMENT
+            #if !DEVELOPMENT
             try
             {
-#endif
+            #endif
             Reader.DataSource dataSource = Reader.DataSource.Client;
             reader = ReaderPool.Retrieve(segment, NetworkManager, dataSource);
             uint tick = reader.ReadTickUnpacked();
@@ -761,9 +755,9 @@ namespace FishNet.Managing.Server
              * received. */
             if (reader.PeekPacketId() == PacketId.Split)
             {
-#if DEVELOPMENT
+                #if DEVELOPMENT
                 NetworkManager.PacketIdHistory.ReceivedPacket(PacketId.Split, packetFromServer: false);
-#endif
+                #endif
                 //Skip packetId.
                 reader.ReadPacketId();
 
@@ -796,9 +790,9 @@ namespace FishNet.Managing.Server
             while (reader.Remaining > 0)
             {
                 packetId = reader.ReadPacketId();
-#if DEVELOPMENT
+                #if DEVELOPMENT
                 NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: false);
-#endif
+                #endif
                 NetworkConnection conn;
 
                 /* Connection isn't available. This should never happen.
@@ -860,17 +854,17 @@ namespace FishNet.Managing.Server
                 }
                 else
                 {
-#if DEVELOPMENT
+                    #if DEVELOPMENT
                     NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} on channel {args.Channel} from connectionId {args.ConnectionId}. Remaining data has been purged.");
                     NetworkManager.LogError(NetworkManager.PacketIdHistory.GetReceivedPacketIds(packetsFromServer: false));
-#else
+                    #else
                     NetworkManager.LogError($"Server received an unhandled PacketId of {(ushort)packetId} on channel {args.Channel} from connectionId {args.ConnectionId}. Connection will be kicked immediately.");
                     NetworkManager.TransportManager.Transport.StopConnection(args.ConnectionId, true);
-#endif
+                    #endif
                     return;
                 }
             }
-#if !DEVELOPMENT
+            #if !DEVELOPMENT
             }
             catch (Exception e)
             {
@@ -880,9 +874,9 @@ namespace FishNet.Managing.Server
             {
                 reader?.Store();
             }
-#else
+            #else
             reader?.Store();
-#endif
+            #endif
 
             //Kicks connection for exceeding MTU.
             void ExceededMTUKick()
@@ -908,10 +902,10 @@ namespace FishNet.Managing.Server
             if (conn.CanPingPong())
                 NetworkManager.TimeManager.SendPong(conn, clientTick);
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_networkTrafficStatistics != null)
                 _networkTrafficStatistics.AddInboundPacketIdData(PacketId.PingPong, string.Empty, reader.Position - readerPositionAfterDebug + TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
-#endif
+            #endif
         }
 
         /// <summary>

@@ -128,16 +128,19 @@ namespace FishNet.Authenticating
         }
 
         /// <summary>
-        /// Returns true if authentication was sent as host.
+        /// Returns true if authentication was sent as the clientHost.
         /// </summary>
-        /// <returns></returns>
-        protected bool AuthenticateAsHost()
+        /// <remarks>This should only be called from the client side when receiving an authentication request.</remarks>
+        protected bool TryAuthenticateAsClientHost()
         {
             if (!_allowHostAuthentication)
                 return false;
+            /* Host hash would only exist if also
+             * the server. */
             if (_hostHash == string.Empty)
                 return false;
 
+            /* Send the password as it is only on the host. */
             HostPasswordBroadcast hpb = new()
             {
                 Password = _hostHash

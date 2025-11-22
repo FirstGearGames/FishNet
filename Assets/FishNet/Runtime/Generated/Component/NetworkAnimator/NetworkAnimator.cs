@@ -15,9 +15,8 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Animating
@@ -275,23 +274,6 @@ namespace FishNet.Component.Animating
         }
         #endregion
 
-        #region Private
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("NetworkAnimator.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker _pm_CheckSendToServer = new ProfilerMarker("NetworkAnimator.CheckSendToServer()");
-        private static readonly ProfilerMarker _pm_CheckSendToClients = new ProfilerMarker("NetworkAnimator.CheckSendToClients()");
-        private static readonly ProfilerMarker _pm_SmoothFloats = new ProfilerMarker("NetworkAnimator.SmoothFloats()");
-        private static readonly ProfilerMarker _pm_AnimatorUpdated = new ProfilerMarker("NetworkAnimator.AnimatorUpdated(ref ArraySegment<byte>, bool)");
-        private static readonly ProfilerMarker _pm_ApplyParametersUpdated = new ProfilerMarker("NetworkAnimator.ApplyParametersUpdated(ref ArraySegment<byte>)");
-        
-        #endregion
-        
-        #endregion
-        
         #region Public.
         /// <summary>
         /// Parameters which will not be synchronized.
@@ -352,11 +334,6 @@ namespace FishNet.Component.Animating
         [Tooltip("True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.")]
         [SerializeField]
         private bool _sendToOwner;
-        /// <summary>
-        /// True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.
-        /// </summary>
-        public bool SendToOwner => _sendToOwner;
-        
         #endregion
 
         #region Private.
@@ -482,6 +459,17 @@ namespace FishNet.Component.Animating
         private bool _subscribedToTicks;
         #endregion
 
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_OnPreTick = new("NetworkAnimator.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new("NetworkAnimator.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new("NetworkAnimator.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_CheckSendToServer = new("NetworkAnimator.CheckSendToServer()");
+        private static readonly ProfilerMarker _pm_CheckSendToClients = new("NetworkAnimator.CheckSendToClients()");
+        private static readonly ProfilerMarker _pm_SmoothFloats = new("NetworkAnimator.SmoothFloats()");
+        private static readonly ProfilerMarker _pm_AnimatorUpdated = new("NetworkAnimator.AnimatorUpdated(ref ArraySegment<byte>, bool)");
+        private static readonly ProfilerMarker _pm_ApplyParametersUpdated = new("NetworkAnimator.ApplyParametersUpdated(ref ArraySegment<byte>)");
+        #endregion
+
         #region Const.
         ///// <summary>
         ///// How much time to fall behind when using smoothing. Only increase value if the smoothing is sometimes jittery. Recommended values are between 0 and 0.04.
@@ -596,7 +584,6 @@ namespace FishNet.Component.Animating
                     _fromServerBuffer.Clear();
                     return;
                 }
-
                 //Disabled/cannot start.
                 if (_startTick == 0)
                     return;
@@ -606,7 +593,6 @@ namespace FishNet.Component.Animating
                     _startTick = 0;
                     return;
                 }
-
                 //Not enough time has passed to start queue.
                 if (TimeManager.LocalTick < _startTick)
                     return;
@@ -682,9 +668,6 @@ namespace FishNet.Component.Animating
             foreach (AnimatorControllerParameter item in _animator.parameters)
             {
                 bool process = !_animator.IsParameterControlledByCurve(item.name);
-                //PROSTART
-
-                //PROEND
                 if (process)
                 {
                     //Over 250 parameters; who would do this!?
@@ -863,7 +846,6 @@ namespace FishNet.Component.Animating
 
                         SendSegment(new(buffer, 0, bufferLength));
                     }
-
                     //Reset client auth buffer.
                     _clientAuthoritativeUpdates.Reset();
                 }
@@ -996,7 +978,6 @@ namespace FishNet.Component.Animating
                     _writer.WriteUInt8Unpacked(_triggerUpdates[i].ParameterIndex);
                     _writer.WriteBoolean(_triggerUpdates[i].Setting);
                 }
-
                 _triggerUpdates.Clear();
 
                 /* States. */
@@ -1087,14 +1068,10 @@ namespace FishNet.Component.Animating
 
                 //Nothing to update.
                 if (_writer.Position == 0)
-                {
                     return false;
-                }
-                else
-                {
-                    updatedBytes = _writer.GetArraySegment();
-                    return true;
-                }
+
+                updatedBytes = _writer.GetArraySegment();
+                return true;
             }
         }
 
@@ -1156,17 +1133,14 @@ namespace FishNet.Component.Animating
                             float normalizedTransitionTime = reader.ReadSingle();
                             //If using fixed.
                             if (useFixedTime)
-                                _animator.CrossFadeInFixedTime(hash, durationTime, layerIndex, offsetTime,
-                                    normalizedTransitionTime);
+                                _animator.CrossFadeInFixedTime(hash, durationTime, layerIndex, offsetTime, normalizedTransitionTime);
                             else
-                                _animator.CrossFade(hash, durationTime, layerIndex, offsetTime,
-                                    normalizedTransitionTime);
+                                _animator.CrossFade(hash, durationTime, layerIndex, offsetTime, normalizedTransitionTime);
                         }
                         //Not a predetermined index, is an actual parameter.
                         else
                         {
-                            AnimatorControllerParameterType acpt = _parameterDetails[parameterIndex].ControllerParameter
-                                .type;
+                            AnimatorControllerParameterType acpt = _parameterDetails[parameterIndex].ControllerParameter.type;
                             if (acpt == AnimatorControllerParameterType.Bool)
                             {
                                 bool value = reader.ReadBoolean();
@@ -1215,8 +1189,7 @@ namespace FishNet.Component.Animating
                 }
                 catch
                 {
-                    NetworkManager.LogWarning(
-                        "An error occurred while applying updates. This may occur when malformed data is sent or when you change the animator or controller but not on all connections.");
+                    NetworkManager.LogWarning("An error occurred while applying updates. This may occur when malformed data is sent or when you change the animator or controller but not on all connections.");
                 }
                 finally
                 {
@@ -1573,14 +1546,14 @@ namespace FishNet.Component.Animating
         #endregion
 
         #region Editor.
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         protected override void Reset()
         {
             base.Reset();
             if (_animator == null)
                 SetAnimator(GetComponent<Animator>());
         }
-#endif
+        #endif
         #endregion
     }
 }

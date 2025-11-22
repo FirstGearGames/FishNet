@@ -45,7 +45,7 @@ namespace FishNet.Managing.Object
                 if (i < index)
                     continue;
 
-                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}".Trim().ToLower();
+                string pathAndName = $"{AssetDatabase.GetAssetPath(n.gameObject)}{n.gameObject.name}".Trim().ToLowerInvariant();
 
                 _stringBuilder.Clear();
                 foreach (char c in pathAndName)

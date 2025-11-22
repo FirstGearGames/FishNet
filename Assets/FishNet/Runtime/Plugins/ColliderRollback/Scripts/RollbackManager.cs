@@ -7,9 +7,9 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Unity.Profiling;
 
 namespace FishNet.Component.ColliderRollback
 {
@@ -39,16 +39,6 @@ namespace FishNet.Component.ColliderRollback
             }
         }
         private int? _boundingBoxLayerNumber;
-        #endregion
-
-        #region Private
-
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPostTick = new("RollbackManager.TimeManager_OnPostTick()");
-        
-        #endregion
-
         #endregion
 
         #region Serialized.

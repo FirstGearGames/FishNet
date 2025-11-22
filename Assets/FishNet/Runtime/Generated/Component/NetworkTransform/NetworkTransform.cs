@@ -13,9 +13,8 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using FishNet.Managing.Timing;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 using UnityEngine.Scripting;
 using static FishNet.Object.NetworkObject;
 
@@ -372,12 +371,12 @@ namespace FishNet.Component.Transforming
             Rotation = AutoPackType.Packed,
             Scale = AutoPackType.Unpacked
         };
+        /// <summary>
         /// True to use scaled deltaTime when smoothing.
         /// </summary>
         [Tooltip("True to use scaled deltaTime when smoothing.")]
         [SerializeField]
         private bool _useScaledTime = true;
-        /// <summary>
         /// <summary>
         /// How many ticks to interpolate.
         /// </summary>
@@ -537,20 +536,6 @@ namespace FishNet.Component.Transforming
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("NetworkTransform.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkTransform.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker _pm_MoveToTarget = new ProfilerMarker("NetworkTransform.MoveToTarget(float)");
-        private static readonly ProfilerMarker _pm_UpdateTransformData = new ProfilerMarker("NetworkTransform.UpdateTransformData(ArraySegment<byte>, TransformData, TransformData, ref ChangedFull)");
-        private static readonly ProfilerMarker _pm_ForceSend0 = new ProfilerMarker("NetworkTransform.ForceSend()");
-        private static readonly ProfilerMarker _pm_ForceSend1 = new ProfilerMarker("NetworkTransform.ForceSend(uint)");
-        private static readonly ProfilerMarker _pm_SendToClients = new ProfilerMarker("NetworkTransform.SendToClients()");
-        private static readonly ProfilerMarker _pm_SendToServer = new ProfilerMarker("NetworkTransform.SendToServer(TransformData)");
-        
-        #endregion
-        
         /// <summary>
         /// Packing data with all values set to uncompressed.
         /// </summary>
@@ -660,6 +645,19 @@ namespace FishNet.Component.Transforming
         /// Cached TimeManager reference for performance.
         /// </summary>
         private TimeManager _timeManager;
+        #endregion
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnUpdate = new("NetworkTransform.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new("NetworkTransform.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_MoveToTarget = new("NetworkTransform.MoveToTarget(float)");
+        private static readonly ProfilerMarker _pm_UpdateTransformData = new("NetworkTransform.UpdateTransformData(ArraySegment<byte>, TransformData, TransformData, ref ChangedFull)");
+        private static readonly ProfilerMarker _pm_ForceSend0 = new("NetworkTransform.ForceSend()");
+        private static readonly ProfilerMarker _pm_ForceSend1 = new("NetworkTransform.ForceSend(uint)");
+        private static readonly ProfilerMarker _pm_SendToClients = new("NetworkTransform.SendToClients()");
+        private static readonly ProfilerMarker _pm_SendToServer = new("NetworkTransform.SendToServer(TransformData)");
+        
         #endregion
 
         #region Const.
@@ -780,6 +778,7 @@ namespace FishNet.Component.Transforming
              * clients do not control this object thus should always
              * follow the queue. */
         }
+
 
         private void TimeManager_OnUpdate()
         {
@@ -1176,8 +1175,7 @@ namespace FishNet.Component.Transforming
                 if (td == null)
                     return;
 
-                t.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
-                td.Update(0, localPosition, localRotation, t.localScale, localPosition, parentBehaviour);
+                td.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, parentBehaviour);
             }
         }
 
@@ -1218,9 +1216,6 @@ namespace FishNet.Component.Transforming
             float maxValue = short.MaxValue - 1;
 
             Transform t = _cachedTransform;
-            t.GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation);
-            Vector3 localScale = t.localScale;
-            
             /* Position. */
             if (_synchronizePosition)
             {
@@ -1228,7 +1223,7 @@ namespace FishNet.Component.Transforming
                 //PositionX
                 if (ChangedContains(changed, ChangedDelta.PositionX))
                 {
-                    original = localPosition.x;
+                    original = t.localPosition.x;
 
                     if (canUpdateData)
                         dataToUpdate.Position.x = original;
@@ -1249,7 +1244,7 @@ namespace FishNet.Component.Transforming
                 //PositionY
                 if (ChangedContains(changed, ChangedDelta.PositionY))
                 {
-                    original = localPosition.y;
+                    original = t.localPosition.y;
 
                     if (canUpdateData)
                         dataToUpdate.Position.y = original;
@@ -1270,7 +1265,7 @@ namespace FishNet.Component.Transforming
                 //PositionZ
                 if (ChangedContains(changed, ChangedDelta.PositionZ))
                 {
-                    original = localPosition.z;
+                    original = t.localPosition.z;
 
                     if (canUpdateData)
                         dataToUpdate.Position.z = original;
@@ -1295,12 +1290,12 @@ namespace FishNet.Component.Transforming
                 if (ChangedContains(changed, ChangedDelta.Rotation))
                 {
                     if (canUpdateData)
-                        dataToUpdate.Rotation = localRotation;
+                        dataToUpdate.Rotation = t.localRotation;
 
                     flagsA |= UpdateFlagA.Rotation;
                     /* Rotation can always use pack settings even
                      * if childed. Unsual transform scale shouldn't affect rotation. */
-                    writer.WriteQuaternion(localRotation, _packing.Rotation);
+                    writer.WriteQuaternion(t.localRotation, _packing.Rotation);
                 }
             }
 
@@ -1333,7 +1328,7 @@ namespace FishNet.Component.Transforming
                     //ScaleX
                     if (ChangedContains(changed, ChangedDelta.ScaleX))
                     {
-                        original = localScale.x;
+                        original = t.localScale.x;
 
                         if (canUpdateData)
                             dataToUpdate.Scale.x = original;
@@ -1350,11 +1345,11 @@ namespace FishNet.Component.Transforming
                             writer.WriteSingle(original);
                         }
                     }
-                    
+
                     //ScaleY
                     if (ChangedContains(changed, ChangedDelta.ScaleY))
                     {
-                        original = localScale.y;
+                        original = t.localScale.y;
 
                         if (canUpdateData)
                             dataToUpdate.Scale.y = original;
@@ -1375,7 +1370,7 @@ namespace FishNet.Component.Transforming
                     //ScaleZ
                     if (ChangedContains(changed, ChangedDelta.ScaleZ))
                     {
-                        original = localScale.z;
+                        original = t.localScale.z;
 
                         if (canUpdateData)
                             dataToUpdate.Scale.z = original;
@@ -1619,127 +1614,118 @@ namespace FishNet.Component.Transforming
         {
             using (_pm_MoveToTarget.Auto())
             {
-                if (_currentGoalData == null)
-                    return;
+            if (_currentGoalData == null)
+                return;
 
-                //Cannot move if neither is active.
-                if (!IsServerInitialized && !IsClientInitialized)
-                    return;
+            //Cannot move if neither is active.
+            if (!IsServerInitialized && !IsClientInitialized)
+                return;
 
-                //If client auth and the owner don't move towards target.
-                if (_clientAuthoritative)
+            //If client auth and the owner don't move towards target.
+            if (_clientAuthoritative)
+            {
+                if (IsOwner || TakenOwnership)
+                    return;
+            }
+            else
+            {
+                //If not client authoritative, is owner, and don't sync to owner.
+                if (IsOwner && !_sendToOwner)
+                    return;
+            }
+
+            //True if not client controlled.
+            bool controlledByClient = _clientAuthoritative && Owner.IsActive;
+            //If not controlled by client and is server then no reason to move.
+            if (!controlledByClient && IsServerInitialized)
+                return;
+
+            /* Once here it's safe to assume the object will be moving.
+             * Any checks which would stop it from moving be it client
+             * auth and owner, or server controlled and server, ect,
+             * would have already been run. */
+            TransformData td = _currentGoalData.Transforms;
+            RateData rd = _currentGoalData.Rates;
+
+            //Set parent.
+            if (_synchronizeParent)
+                SetParent(td.ParentBehaviour, rd);
+
+            float multiplier = 1f;
+            int queueCount = _goalDataQueue.Count;
+            //Increase move rate slightly if over queue count.
+            if (queueCount > _interpolation + 1)
+                multiplier += 0.05f;
+
+            //Rate to update. Changes per property.
+            float rate;
+            Transform t = _cachedTransform;
+
+            //Snap any bits of the transform that should be.
+            SnapProperties(td);
+
+            //Position.
+            if (_synchronizePosition)
+            {
+                rate = rd.Position;
+                Vector3 posGoal = td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable ? td.ExtrapolatedPosition : td.Position;
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (rate == -1f)
+                    t.localPosition = td.Position;
+                else
+                    t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, rate * delta * multiplier);
+            }
+
+            //Rotation.
+            if (_synchronizeRotation)
+            {
+                rate = rd.Rotation;
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (rate == -1f)
+                    t.localRotation = td.Rotation;
+                else
+                    t.localRotation = Quaternion.RotateTowards(t.localRotation, td.Rotation, rate * delta);
+            }
+
+            //Scale.
+            if (_synchronizeScale)
+            {
+                rate = rd.Scale;
+                // ReSharper disable once CompareOfFloatsByEqualityOperator
+                if (rate == -1f)
+                    t.localScale = td.Scale;
+                else
+                    t.localScale = Vector3.MoveTowards(t.localScale, td.Scale, rate * delta);
+            }
+
+            float timeRemaining = rd.TimeRemaining - delta * multiplier;
+            if (timeRemaining < -delta)
+                timeRemaining = -delta;
+            rd.TimeRemaining = timeRemaining;
+
+            if (rd.TimeRemaining <= 0f)
+            {
+                float leftOver = Mathf.Abs(rd.TimeRemaining);
+                //If more in buffer then run next buffer.
+                if (queueCount > 0)
                 {
-                    if (IsOwner || TakenOwnership)
-                        return;
+                    SetCurrentGoalData(_goalDataQueue.Dequeue());
+                    if (leftOver > 0f)
+                        MoveToTarget(leftOver);
                 }
+                //No more in buffer, see if can extrapolate.
                 else
                 {
-                    //If not client authoritative, is owner, and don't sync to owner.
-                    if (IsOwner && !_sendToOwner)
-                        return;
-                }
-
-                //True if not client controlled.
-                bool controlledByClient = _clientAuthoritative && Owner.IsActive;
-                //If not controlled by client and is server then no reason to move.
-                if (!controlledByClient && IsServerInitialized)
-                    return;
-
-                /* Once here it's safe to assume the object will be moving.
-                 * Any checks which would stop it from moving be it client
-                 * auth and owner, or server controlled and server, ect,
-                 * would have already been run. */
-                TransformData td = _currentGoalData.Transforms;
-                RateData rd = _currentGoalData.Rates;
-
-                //Set parent.
-                if (_synchronizeParent)
-                    SetParent(td.ParentBehaviour, rd);
-
-                float multiplier = 1f;
-                int queueCount = _goalDataQueue.Count;
-                //Increase move rate slightly if over queue count.
-                if (queueCount > _interpolation + 1)
-                    multiplier += 0.05f;
-
-                //Rate to update. Changes per property.
-                float rate;
-                Transform t = _cachedTransform;
-                t.GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation);
-                Vector3 localScale = t.localScale;
-
-                //Snap any bits of the transform that should be.
-                SnapProperties(td);
-
-                //Position.
-                if (_synchronizePosition)
-                {
-                    rate = rd.Position;
-                    Vector3 posGoal =
-                        td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable
-                            ? td.ExtrapolatedPosition
-                            : td.Position;
-                    // ReSharper disable once CompareOfFloatsByEqualityOperator
-                    if (rate == -1f)
-                        t.localPosition = td.Position;
-                    else
-                        t.localPosition = Vector3.MoveTowards(localPosition, posGoal, rate * delta * multiplier);
-                }
-
-                //Rotation.
-                if (_synchronizeRotation)
-                {
-                    rate = rd.Rotation;
-                    // ReSharper disable once CompareOfFloatsByEqualityOperator
-                    if (rate == -1f)
-                        t.localRotation = td.Rotation;
-                    else
-                        t.localRotation = Quaternion.RotateTowards(localRotation, td.Rotation, rate * delta);
-                }
-
-                //Scale.
-                if (_synchronizeScale)
-                {
-                    rate = rd.Scale;
-                    // ReSharper disable once CompareOfFloatsByEqualityOperator
-                    if (rate == -1f)
-                        t.localScale = td.Scale;
-                    else
-                        t.localScale = Vector3.MoveTowards(localScale, td.Scale, rate * delta);
-                }
-
-                float timeRemaining = rd.TimeRemaining - delta * multiplier;
-                if (timeRemaining < -delta)
-                    timeRemaining = -delta;
-                rd.TimeRemaining = timeRemaining;
-
-                if (rd.TimeRemaining <= 0f)
-                {
-                    float leftOver = Mathf.Abs(rd.TimeRemaining);
-                    //If more in buffer then run next buffer.
-                    if (queueCount > 0)
-                    {
-                        SetCurrentGoalData(_goalDataQueue.Dequeue());
-                        if (leftOver > 0f)
-                            MoveToTarget(leftOver);
-                    }
-                    //No more in buffer, see if can extrapolate.
-                    else
-                    {
-                        //PROSTART
-                            //PROEND
-                            /* If everything matches up then end queue.
-                             * Otherwise let it play out until stuff
-                             * aligns. Generally the time remaining is enough
-                             * but every once in awhile something goes funky
-                             * and it's thrown off. */
-                            if (!HasChanged(td))
-                                _currentGoalData = null;
-                            OnInterpolationComplete?.Invoke();
-                            //PROSTART
-                        //PROEND
-                    }
-                }
+                    /* If everything matches up then end queue.
+                         * Otherwise let it play out until stuff
+                         * aligns. Generally the time remaining is enough
+                         * but every once in awhile something goes funky
+                         * and it's thrown off. */
+                        if (!HasChanged(td))
+                            _currentGoalData = null;
+                        OnInterpolationComplete?.Invoke();
+                        }
+            }
             }
         }
 
@@ -1762,8 +1748,7 @@ namespace FishNet.Component.Transforming
                      * then a packet maybe did not arrive when expected. See if we need
                      * to force a reliable with the last data based on ticks passed since
                      * last update.*/
-                    if (!_authoritativeClientData.HasData && _authoritativeClientData.Channel != Channel.Reliable &&
-                        _authoritativeClientData.Writer != null)
+                    if (!_authoritativeClientData.HasData && _authoritativeClientData.Channel != Channel.Reliable && _authoritativeClientData.Writer != null)
                     {
                         /* If ticks have passed beyond interpolation then force
                          * to send reliably. */
@@ -1780,8 +1765,7 @@ namespace FishNet.Component.Transforming
                     {
                         _changedSinceStart = true;
                         //Resend data from clients.
-                        ObserversUpdateClientAuthoritativeTransform(_authoritativeClientData.Writer.GetArraySegment(),
-                            _authoritativeClientData.Channel);
+                        ObserversUpdateClientAuthoritativeTransform(_authoritativeClientData.Writer.GetArraySegment(), _authoritativeClientData.Channel);
                         //Now being sent data can unset.
                         _authoritativeClientData.HasData = false;
                     }
@@ -1820,8 +1804,7 @@ namespace FishNet.Component.Transforming
                         /* If here a send for transform values will occur. Update last values.
                          * Tick doesn't need to be set for whoever controls transform. */
                         //Transform t = _cachedTransform;
-                        //t.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
-                        //lastSentData.Update(0, localPosition, localRotation, t.localScale, localPosition, ParentBehaviour);
+                        //lastSentData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, ParentBehaviour);
                         lastSentData.Tick = 0;
 
                         SerializeChanged(changed, writer, lastSentData);
@@ -1878,8 +1861,7 @@ namespace FishNet.Component.Transforming
                  * Tick doesn't need to be set for whoever controls transform. */
                 Transform t = _cachedTransform;
 
-                //t.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
-                //lastSentData.Update(0, localPosition, localRotation, t.localScale, localPosition, ParentBehaviour);
+                //lastSentData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, ParentBehaviour);
                 lastSentTransformData.Tick = 0;
 
                 //Send latest.
@@ -1899,8 +1881,7 @@ namespace FishNet.Component.Transforming
         private bool HasChanged(TransformData td)
         {
             Transform t = _cachedTransform;
-            t.GetLocalPositionAndRotation(out var localPosition, out var localRotation);
-            bool changed = td.Position != localPosition || td.Rotation != localRotation || td.Scale != t.localScale;
+            bool changed = td.Position != t.localPosition || td.Rotation != t.localRotation || td.Scale != t.localScale;
 
             return changed;
         }
@@ -1966,16 +1947,17 @@ namespace FishNet.Component.Transforming
         {
             ChangedDelta changed = ChangedDelta.Unset;
             Transform t = _cachedTransform;
-            t.GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation);
-            
-            if (Mathf.Abs(localPosition.x - lastPosition.x) >= _positionSensitivity)
+
+            Vector3 position = t.localPosition;
+            if (Mathf.Abs(position.x - lastPosition.x) >= _positionSensitivity)
                 changed |= ChangedDelta.PositionX;
-            if (Mathf.Abs(localPosition.y - lastPosition.y) >= _positionSensitivity)
+            if (Mathf.Abs(position.y - lastPosition.y) >= _positionSensitivity)
                 changed |= ChangedDelta.PositionY;
-            if (Mathf.Abs(localPosition.z - lastPosition.z) >= _positionSensitivity)
+            if (Mathf.Abs(position.z - lastPosition.z) >= _positionSensitivity)
                 changed |= ChangedDelta.PositionZ;
 
-            if (!localRotation.Matches(lastRotation, true))
+            Quaternion rotation = t.localRotation;
+            if (!rotation.Matches(lastRotation, true))
                 changed |= ChangedDelta.Rotation;
 
             ChangedDelta startChanged = changed;
@@ -2011,38 +1993,36 @@ namespace FishNet.Component.Transforming
 
             transformData.SnappingChecked = true;
             Transform t = _cachedTransform;
-            t.GetLocalPositionAndRotation(out Vector3 startPosition, out Quaternion startRotation);
-            
+
             //Position.
             if (_synchronizePosition)
             {
+                Vector3 startPosition = t.localPosition;
                 Vector3 position;
-                position.x = force || _positionSnapping.X ? transformData.Position.x : startPosition.x;
-                position.y = force || _positionSnapping.Y ? transformData.Position.y : startPosition.y;
-                position.z = force || _positionSnapping.Z ? transformData.Position.z : startPosition.z;
+                position.x = force || _positionSnapping.X ? transformData.Position.x : t.localPosition.x;
+                position.y = force || _positionSnapping.Y ? transformData.Position.y : t.localPosition.y;
+                position.z = force || _positionSnapping.Z ? transformData.Position.z : t.localPosition.z;
                 t.localPosition = position;
             }
 
             //Rotation.
             if (_synchronizeRotation)
             {
-                Vector3 startEulers = startRotation.eulerAngles;
-                Vector3 goalEulers = transformData.Rotation.eulerAngles;
                 Vector3 eulers;
-                eulers.x = force || _rotationSnapping.X ? goalEulers.x : startEulers.x;
-                eulers.y = force || _rotationSnapping.Y ? goalEulers.y : startEulers.y;
-                eulers.z = force || _rotationSnapping.Z ? goalEulers.z : startEulers.z;
+                Vector3 goalEulers = transformData.Rotation.eulerAngles;
+                eulers.x = force || _rotationSnapping.X ? goalEulers.x : t.localEulerAngles.x;
+                eulers.y = force || _rotationSnapping.Y ? goalEulers.y : t.localEulerAngles.y;
+                eulers.z = force || _rotationSnapping.Z ? goalEulers.z : t.localEulerAngles.z;
                 t.localEulerAngles = eulers;
             }
 
             //Scale.
             if (_synchronizeScale)
             {
-                var startScale = t.localScale;
                 Vector3 scale;
-                scale.x = force || _scaleSnapping.X ? transformData.Scale.x : startScale.x;
-                scale.y = force || _scaleSnapping.Y ? transformData.Scale.y : startScale.y;
-                scale.z = force || _scaleSnapping.Z ? transformData.Scale.z : startScale.z;
+                scale.x = force || _scaleSnapping.X ? transformData.Scale.x : t.localScale.x;
+                scale.y = force || _scaleSnapping.Y ? transformData.Scale.y : t.localScale.y;
+                scale.z = force || _scaleSnapping.Z ? transformData.Scale.z : t.localScale.z;
                 t.localScale = scale;
             }
         }
@@ -2261,9 +2241,7 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            //PROSTART
-            //PROEND
-        }
+            }
 
         /// <summary>
         /// Updates a client with transform data.

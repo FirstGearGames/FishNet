@@ -6,9 +6,8 @@ using System.Collections.Generic;
 using FishNet.Editing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
-using UnityEngine;
-using UnityEngine.Profiling;
 using Unity.Profiling;
+using UnityEngine;
 
 namespace FishNet.Managing.Statistic
 {
@@ -89,13 +88,6 @@ namespace FishNet.Managing.Statistic
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkTrafficStatistics.TimeManager_OnPreTick()");
-        
-        #endregion
-        
         /// <summary>
         /// NetworkManager for this statistics.
         /// </summary>
@@ -118,6 +110,10 @@ namespace FishNet.Managing.Statistic
         private bool _initializedOnce;
         #endregion
 
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_OnPreTick = new("NetworkTrafficStatistics.TimeManager_OnPreTick()");
+        #endregion
+
         #region Consts.
         /// <summary>
         /// Id for unspecified packets.
@@ -129,7 +125,7 @@ namespace FishNet.Managing.Statistic
         {
             if (_initializedOnce)
                 return;
-            
+
             _networkManager = manager;
 
             /* Do not bother caching once destroyed. Losing a single instance of each
@@ -137,9 +133,9 @@ namespace FishNet.Managing.Statistic
              * shutting down anyway. */
             _serverTraffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
             _clientTraffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
-            
+
             manager.TimeManager.OnPreTick += TimeManager_OnPreTick;
-            
+
             _initializedOnce = true;
         }
 

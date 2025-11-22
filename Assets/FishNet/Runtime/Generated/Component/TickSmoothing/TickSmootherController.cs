@@ -2,8 +2,8 @@
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
-using UnityEngine;
 using Unity.Profiling;
+using UnityEngine;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -21,15 +21,6 @@ namespace FishNet.Component.Transforming.Beta
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        
-        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("TickSmootherController.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPostTick()");
-        
-        #endregion
-        
         /// <summary>
         /// </summary>
         private InitializationSettings _initializationSettings = new();
@@ -71,6 +62,10 @@ namespace FishNet.Component.Transforming.Beta
         /// True if initialized.
         /// </summary>
         private bool _isInitialized;
+        
+        private static readonly ProfilerMarker _pm_OnUpdate = new("TickSmootherController.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnPreTick = new("TickSmootherController.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new("TickSmootherController.TimeManager_OnPostTick()");
         #endregion
 
         public void Initialize(InitializationSettings initializationSettings, MovementSettings ownerSettings, MovementSettings spectatorSettings)
@@ -160,7 +155,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             using (_pm_OnPreTick.Auto())
             {
-                UniversalSmoother.OnPreTick();
+                UniversalSmoother.OnUpdate(Time.deltaTime);
             }
         }
 
