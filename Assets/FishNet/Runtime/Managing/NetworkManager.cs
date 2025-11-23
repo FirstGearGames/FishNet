@@ -232,7 +232,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.16";
+        public const string FISHNET_VERSION = "4.6.17";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
