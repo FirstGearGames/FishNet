@@ -935,7 +935,7 @@ namespace FishNet.Object
                  * identify its parent properly. */
                 TryAddEmptyNetworkBehaviour(parentNob, addToNetworkBehaviours: true, out _);
 
-                if (!transform.parent.TryGetComponent(out NetworkBehaviour parentNb))
+                if (!parentNob.TryGetComponent(out NetworkBehaviour parentNb))
                     NetworkManager.LogError($"A NetworkBehaviour is expected to exist on {parentNob.name} but does not.");
                 else
                     InitializedParentNetworkBehaviour = parentNb;

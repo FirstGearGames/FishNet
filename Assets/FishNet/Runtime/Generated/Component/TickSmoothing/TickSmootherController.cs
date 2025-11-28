@@ -62,7 +62,6 @@ namespace FishNet.Component.Transforming.Beta
         /// True if initialized.
         /// </summary>
         private bool _isInitialized;
-        
         private static readonly ProfilerMarker _pm_OnUpdate = new("TickSmootherController.TimeManager_OnUpdate()");
         private static readonly ProfilerMarker _pm_OnPreTick = new("TickSmootherController.TimeManager_OnPreTick()");
         private static readonly ProfilerMarker _pm_OnPostTick = new("TickSmootherController.TimeManager_OnPostTick()");
@@ -155,7 +154,7 @@ namespace FishNet.Component.Transforming.Beta
         {
             using (_pm_OnPreTick.Auto())
             {
-                UniversalSmoother.OnUpdate(Time.deltaTime);
+                UniversalSmoother.OnPreTick();
             }
         }
 

@@ -250,7 +250,7 @@ namespace FishNet.Object
             else
             {
                 _addedNetworkObject = transform.root.gameObject.AddComponent<NetworkObject>();
-                NetworkManager.Log($"Script {GetType().Name} on object {gameObject.name} added a NetworkObject component to {transform.root.name}.");
+                NetworkManagerExtensions.Log($"Script {GetType().Name} on object {gameObject.name} added a NetworkObject component to {transform.root.name}.");
             }
 
             AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
