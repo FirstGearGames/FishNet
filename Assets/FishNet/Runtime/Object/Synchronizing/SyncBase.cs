@@ -28,8 +28,7 @@ namespace FishNet.Object.Synchronizing.Internal
         /// <summary>
         /// The settings for this SyncVar.
         /// </summary>
-        [MakePublic]
-        internal SyncTypeSettings Settings;
+        [MakePublic] public SyncTypeSettings Settings;
         /// <summary>
         /// How often updates may send.
         /// </summary>

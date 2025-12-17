@@ -446,6 +446,11 @@ namespace FishNet.Object.Synchronizing
                 foreach (KeyValuePair<TKey, TValue> item in _initialValues)
                     Collection[item.Key] = item.Value;
             }
+            
+            if (asServer)
+                _serverOnChanges.Clear();
+            else
+                _clientOnChanges.Clear();
         }
 
         /// <summary>

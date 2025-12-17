@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace FishNet.Object.Synchronizing
 {
-    internal interface ISyncVar { }
+    public interface ISyncVar { }
 
     [APIExclude]
     [System.Serializable]
@@ -468,6 +468,9 @@ namespace FishNet.Object.Synchronizing
                 _value = _initialValue;
                 _valueSetAfterInitialized = false;
             }
+            
+            if (asServer) _serverOnChange = null;
+            else _clientOnChange = null;
         }
     }
 }

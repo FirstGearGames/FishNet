@@ -460,6 +460,9 @@ namespace FishNet.Object.Synchronizing
                 foreach (T item in _initialValues)
                     Collection.Add(item);
             }
+                
+            if (asServer) _serverOnChanges.Clear();
+            else _clientOnChanges.Clear();
         }
 
         /// <summary>
