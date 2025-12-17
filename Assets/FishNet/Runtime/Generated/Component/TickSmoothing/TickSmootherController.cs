@@ -1,9 +1,8 @@
-﻿using FishNet.Managing.Predicting;
-using FishNet.Managing.Timing;
+﻿using FishNet.Managing.Timing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
-using Unity.Profiling;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -14,13 +13,22 @@ namespace FishNet.Component.Transforming.Beta
     public class TickSmootherController : IResettable
     {
         #region Public.
-        /// <summary>
-        /// Logic for owner smoothing.
-        /// </summary>
-        public UniversalTickSmoother UniversalSmoother { get; private set; }
+        // /// <summary>
+        // /// Logic for owner smoothing.
+        // /// </summary>
+        // public UniversalTickSmoother UniversalSmoother { get; private set; }
         #endregion
-
+        
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("TickSmootherController.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("TickSmootherController.TimeManager_OnPostTick()");
+        
+        #endregion
+        
         /// <summary>
         /// </summary>
         private InitializationSettings _initializationSettings = new();
@@ -43,6 +51,10 @@ namespace FishNet.Component.Transforming.Beta
         /// </summary>
         private NetworkBehaviour _initializingNetworkBehaviour;
         /// <summary>
+        /// TickSmoothingManager.
+        /// </summary>
+        private TickSmoothingManager _tickSmoothingManager;
+        /// <summary>
         /// Transform which initialized this object.
         /// </summary>
         private Transform _graphicalTransform;
@@ -62,13 +74,13 @@ namespace FishNet.Component.Transforming.Beta
         /// True if initialized.
         /// </summary>
         private bool _isInitialized;
-        private static readonly ProfilerMarker _pm_OnUpdate = new("TickSmootherController.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker _pm_OnPreTick = new("TickSmootherController.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostTick = new("TickSmootherController.TimeManager_OnPostTick()");
         #endregion
 
         public void Initialize(InitializationSettings initializationSettings, MovementSettings ownerSettings, MovementSettings spectatorSettings)
         {
+            _tickSmoothingManager =
+                initializationSettings.InitializingNetworkBehaviour?.NetworkManager.TickSmoothingManager ??
+                InstanceFinder.NetworkManager.TickSmoothingManager;
             _initializingNetworkBehaviour = initializationSettings.InitializingNetworkBehaviour;
             _graphicalTransform = initializationSettings.GraphicalTransform;
 
@@ -83,8 +95,12 @@ namespace FishNet.Component.Transforming.Beta
 
         public void OnDestroy()
         {
-            ChangeSubscriptions(false);
-            StoreSmoother();
+            var tsm = _tickSmoothingManager;
+            if (tsm != null)
+                tsm.Unregister(this);
+            
+            // ChangeSubscriptions(false);
+            // StoreSmoother();
             _destroyed = true;
             _isInitialized = false;
         }
@@ -99,11 +115,15 @@ namespace FishNet.Component.Transforming.Beta
             if (!canStart)
                 return;
 
-            RetrieveSmoothers();
+            // RetrieveSmoothers();
+            //
+            // UniversalSmoother.Initialize(_initializationSettings, _ownerMovementSettings, _spectatorMovementSettings);
+            //
+            // UniversalSmoother.StartSmoother();
 
-            UniversalSmoother.Initialize(_initializationSettings, _ownerMovementSettings, _spectatorMovementSettings);
-
-            UniversalSmoother.StartSmoother();
+            var tsm = _tickSmoothingManager;
+            if (tsm != null)
+                tsm.Register(this, _initializationSettings, _ownerMovementSettings, _spectatorMovementSettings);
 
             bool StartOnline()
             {
@@ -125,13 +145,15 @@ namespace FishNet.Component.Transforming.Beta
 
         public void StopSmoother()
         {
-            ChangeSubscriptions(subscribe: false);
-
+            var tsm = _tickSmoothingManager;
+            if (tsm != null)
+                tsm.Unregister(this);
+            
             if (!_initializedOffline)
                 StopOnline();
-
-            if (UniversalSmoother != null)
-                UniversalSmoother.StopSmoother();
+            
+            // if (UniversalSmoother != null)
+            //     UniversalSmoother.StopSmoother();
 
             void StopOnline()
             {
@@ -142,64 +164,64 @@ namespace FishNet.Component.Transforming.Beta
             // void StopOffline() { }
         }
 
-        public void TimeManager_OnUpdate()
-        {
-            using (_pm_OnUpdate.Auto())
-            {
-                UniversalSmoother.OnUpdate(Time.deltaTime);
-            }
-        }
-
-        public void TimeManager_OnPreTick()
-        {
-            using (_pm_OnPreTick.Auto())
-            {
-                UniversalSmoother.OnPreTick();
-            }
-        }
-
-        /// <summary>
-        /// Called after a tick completes.
-        /// </summary>
-        public void TimeManager_OnPostTick()
-        {
-            using (_pm_OnPostTick.Auto())
-            {
-                if (_timeManager != null)
-                    UniversalSmoother.OnPostTick(_timeManager.LocalTick);
-            }
-        }
-
-        private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
-        {
-            UniversalSmoother.OnPostReplicateReplay(clientTick);
-        }
-
-        private void TimeManager_OnRoundTripTimeUpdated(long rttMs)
-        {
-            UniversalSmoother.UpdateRealtimeInterpolation();
-        }
-
-        /// <summary>
-        /// Stores smoothers if they have value.
-        /// </summary>
-        private void StoreSmoother()
-        {
-            if (UniversalSmoother == null)
-                return;
-
-            ResettableObjectCaches<UniversalTickSmoother>.Store(UniversalSmoother);
-            UniversalSmoother = null;
-        }
-
-        /// <summary>
-        /// Stores current smoothers and retrieves new ones.
-        /// </summary>
-        private void RetrieveSmoothers()
-        {
-            StoreSmoother();
-            UniversalSmoother = ResettableObjectCaches<UniversalTickSmoother>.Retrieve();
-        }
+        // public void TimeManager_OnUpdate()
+        // {
+        //     using (_pm_OnUpdate.Auto())
+        //     {
+        //         UniversalSmoother.OnUpdate(Time.deltaTime);
+        //     }
+        // }
+        //
+        // public void TimeManager_OnPreTick()
+        // {
+        //     using (_pm_OnPreTick.Auto())
+        //     {
+        //         UniversalSmoother.OnPreTick();
+        //     }
+        // }
+        //
+        // /// <summary>
+        // /// Called after a tick completes.
+        // /// </summary>
+        // public void TimeManager_OnPostTick()
+        // {
+        //     using (_pm_OnPostTick.Auto())
+        //     {
+        //         if (_timeManager != null)
+        //             UniversalSmoother.OnPostTick(_timeManager.LocalTick);
+        //     }
+        // }
+        //
+        // private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
+        // {
+        //     UniversalSmoother.OnPostReplicateReplay(clientTick);
+        // }
+        //
+        // private void TimeManager_OnRoundTripTimeUpdated(long rttMs)
+        // {
+        //     UniversalSmoother.UpdateRealtimeInterpolation();
+        // }
+        //
+        // /// <summary>
+        // /// Stores smoothers if they have value.
+        // /// </summary>
+        // private void StoreSmoother()
+        // {
+        //     if (UniversalSmoother == null)
+        //         return;
+        //
+        //     ResettableObjectCaches<UniversalTickSmoother>.Store(UniversalSmoother);
+        //     UniversalSmoother = null;
+        // }
+        //
+        // /// <summary>
+        // /// Stores current smoothers and retrieves new ones.
+        // /// </summary>
+        // private void RetrieveSmoothers()
+        // {
+        //     StoreSmoother();
+        //     UniversalSmoother = ResettableObjectCaches<UniversalTickSmoother>.Retrieve();
+        // }
 
         // /// <summary>
         // /// Sets a target transform to follow.
@@ -233,58 +255,59 @@ namespace FishNet.Component.Transforming.Beta
                 return;
 
             // Unsub from current.
-            ChangeSubscriptions(false);
+            // ChangeSubscriptions(false);
             //Sub to newest.
             _timeManager = tm;
-            ChangeSubscriptions(true);
+            // ChangeSubscriptions(true);
         }
-
-        /// <summary>
-        /// Changes the subscription to the TimeManager.
-        /// </summary>
-        private void ChangeSubscriptions(bool subscribe)
-        {
-            if (_destroyed)
-                return;
-            TimeManager tm = _timeManager;
-            if (tm == null)
-                return;
-
-            if (subscribe == _subscribed)
-                return;
-            _subscribed = subscribe;
-
-            bool adaptiveIsOff = _ownerMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off && _spectatorMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off;
-
-            if (subscribe)
-            {
-                tm.OnUpdate += TimeManager_OnUpdate;
-                tm.OnPreTick += TimeManager_OnPreTick;
-                tm.OnPostTick += TimeManager_OnPostTick;
-
-                if (!adaptiveIsOff)
-                {
-                    tm.OnRoundTripTimeUpdated += TimeManager_OnRoundTripTimeUpdated;
-                    PredictionManager pm = tm.NetworkManager.PredictionManager;
-                    pm.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
-                    _subscribedToAdaptiveEvents = true;
-                }
-            }
-            else
-            {
-                tm.OnUpdate -= TimeManager_OnUpdate;
-                tm.OnPreTick -= TimeManager_OnPreTick;
-                tm.OnPostTick -= TimeManager_OnPostTick;
-
-                if (_subscribedToAdaptiveEvents)
-                {
-                    tm.OnRoundTripTimeUpdated -= TimeManager_OnRoundTripTimeUpdated;
-                    PredictionManager pm = tm.NetworkManager.PredictionManager;
-                    pm.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
-                }
-            }
-        }
-
+        
+        
+        // /// <summary>
+        // /// Changes the subscription to the TimeManager.
+        // /// </summary>
+        // private void ChangeSubscriptions(bool subscribe)
+        // {
+        //     if (_destroyed)
+        //         return;
+        //     TimeManager tm = _timeManager;
+        //     if (tm == null)
+        //         return;
+        //
+        //     if (subscribe == _subscribed)
+        //         return;
+        //     _subscribed = subscribe;
+        //
+        //     bool adaptiveIsOff = _ownerMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off && _spectatorMovementSettings.AdaptiveInterpolationValue == AdaptiveInterpolationType.Off;
+        //
+        //     if (subscribe)
+        //     {
+        //         tm.OnUpdate += TimeManager_OnUpdate;
+        //         tm.OnPreTick += TimeManager_OnPreTick;
+        //         tm.OnPostTick += TimeManager_OnPostTick;
+        //
+        //         if (!adaptiveIsOff)
+        //         {
+        //             tm.OnRoundTripTimeUpdated += TimeManager_OnRoundTripTimeUpdated;
+        //             PredictionManager pm = tm.NetworkManager.PredictionManager;
+        //             pm.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
+        //             _subscribedToAdaptiveEvents = true;
+        //         }
+        //     }
+        //     else
+        //     {
+        //         tm.OnUpdate -= TimeManager_OnUpdate;
+        //         tm.OnPreTick -= TimeManager_OnPreTick;
+        //         tm.OnPostTick -= TimeManager_OnPostTick;
+        //
+        //         if (_subscribedToAdaptiveEvents)
+        //         {
+        //             tm.OnRoundTripTimeUpdated -= TimeManager_OnRoundTripTimeUpdated;
+        //             PredictionManager pm = tm.NetworkManager.PredictionManager;
+        //             pm.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
+        //         }
+        //     }
+        // }
+        
         public void ResetState()
         {
             _initializationSettings = default;
