@@ -8,7 +8,7 @@ namespace GameKit.Dependencies.Utilities
         /// Uses a hacky way to TryGetValue on a dictionary when using IL2CPP and on mobile.
         /// This is to support older devices that don't properly handle IL2CPP builds.
         /// </summary>
-        public static bool TryGetValueIL2CPP<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, out TValue value)
+        public static bool TryGetValueIL2CPP<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, out TValue value)
         {
 #if ENABLE_IL2CPP && UNITY_IOS || UNITY_ANDROID
             if (dict.ContainsKey(key))
@@ -30,7 +30,7 @@ namespace GameKit.Dependencies.Utilities
         /// Returns values as a list.
         /// </summary>
         /// <returns></returns>
-        public static List<TValue> ValuesToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, bool useCache)
+        public static List<TValue> ValuesToList<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, bool useCache)
         {
             List<TValue> result = useCache ? CollectionCaches<TValue>.RetrieveList() : new(dict.Count);
 
@@ -43,7 +43,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Adds values to a list.
         /// </summary>
-        public static void ValuesToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, ref List<TValue> result, bool clearLst)
+        public static void ValuesToList<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, ref List<TValue> result, bool clearLst)
         {
             if (clearLst)
                 result.Clear();
@@ -55,7 +55,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Returns keys as a list.
         /// </summary>
-        public static List<TKey> KeysToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, bool useCache)
+        public static List<TKey> KeysToList<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, bool useCache)
         {
             List<TKey> result = useCache ? CollectionCaches<TKey>.RetrieveList() : new(dict.Count);
 
@@ -68,7 +68,7 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Adds keys to a list.
         /// </summary>
-        public static void KeysToList<TKey, TValue>(this IDictionary<TKey, TValue> dict, ref List<TKey> result, bool clearLst)
+        public static void KeysToList<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, ref List<TKey> result, bool clearLst)
         {
             result.Clear();
 
