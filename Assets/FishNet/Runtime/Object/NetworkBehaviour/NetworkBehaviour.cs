@@ -1,6 +1,7 @@
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #define DEVELOPMENT
 #endif
+using System;
 using FishNet.CodeGenerating;
 using FishNet.Documenting;
 using FishNet.Managing.Transporting;
@@ -76,7 +77,7 @@ namespace FishNet.Object
 #if !UNITY_SERVER
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         /// <summary>
         /// Name of this NetworkBehaviour.
         /// </summary>
@@ -101,7 +102,7 @@ namespace FishNet.Object
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Name [{gameObject.name}] ComponentId [{ComponentIndex}] NetworkObject Name [{_networkObjectCache.name}] NetworkObject Id [{_networkObjectCache.ObjectId}]";
+            return $"Name [{gameObject.name}] ComponentId [{ComponentIndex}] NetworkObject Name [{_networkObjectCache?.name ?? string.Empty}] NetworkObject Id [{_networkObjectCache?.ObjectId ?? -1}]";
         }
 
         [MakePublic]
