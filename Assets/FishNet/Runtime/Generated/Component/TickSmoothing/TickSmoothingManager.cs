@@ -7,6 +7,7 @@ using FishNet.Object.Prediction;
 using FishNet.Transporting;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
+using GameKit.Dependencies.Utilities.Types;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
@@ -326,12 +327,12 @@ namespace FishNet.Component.Transforming.Beta
             }
             
             while (_trackerTransformsPool.TryPop(out Transform trackerTransform))
-                if (trackerTransform.gameObject) Destroy(trackerTransform.gameObject);
+                if (trackerTransform && trackerTransform.gameObject) Destroy(trackerTransform.gameObject);
 
             for (int i = 0; i < _indexToSmoother.Count; i++)
             {
                 Transform trackerTransform = _trackerTaa[i];
-                if (trackerTransform.gameObject) Destroy(trackerTransform.gameObject);
+                if (trackerTransform && trackerTransform.gameObject) Destroy(trackerTransform.gameObject);
             }
            
             if (_moveRates.IsCreated)               _moveRates.Dispose();
@@ -795,7 +796,7 @@ namespace FishNet.Component.Transforming.Beta
             using (_pm_ClientManager_OnClientConnectionState.Auto())
             {
                 while (_trackerTransformsPool.TryPop(out Transform trackerTransform))
-                    if (trackerTransform.gameObject) Destroy(trackerTransform.gameObject);
+                    if (trackerTransform && trackerTransform.gameObject) Destroy(trackerTransform.gameObject);
                 
                 if (args.ConnectionState == LocalConnectionState.Started)
                     ChangeSubscriptions(true);

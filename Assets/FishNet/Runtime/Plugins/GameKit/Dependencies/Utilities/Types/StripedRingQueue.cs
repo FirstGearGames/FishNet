@@ -5,7 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace GameKit.Dependencies.Utilities
+namespace GameKit.Dependencies.Utilities.Types
 {
     /// <summary>
     /// A striped ring-buffer that stores N independent queues addressed by i = 0..N-1.

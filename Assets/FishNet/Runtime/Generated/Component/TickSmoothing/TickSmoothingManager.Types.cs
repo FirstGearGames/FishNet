@@ -4,7 +4,7 @@ using FishNet.Managing.Timing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
-using GameKit.Dependencies.Utilities;
+using GameKit.Dependencies.Utilities.Types;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
