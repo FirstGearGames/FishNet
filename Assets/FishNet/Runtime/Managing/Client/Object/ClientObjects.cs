@@ -99,7 +99,7 @@ namespace FishNet.Managing.Client
                 /* Clear spawned and scene objects as they will be rebuilt.
                  * Spawned would have already be cleared if DespawnSpawned
                  * was called but it won't hurt anything clearing an empty collection. */
-                Spawned.Clear();
+                HandleClear();
                 SceneObjects_Internal.Clear();
             }
         }

@@ -23,10 +23,20 @@ namespace FishNet.Managing.Object
     public abstract partial class ManagedObjects
     {
         #region Public.
+
         /// <summary>
         /// NetworkObjects which are currently active.
         /// </summary>
-        public Dictionary<int, NetworkObject> Spawned = new();
+        
+        private readonly Dictionary<int, NetworkObject> _spawned = new();
+        public IReadOnlyDictionary<int, NetworkObject> Spawned => _spawned;
+        
+        public delegate void OnSpawnedChanged(int objectId, NetworkObject networkObject);
+
+        public event OnSpawnedChanged OnSpawnedAdd;
+        public event OnSpawnedChanged OnSpawnedRemove;
+        public event Action OnSpawnedClear;
+        
         #endregion
 
         #region Protected.
@@ -55,7 +65,26 @@ namespace FishNet.Managing.Object
         public IReadOnlyDictionary<ulong, NetworkObject> SceneObjects => SceneObjects_Internal;
         /// <summary>
         /// </summary>
-        protected NetworkTrafficStatistics NetworkTrafficStatistics;
+        [NonSerialized] protected NetworkTrafficStatistics NetworkTrafficStatistics;
+
+        protected void HandleAdd(NetworkObject nob)
+        {
+            _spawned[nob.ObjectId] = nob;
+            OnSpawnedAdd?.Invoke(nob.ObjectId, nob);
+        }
+        
+        protected void HandleRemove(NetworkObject nob)
+        {
+            if (_spawned.Remove(nob.ObjectId))
+                OnSpawnedAdd?.Invoke(nob.ObjectId, nob);
+        }
+        
+        protected void HandleClear()
+        {
+            _spawned.Clear();
+            OnSpawnedClear?.Invoke();
+        }
+        
         #endregion
 
         #region Private.
@@ -109,7 +138,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         protected virtual void RemoveFromSpawned(NetworkObject nob, bool fromOnDestroy, bool asServer)
         {
-            Spawned.Remove(nob.ObjectId);
+            HandleRemove(nob);
             // Do the same with SceneObjects.
             if (fromOnDestroy && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
@@ -316,7 +345,7 @@ namespace FishNet.Managing.Object
                 DespawnWithoutSynchronization(nob, recursive, asServer, nob.GetDefaultDespawnType(), removeFromSpawned: false);
             }
 
-            Spawned.Clear();
+            HandleClear();
         }
 
         /// <summary>
@@ -371,7 +400,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         internal virtual void AddToSpawned(NetworkObject nob, bool asServer)
         {
-            Spawned[nob.ObjectId] = nob;
+            HandleAdd(nob);
         }
 
         /// <summary>
@@ -408,7 +437,7 @@ namespace FishNet.Managing.Object
         protected internal NetworkObject GetSpawnedNetworkObject(int objectId)
         {
             NetworkObject r;
-            if (!Spawned.TryGetValueIL2CPP(objectId, out r))
+            if (!_spawned.TryGetValueIL2CPP(objectId, out r))
                 NetworkManager.LogError($"Spawned NetworkObject not found for ObjectId {objectId}.");
 
             return r;
