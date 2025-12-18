@@ -76,7 +76,7 @@ namespace FishNet.Managing.Object
         protected void HandleRemove(NetworkObject nob)
         {
             if (_spawned.Remove(nob.ObjectId))
-                OnSpawnedAdd?.Invoke(nob.ObjectId, nob);
+                OnSpawnedRemove?.Invoke(nob.ObjectId, nob);
         }
         
         protected void HandleClear()
@@ -541,4 +541,5 @@ namespace FishNet.Managing.Object
         }
 #endif
     }
+
 }
