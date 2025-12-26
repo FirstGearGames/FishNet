@@ -501,7 +501,7 @@ namespace FishNet.Managing.Client
             //If not found in Spawning then check Spawned.
             if (!IteratedSpawningObjects.TryGetValue(objectId, out result))
             {
-                Dictionary<int, NetworkObject> spawned = _networkManager.IsHostStarted ? _networkManager.ServerManager.Objects.Spawned : _networkManager.ClientManager.Objects.Spawned;
+                IReadOnlyDictionary<int, NetworkObject> spawned = _networkManager.IsHostStarted ? _networkManager.ServerManager.Objects.Spawned : _networkManager.ClientManager.Objects.Spawned;
                 spawned.TryGetValue(objectId, out result);
             }
 

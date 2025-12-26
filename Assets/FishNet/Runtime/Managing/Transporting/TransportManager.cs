@@ -122,7 +122,7 @@ namespace FishNet.Managing.Transporting
         private int _customMtuReserve = MINIMUM_MTU_RESERVE;
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         #region Consts.

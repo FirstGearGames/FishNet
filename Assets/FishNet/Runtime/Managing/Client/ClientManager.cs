@@ -143,7 +143,7 @@ namespace FishNet.Managing.Client
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         #region Private Profiler Markers

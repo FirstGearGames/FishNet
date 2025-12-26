@@ -7,6 +7,12 @@ namespace FishNet.Object
 {
     public partial class NetworkObject : MonoBehaviour
     {
+        #region Types
+
+        public delegate void NetworkObjectCallback(NetworkObject nb);
+
+        #endregion
+        
         #region Private.
         /// <summary>
         /// True if OnStartServer was called.
@@ -16,6 +22,40 @@ namespace FishNet.Object
         /// True if OnStartClient was called.
         /// </summary>
         private bool _onStartClientCalled;
+
+        private bool OnStartServerCalled
+        {
+            get => _onStartServerCalled;
+            set
+            {
+                if (_onStartServerCalled != value)
+                {
+                    _onStartServerCalled = value;
+                    if (value) OnStartServerEvent?.Invoke(this);
+                    else OnStopServerEvent?.Invoke(this);
+                }
+            }
+        }
+        
+        private bool OnStartClientCalled
+        {
+            get => _onStartClientCalled;
+            set
+            {
+                if (_onStartClientCalled != value)
+                {
+                    _onStartClientCalled = value;
+                    if (value) OnStartClientEvent?.Invoke(this);
+                    else OnStopClientEvent?.Invoke(this);
+                }
+            }
+        }
+
+        public event NetworkObjectCallback OnStartServerEvent;
+        public event NetworkObjectCallback OnStopServerEvent;
+        public event NetworkObjectCallback OnStartClientEvent;
+        public event NetworkObjectCallback OnStopClientEvent;
+        
         #endregion
 
         // ReSharper disable Unity.PerformanceAnalysis
@@ -41,7 +81,7 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStartServer_Internal();
-                _onStartServerCalled = true;
+                OnStartServerCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(Managing.NetworkManager.EmptyConnection);
             }
@@ -50,7 +90,7 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStartClient_Internal();
-                _onStartClientCalled = true;
+                OnStartClientCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipClient_Internal(Managing.NetworkManager.EmptyConnection);
             }
@@ -114,17 +154,17 @@ namespace FishNet.Object
             if (invokeSyncTypeCallbacks)
                 InvokeOnStopSyncTypeCallbacks(asServer);
 
-            if (asServer && _onStartServerCalled)
+            if (asServer && OnStartServerCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopServer_Internal();
 
-                if (!_onStartClientCalled)
+                if (!OnStartClientCalled)
                     InvokeOnNetwork();
 
-                _onStartServerCalled = false;
+                OnStartServerCalled = false;
             }
-            else if (!asServer && _onStartClientCalled)
+            else if (!asServer && OnStartClientCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopClient_Internal();
@@ -133,10 +173,10 @@ namespace FishNet.Object
                  * that means this is still intialized on the server. This would
                  * happen if the object despawned for the clientHost but not on the
                  * server. */
-                if (!_onStartServerCalled)
+                if (!OnStartServerCalled)
                     InvokeOnNetwork();
 
-                _onStartClientCalled = false;
+                OnStartClientCalled = false;
             }
 
             void InvokeOnNetwork()

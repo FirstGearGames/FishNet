@@ -222,7 +222,7 @@ namespace FishNet.Managing.Server
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         #if DEVELOPMENT
         /// <summary>
         /// Logs data about parser to help debug.

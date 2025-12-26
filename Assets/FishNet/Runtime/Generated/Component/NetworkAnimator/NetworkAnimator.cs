@@ -15,8 +15,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
-using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.Profiling;
+using Unity.Profiling;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
 namespace FishNet.Component.Animating
@@ -33,6 +34,7 @@ namespace FishNet.Component.Animating
             /// <summary>
             /// Gets an Arraysegment of received data.
             /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public ArraySegment<byte> GetArraySegment() => new(_data, 0, _length);
 
             /// <summary>
@@ -51,6 +53,7 @@ namespace FishNet.Component.Animating
                 Buffer.BlockCopy(segment.Array, segment.Offset, _data, 0, _length);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Dispose()
             {
                 if (_data != null)
@@ -210,6 +213,7 @@ namespace FishNet.Component.Animating
             /// <summary>
             /// Resets buffers.
             /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void Reset()
             {
                 BufferCount = 0;
@@ -274,6 +278,23 @@ namespace FishNet.Component.Animating
         }
         #endregion
 
+        #region Private
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("NetworkAnimator.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("NetworkAnimator.TimeManager_OnUpdate()");
+        private static readonly ProfilerMarker _pm_CheckSendToServer = new ProfilerMarker("NetworkAnimator.CheckSendToServer()");
+        private static readonly ProfilerMarker _pm_CheckSendToClients = new ProfilerMarker("NetworkAnimator.CheckSendToClients()");
+        private static readonly ProfilerMarker _pm_SmoothFloats = new ProfilerMarker("NetworkAnimator.SmoothFloats()");
+        private static readonly ProfilerMarker _pm_AnimatorUpdated = new ProfilerMarker("NetworkAnimator.AnimatorUpdated(ref ArraySegment<byte>, bool)");
+        private static readonly ProfilerMarker _pm_ApplyParametersUpdated = new ProfilerMarker("NetworkAnimator.ApplyParametersUpdated(ref ArraySegment<byte>)");
+        
+        #endregion
+        
+        #endregion
+        
         #region Public.
         /// <summary>
         /// Parameters which will not be synchronized.
@@ -303,6 +324,14 @@ namespace FishNet.Component.Animating
         [Tooltip("True to synchronize changes even when the animator component is disabled.")]
         [SerializeField]
         private bool _synchronizeWhenDisabled;
+        /// <summary>
+        /// True to synchronize changes even when the animator component is disabled.
+        /// </summary>
+        public bool SynchronizeWhenDisabled
+        {
+            get { return _synchronizeWhenDisabled; }
+            set { _synchronizeWhenDisabled = value; }
+        }
         /// <summary>
         /// True to smooth float value changes for spectators.
         /// </summary>
@@ -334,6 +363,11 @@ namespace FishNet.Component.Animating
         [Tooltip("True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.")]
         [SerializeField]
         private bool _sendToOwner;
+        /// <summary>
+        /// True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.
+        /// </summary>
+        public bool SendToOwner => _sendToOwner;
+        
         #endregion
 
         #region Private.
@@ -370,12 +404,19 @@ namespace FishNet.Component.Animating
         // /// </summary>
         // private List<byte[]> _toClientsBuffer = new();
         /// <summary>
+        /// Synchronization enabled state. True by default
+        /// </summary>
+        private bool _isSynchronizationEnabled = true;
+        /// <summary>
         /// Returns if the animator is exist and can be synchronized.
         /// </summary>
         private bool _canSynchronizeAnimator
         {
             get
             {
+                if (!_isSynchronizationEnabled)
+                    return false;
+                
                 if (!_isAnimatorSet)
                     return false;
 
@@ -459,17 +500,6 @@ namespace FishNet.Component.Animating
         private bool _subscribedToTicks;
         #endregion
 
-        #region Private Profiler Markers
-        private static readonly ProfilerMarker _pm_OnPreTick = new("NetworkAnimator.TimeManager_OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostTick = new("NetworkAnimator.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker _pm_OnUpdate = new("NetworkAnimator.TimeManager_OnUpdate()");
-        private static readonly ProfilerMarker _pm_CheckSendToServer = new("NetworkAnimator.CheckSendToServer()");
-        private static readonly ProfilerMarker _pm_CheckSendToClients = new("NetworkAnimator.CheckSendToClients()");
-        private static readonly ProfilerMarker _pm_SmoothFloats = new("NetworkAnimator.SmoothFloats()");
-        private static readonly ProfilerMarker _pm_AnimatorUpdated = new("NetworkAnimator.AnimatorUpdated(ref ArraySegment<byte>, bool)");
-        private static readonly ProfilerMarker _pm_ApplyParametersUpdated = new("NetworkAnimator.ApplyParametersUpdated(ref ArraySegment<byte>)");
-        #endregion
-
         #region Const.
         ///// <summary>
         ///// How much time to fall behind when using smoothing. Only increase value if the smoothing is sometimes jittery. Recommended values are between 0 and 0.04.
@@ -515,6 +545,7 @@ namespace FishNet.Component.Animating
         public override void OnStartNetwork()
         {
             ChangeTickSubscription(true);
+            _isSynchronizationEnabled = true;
         }
 
         [APIExclude]
@@ -584,6 +615,7 @@ namespace FishNet.Component.Animating
                     _fromServerBuffer.Clear();
                     return;
                 }
+
                 //Disabled/cannot start.
                 if (_startTick == 0)
                     return;
@@ -593,6 +625,7 @@ namespace FishNet.Component.Animating
                     _startTick = 0;
                     return;
                 }
+
                 //Not enough time has passed to start queue.
                 if (TimeManager.LocalTick < _startTick)
                     return;
@@ -645,7 +678,7 @@ namespace FishNet.Component.Animating
             //Don't run the rest if not in play mode.
             if (!ApplicationState.IsPlaying())
                 return;
-
+            
             if (!_canSynchronizeAnimator)
             {
                 //Debug.LogWarning("Animator is null or not enabled; unable to initialize for animator. Use SetAnimator if animator was changed or enable the animator.");
@@ -707,6 +740,15 @@ namespace FishNet.Component.Animating
                     _parameterDetails.Add(new(item, (byte)typeIndex));
                 }
             }
+        }
+        
+        /// <summary>
+        /// Sets synchronization state to NetworkAnimator. Enabled by default.
+        /// </summary>
+        /// <param name = "state"></param>
+        public void SetSynchronizationState(bool state)
+        {
+            _isSynchronizationEnabled = state;
         }
 
         /// <summary>
@@ -846,6 +888,7 @@ namespace FishNet.Component.Animating
 
                         SendSegment(new(buffer, 0, bufferLength));
                     }
+
                     //Reset client auth buffer.
                     _clientAuthoritativeUpdates.Reset();
                 }
@@ -978,6 +1021,7 @@ namespace FishNet.Component.Animating
                     _writer.WriteUInt8Unpacked(_triggerUpdates[i].ParameterIndex);
                     _writer.WriteBoolean(_triggerUpdates[i].Setting);
                 }
+
                 _triggerUpdates.Clear();
 
                 /* States. */
@@ -1069,7 +1113,7 @@ namespace FishNet.Component.Animating
                 //Nothing to update.
                 if (_writer.Position == 0)
                     return false;
-
+                
                 updatedBytes = _writer.GetArraySegment();
                 return true;
             }
@@ -1225,6 +1269,7 @@ namespace FishNet.Component.Animating
         /// Immediately sends all variables and states of layers.
         /// This is a very bandwidth intensive operation.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SendAll()
         {
             _forceAllOnTimed = true;
@@ -1234,6 +1279,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Play(string name)
         {
             Play(Animator.StringToHash(name));
@@ -1242,6 +1288,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Play(int hash)
         {
             for (int i = 0; i < _animator.layerCount; i++)
@@ -1251,6 +1298,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Play(string name, int layer)
         {
             Play(Animator.StringToHash(name), layer);
@@ -1259,6 +1307,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Play(int hash, int layer)
         {
             Play(hash, layer, 0f);
@@ -1267,6 +1316,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Play(string name, int layer, float normalizedTime)
         {
             Play(Animator.StringToHash(name), layer, normalizedTime);
@@ -1289,6 +1339,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PlayInFixedTime(string name, float fixedTime)
         {
             PlayInFixedTime(Animator.StringToHash(name), fixedTime);
@@ -1297,6 +1348,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PlayInFixedTime(int hash, float fixedTime)
         {
             for (int i = 0; i < _animator.layerCount; i++)
@@ -1306,6 +1358,7 @@ namespace FishNet.Component.Animating
         /// <summary>
         /// Plays a state.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void PlayInFixedTime(string name, int layer, float fixedTime)
         {
             PlayInFixedTime(Animator.StringToHash(name), layer, fixedTime);
@@ -1335,6 +1388,7 @@ namespace FishNet.Component.Animating
         /// <param name = "layer"></param>
         /// <param name = "normalizedTimeOffset"></param>
         /// <param name = "normalizedTransitionTime"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CrossFade(string stateName, float normalizedTransitionDuration, int layer, float normalizedTimeOffset = float.NegativeInfinity, float normalizedTransitionTime = 0.0f)
         {
             CrossFade(Animator.StringToHash(stateName), normalizedTransitionDuration, layer, normalizedTimeOffset, normalizedTransitionTime);
@@ -1367,6 +1421,7 @@ namespace FishNet.Component.Animating
         /// <param name = "layer"></param>
         /// <param name = "fixedTimeOffset"></param>
         /// <param name = "normalizedTransitionTime"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CrossFadeInFixedTime(string stateName, float fixedTransitionDuration, int layer, float fixedTimeOffset = 0.0f, float normalizedTransitionTime = 0.0f)
         {
             CrossFadeInFixedTime(Animator.StringToHash(stateName), fixedTransitionDuration, layer, fixedTimeOffset, normalizedTransitionTime);
@@ -1397,6 +1452,7 @@ namespace FishNet.Component.Animating
         /// Sets a trigger on the animator and sends it over the network.
         /// </summary>
         /// <param name = "hash"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetTrigger(int hash)
         {
             if (!_canSynchronizeAnimator)
@@ -1408,6 +1464,7 @@ namespace FishNet.Component.Animating
         /// Sets a trigger on the animator and sends it over the network.
         /// </summary>
         /// <param name = "hash"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetTrigger(string name)
         {
             SetTrigger(Animator.StringToHash(name));
@@ -1417,6 +1474,7 @@ namespace FishNet.Component.Animating
         /// Resets a trigger on the animator and sends it over the network.
         /// </summary>
         /// <param name = "hash"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ResetTrigger(int hash)
         {
             UpdateTrigger(hash, false);
@@ -1426,6 +1484,7 @@ namespace FishNet.Component.Animating
         /// Resets a trigger on the animator and sends it over the network.
         /// </summary>
         /// <param name = "hash"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ResetTrigger(string name)
         {
             ResetTrigger(Animator.StringToHash(name));

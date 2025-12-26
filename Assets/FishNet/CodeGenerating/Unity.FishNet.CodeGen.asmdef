@@ -4,7 +4,10 @@
     "references": [
         "FishNet.Runtime",
         "FishNet.Codegen.Cecil",
-        "GameKit.Dependencies"
+        "GameKit.Dependencies",
+        "Unity.Burst",
+        "Unity.Mathematics",
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"
