@@ -36,6 +36,5 @@ namespace FishNet.Component.ColliderRollback
         private GameObject[] _colliderParents = new GameObject[0];
 #pragma warning restore CS0414
         #endregion
-
         }
 }
