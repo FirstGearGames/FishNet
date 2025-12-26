@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
 {
@@ -16,16 +17,39 @@ namespace GameKit.Dependencies.Utilities
             angle = a.Angle(goal, true);
             return angle / (duration * interval);
         }
+        
+        /// <summary>
+        /// Returns how fast an object must rotate over duration to reach goal.
+        /// </summary>
+        /// <param name = "goal">Quaternion to measure distance against.</param>
+        /// <param name = "duration">How long it should take to move to goal.</param>
+        /// <param name = "interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
+        /// <returns></returns>
+        public static float GetRate(this quaternion a, quaternion goal, float duration, out float angle, uint interval = 1, float tolerance = 0f)
+        {
+            angle = a.Angle(goal, true);
+            return angle / (duration * interval);
+        }
 
         /// <summary>
         /// Subtracts b quaternion from a.
         /// </summary>
         public static Quaternion Subtract(this Quaternion a, Quaternion b) => Quaternion.Inverse(b) * a;
+        
+        /// <summary>
+        /// Subtracts b quaternion from a.
+        /// </summary>
+        public static quaternion Subtract(this quaternion a, quaternion b) => math.mul(math.inverse(b), a);
 
         /// <summary>
         /// Adds quaternion b onto quaternion a.
         /// </summary>
         public static Quaternion Add(this Quaternion a, Quaternion b) => a * b;
+        
+        /// <summary>
+        /// Adds quaternion b onto quaternion a.
+        /// </summary>
+        public static quaternion Add(this quaternion a, quaternion b) => math.mul(a, b);
 
         /// <summary>
         /// Returns if two quaternions match.
@@ -57,6 +81,27 @@ namespace GameKit.Dependencies.Utilities
             {
                 return Quaternion.Angle(a, b);
             }
+        }
+        
+        /// <summary>
+        /// Returns the angle between two quaterions.
+        /// </summary>
+        /// <param name = "precise">True to use a custom implementation with no error tolerance. False to use Unity's implementation which may return 0f due to error tolerance, even while there is a difference.</param>
+        /// <returns></returns>
+        public static float Angle(this quaternion a, quaternion b, bool precise = false)
+        {
+            if (!precise)
+            {
+                float d = math.dot(a.value, b.value);
+                float c = math.saturate(math.abs(d));
+                return math.degrees(2f * math.acos(c));
+            }
+
+            quaternion an = math.normalize(a);
+            quaternion bn = math.normalize(b);
+            float dn = math.dot(an.value, bn.value);
+            float cn = math.saturate(math.abs(dn));
+            return math.degrees(2f * math.acos(cn));
         }
     }
 }
