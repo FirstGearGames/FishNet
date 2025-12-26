@@ -13,7 +13,7 @@
 0.g "Purchaser" is a single individual which has acquired FishNet-Pro.
 
 
-1.a License Grant to the Software. FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce, modify, and use the Software for developed game, or other content with Software.
+1.a License Grant to the Software. Subject to the exclusions in Section 2.a, FirstGearGames grants to you a worldwide, non-exclusive, no-charge, and royalty-free license to reproduce, modify, and use the Software for developed game, or other content with Software.
 
 
 2.a Exclusions:
