@@ -197,6 +197,20 @@ namespace FishNet.Managing.Predicting
 
         #region Public.
         /// <summary>
+        /// Called before reconcile cycle begin.
+        /// </summary>
+        public event ReconcileBeginDel OnReconcileBegin;
+
+        public delegate void ReconcileBeginDel();
+
+        /// <summary>
+        /// Called after reconcile cycle end.
+        /// </summary>
+        public event ReconcileEndDel OnReconcileEnd;
+
+        public delegate void ReconcileEndDel();
+
+        /// <summary>
         /// Called before performing a reconcile. Contains the client and server tick the reconcile is for.
         /// </summary>
         public event PreReconcileDel OnPreReconcile;
@@ -408,7 +422,7 @@ namespace FishNet.Managing.Predicting
         private uint _lastOrderedReadReconcileTick;
         /// <summary>
         /// </summary>
-        private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
         /// <summary>
         /// 
         /// </summary>
@@ -426,6 +440,9 @@ namespace FishNet.Managing.Predicting
         
         #region Private Profiler Markers
         
+        private static readonly ProfilerMarker _pm_ReconcileToStates = new ProfilerMarker("PredictionManager.ReconcileToStates()");
+        private static readonly ProfilerMarker _pm_OnReconcileBegin = new ProfilerMarker("PredictionManager.OnReconcileBegin()");
+        private static readonly ProfilerMarker _pm_OnReconcileEnd = new ProfilerMarker("PredictionManager.OnReconcileEnd()");
         private static readonly ProfilerMarker _pm_OnLateUpdate = new("PredictionManager.TimeManager_OnLateUpdate()");
         private static readonly ProfilerMarker _pm_OnPreReconcile = new("PredictionManager.OnPreReconcile(uint, uint)");
         private static readonly ProfilerMarker _pm_OnReconcile = new("PredictionManager.OnReconcile(uint, uint)");
@@ -586,185 +603,197 @@ namespace FishNet.Managing.Predicting
         /// </summary>
         internal void ReconcileToStates()
         {
-            if (!_networkManager.IsClientStarted)
-                return;
-
-            // Creates a local state update if one is not available in reconcile states.
-            //   CreateLocalStateUpdate();
-
-            // If there are no states then guestimate the next state.
-            if (_reconcileStates.Count == 0)
-                return;
-
-            TimeManager tm = _networkManager.TimeManager;
-            uint localTick = tm.LocalTick;
-            uint estimatedLastRemoteTick = tm.LastPacketTick.Value();
-
-            /* When there is an excessive amount of states try to consume
-             * some.This only happens when the client gets really far behind
-             * and has to catch up, such as a latency increase then drop.
-             * Limit the number of states consumed per tick so the clients
-             * computer doesn't catch fire. */
-            int iterations = 0;
-
-            while (_reconcileStates.Count > 0)
+            using (_pm_ReconcileToStates.Auto())
             {
-                iterations++;
-                /* Typically there should only be 'interpolation' amount in queue but
-                 * there can be more if the clients network is unstable and they are
-                 * arriving in burst.
-                 * If there's more than interpolation (+1 for as a leniency buffer) then begin to
-                 * consume multiple. */
-                byte stateInterpolation = StateInterpolation;
-                int maxIterations = _reconcileStates.Count > stateInterpolation + 1 ? 2 : 1;
-                // At most 2 iterations.
-                if (iterations > maxIterations)
+                if (!_networkManager.IsClientStarted)
                     return;
 
-                StatePacket sp;
-                if (!ConditionsMet(_reconcileStates.Peek()))
+                // Creates a local state update if one is not available in reconcile states.
+                //   CreateLocalStateUpdate();
+
+                // If there are no states then guestimate the next state.
+                if (_reconcileStates.Count == 0)
                     return;
-                else
-                    sp = _reconcileStates.Dequeue();
 
-                // Condition met. See if the next one matches condition, if so drop current.
-                // Returns if a state has it's conditions met.
-                bool ConditionsMet(StatePacket spChecked)
+                TimeManager tm = _networkManager.TimeManager;
+                uint localTick = tm.LocalTick;
+                uint estimatedLastRemoteTick = tm.LastPacketTick.Value();
+
+                /* When there is an excessive amount of states try to consume
+                 * some.This only happens when the client gets really far behind
+                 * and has to catch up, such as a latency increase then drop.
+                 * Limit the number of states consumed per tick so the clients
+                 * computer doesn't catch fire. */
+                int iterations = 0;
+
+                using (_pm_OnReconcileBegin.Auto())
+                    OnReconcileBegin?.Invoke();
+
+                while (_reconcileStates.Count > 0)
                 {
-                    if (spChecked == null)
-                        return false;
+                    iterations++;
+                    /* Typically there should only be 'interpolation' amount in queue but
+                     * there can be more if the clients network is unstable and they are
+                     * arriving in burst.
+                     * If there's more than interpolation (+1 for as a leniency buffer) then begin to
+                     * consume multiple. */
+                    byte stateInterpolation = StateInterpolation;
+                    int maxIterations = _reconcileStates.Count > stateInterpolation + 1 ? 2 : 1;
+                    // At most 2 iterations.
+                    if (iterations > maxIterations)
+                        return;
 
-                    /* varianceAllowance gives a few ticks to provide opportunity for late
-                     * packets to arrive. This adds on varianceAllowance to replays but greatly
-                     * increases the chances of the state being received before skipping past it
-                     * in a replay.
-                     *
-                     * When using Inserted (not AppendedStateOrder) there does not need to be any
-                     * additional allowance since there is no extra queue like appended, they rather just
-                     * go right into the past. */
-                    uint varianceAllowance = IsAppendedStateOrder ? (uint)2 : (uint)0;
-                    uint serverTickDifferenceRequirement = varianceAllowance + stateInterpolation;
+                    StatePacket sp;
+                    if (!ConditionsMet(_reconcileStates.Peek()))
+                        return;
+                    else
+                        sp = _reconcileStates.Dequeue();
 
-                    bool serverPass = spChecked.ServerTick < estimatedLastRemoteTick - serverTickDifferenceRequirement;
-                    bool clientPass = spChecked.ClientTick < localTick - stateInterpolation;
-
-                    return serverPass && clientPass;
-                }
-
-                bool dropReconcile = false;
-                uint clientTick = sp.ClientTick;
-                uint serverTick = sp.ServerTick;
-
-                //Check to throttle reconciles.
-                if (_reduceReconcilesWithFramerate && !_clientReconcileThrottler.TryReconcile(_minimumClientReconcileFramerate))
-                    dropReconcile = true;
-
-                if (!dropReconcile)
-                {
-                    IsReconciling = true;
-                    _lastStatePacketTick.Update(clientTick, serverTick);
-
-                    ClientStateTick = clientTick;
-                    /* This is the tick which the reconcile is for.
-                     * Since reconciles are performed after replicate, if
-                     * the replicate was on tick 100 then this reconcile is the state
-                     * on tick 100, after the replicate is performed. */
-                    ServerStateTick = serverTick;
-
-                    // Have the reader get processed.
-                    foreach (StatePacket.IncomingData item in sp.Datas)
+                    // Condition met. See if the next one matches condition, if so drop current.
+                    // Returns if a state has it's conditions met.
+                    bool ConditionsMet(StatePacket spChecked)
                     {
-                        // // If data isn't set skip it. This can be true if a locally generated state packet.
-                        // if (item.Data.Array == null)
-                        //     continue;
+                        if (spChecked == null)
+                            return false;
 
-                        PooledReader reader = ReaderPool.Retrieve(item.Data, _networkManager, Reader.DataSource.Server);
-                        _networkManager.ClientManager.ParseReader(reader, item.Channel);
-                        ReaderPool.Store(reader);
+                        /* varianceAllowance gives a few ticks to provide opportunity for late
+                         * packets to arrive. This adds on varianceAllowance to replays but greatly
+                         * increases the chances of the state being received before skipping past it
+                         * in a replay.
+                         *
+                         * When using Inserted (not AppendedStateOrder) there does not need to be any
+                         * additional allowance since there is no extra queue like appended, they rather just
+                         * go right into the past. */
+                        uint varianceAllowance = IsAppendedStateOrder ? (uint)2 : (uint)0;
+                        uint serverTickDifferenceRequirement = varianceAllowance + stateInterpolation;
+
+                        bool serverPass = spChecked.ServerTick <
+                            estimatedLastRemoteTick - serverTickDifferenceRequirement;
+                        bool clientPass = spChecked.ClientTick < localTick - stateInterpolation;
+
+                        return serverPass && clientPass;
                     }
 
-                    bool timeManagerPhysics = tm.PhysicsMode == PhysicsMode.TimeManager;
-                    float tickDelta = (float)tm.TickDelta * _networkManager.TimeManager.GetPhysicsTimeScale();
-                    
-                    using (_pm_OnPreReconcile.Auto())
-                    {
-                        OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
-                    }
-                    
-                    using (_pm_OnReconcile.Auto())
-                    {
-                        OnReconcile?.Invoke(ClientStateTick, ServerStateTick);
-                    }
+                    bool dropReconcile = false;
+                    uint clientTick = sp.ClientTick;
+                    uint serverTick = sp.ServerTick;
 
-                    if (timeManagerPhysics)
+                    //Check to throttle reconciles.
+                    if (_reduceReconcilesWithFramerate &&
+                        !_clientReconcileThrottler.TryReconcile(_minimumClientReconcileFramerate))
+                        dropReconcile = true;
+
+                    if (!dropReconcile)
                     {
-                        using (_pm_OnPrePhysicsTransformSync.Auto())
-                            OnPrePhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
-                        
-                        using (_pm_PhysicsSyncTransforms.Auto())
-                            Physics.SyncTransforms();
-                        
-                        using (_pm_Physics2DSyncTransforms.Auto())
-                            Physics2D.SyncTransforms();
-                        
-                        using (_pm_OnPostPhysicsTransformSync.Auto())
-                            OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
-                    }
+                        IsReconciling = true;
+                        _lastStatePacketTick.Update(clientTick, serverTick);
 
-                    using (_pm_OnPostReconcileSyncTransforms.Auto())
-                        OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
+                        ClientStateTick = clientTick;
+                        /* This is the tick which the reconcile is for.
+                         * Since reconciles are performed after replicate, if
+                         * the replicate was on tick 100 then this reconcile is the state
+                         * on tick 100, after the replicate is performed. */
+                        ServerStateTick = serverTick;
 
-                    /* Set first replicate to be the 1 tick
-                     * after reconcile. This is because reconcile calcs
-                     * should be performed after replicate has run.
-                     * In result object will reconcile to data AFTER
-                     * the replicate tick, and then run remaining replicates as replay.
-                     *
-                     * Replay up to localtick, excluding localtick. There will
-                     * be no input for localtick since reconcile runs before
-                     * OnTick. */
-                    ClientReplayTick = ClientStateTick + 1;
-                    ServerReplayTick = ServerStateTick + 1;
-
-                    /* Only replay up to but excluding local tick.
-                     * This prevents client from running 1 local tick into the future
-                     * since the OnTick has not run yet.
-                     *
-                     * EG: if localTick is 100 replay will run up to 99, then OnTick
-                     * will fire for 100.                     */
-                    while (ClientReplayTick < localTick)
-                    {
-                        using (_pm_OnPreReplicateReplay.Auto())
-                            OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        using (_pm_OnReplicateReplay.Auto())
-                            OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        
-                        if (timeManagerPhysics && tickDelta > 0f)
+                        // Have the reader get processed.
+                        foreach (StatePacket.IncomingData item in sp.Datas)
                         {
-                            using (_pm_PhysicsSimulate.Auto())
-                                Physics.Simulate(tickDelta);
-                            using (_pm_Physics2DSimulate.Auto())
-                                Physics2D.Simulate(tickDelta);
+                            // // If data isn't set skip it. This can be true if a locally generated state packet.
+                            // if (item.Data.Array == null)
+                            //     continue;
+
+                            PooledReader reader =
+                                ReaderPool.Retrieve(item.Data, _networkManager, Reader.DataSource.Server);
+                            _networkManager.ClientManager.ParseReader(reader, item.Channel);
+                            ReaderPool.Store(reader);
                         }
-                        
-                        using (_pm_OnPostReplicateReplay.Auto())
-                            OnPostReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
-                        
-                        ClientReplayTick++;
-                        ServerReplayTick++;
+
+                        bool timeManagerPhysics = tm.PhysicsMode == PhysicsMode.TimeManager;
+                        float tickDelta = (float)tm.TickDelta * _networkManager.TimeManager.GetPhysicsTimeScale();
+
+                        using (_pm_OnPreReconcile.Auto())
+                        {
+                            OnPreReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                        }
+
+                        using (_pm_OnReconcile.Auto())
+                        {
+                            OnReconcile?.Invoke(ClientStateTick, ServerStateTick);
+                        }
+
+                        if (timeManagerPhysics)
+                        {
+                            using (_pm_OnPrePhysicsTransformSync.Auto())
+                                OnPrePhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
+
+                            using (_pm_PhysicsSyncTransforms.Auto())
+                                Physics.SyncTransforms();
+
+                            using (_pm_Physics2DSyncTransforms.Auto())
+                                Physics2D.SyncTransforms();
+
+                            using (_pm_OnPostPhysicsTransformSync.Auto())
+                                OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
+                        }
+
+                        using (_pm_OnPostReconcileSyncTransforms.Auto())
+                            OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
+
+                        /* Set first replicate to be the 1 tick
+                         * after reconcile. This is because reconcile calcs
+                         * should be performed after replicate has run.
+                         * In result object will reconcile to data AFTER
+                         * the replicate tick, and then run remaining replicates as replay.
+                         *
+                         * Replay up to localtick, excluding localtick. There will
+                         * be no input for localtick since reconcile runs before
+                         * OnTick. */
+                        ClientReplayTick = ClientStateTick + 1;
+                        ServerReplayTick = ServerStateTick + 1;
+
+                        /* Only replay up to but excluding local tick.
+                         * This prevents client from running 1 local tick into the future
+                         * since the OnTick has not run yet.
+                         *
+                         * EG: if localTick is 100 replay will run up to 99, then OnTick
+                         * will fire for 100.                     */
+                        while (ClientReplayTick < localTick)
+                        {
+                            using (_pm_OnPreReplicateReplay.Auto())
+                                OnPreReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+                            using (_pm_OnReplicateReplay.Auto())
+                                OnReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+
+                            if (timeManagerPhysics && tickDelta > 0f)
+                            {
+                                using (_pm_PhysicsSimulate.Auto())
+                                    Physics.Simulate(tickDelta);
+                                using (_pm_Physics2DSimulate.Auto())
+                                    Physics2D.Simulate(tickDelta);
+                            }
+
+                            using (_pm_OnPostReplicateReplay.Auto())
+                                OnPostReplicateReplay?.Invoke(ClientReplayTick, ServerReplayTick);
+
+                            ClientReplayTick++;
+                            ServerReplayTick++;
+                        }
+
+                        using (_pm_OnPostReconcile.Auto())
+                            OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
+
+                        // ClientStateTick = TimeManager.UNSET_TICK;
+                        // ServerStateTick = TimeManager.UNSET_TICK;
+                        ClientReplayTick = TimeManager.UNSET_TICK;
+                        ServerReplayTick = TimeManager.UNSET_TICK;
+                        IsReconciling = false;
                     }
 
-                    using (_pm_OnPostReconcile.Auto())
-                        OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
-                    
-                    // ClientStateTick = TimeManager.UNSET_TICK;
-                    // ServerStateTick = TimeManager.UNSET_TICK;
-                    ClientReplayTick = TimeManager.UNSET_TICK;
-                    ServerReplayTick = TimeManager.UNSET_TICK;
-                    IsReconciling = false;
+                    DisposeOfStatePacket(sp);
                 }
 
-                DisposeOfStatePacket(sp);
+                using (_pm_OnReconcileEnd.Auto())
+                    OnReconcileEnd?.Invoke();
             }
         }
 
