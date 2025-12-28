@@ -29,10 +29,10 @@ namespace FishNet.Component.Transforming.Beta
         private static readonly ProfilerMarker _pm_Prediction_OnPostReplicateReplay                 = new("TickSmoothingManager.Prediction_OnPostReplicateReplay()");
         private static readonly ProfilerMarker _pm_TimeManager_OnRoundTripTimeUpdated               = new("TickSmoothingManager.TimeManager_OnRoundTripTimeUpdated()");
         private static readonly ProfilerMarker _pm_MoveToTarget                                     = new("TickSmoothingManager.MoveToTarget()");
-        private static readonly ProfilerMarker _pm_ScheduleUpdateRealtimeInterpolation              = new("TickSmoothingManager.UpdateRealtimeInterpolation()");
-        private static readonly ProfilerMarker _pm_ScheduleDiscardExcessiveTransformPropertiesQueue = new("TickSmoothingManager.DiscardExcessiveTransformPropertiesQueue()");
-        private static readonly ProfilerMarker _pm_ScheduleSetMoveRates                             = new("TickSmoothingManager.SetMoveRates()");
-        private static readonly ProfilerMarker _pm_ScheduleSetMovementMultiplier                    = new("TickSmoothingManager.SetMovementMultiplier()");
+        private static readonly ProfilerMarker _pm_ScheduleUpdateRealtimeInterpolation              = new("TickSmoothingManager.ScheduleUpdateRealtimeInterpolation()");
+        private static readonly ProfilerMarker _pm_ScheduleDiscardExcessiveTransformPropertiesQueue = new("TickSmoothingManager.ScheduleDiscardExcessiveTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_ScheduleSetMoveRates                             = new("TickSmoothingManager.ScheduleSetMoveRates()");
+        private static readonly ProfilerMarker _pm_ScheduleSetMovementMultiplier                    = new("TickSmoothingManager.ScheduleSetMovementMultiplier()");
         private static readonly ProfilerMarker _pm_ScheduleAddTransformProperties                   = new("TickSmoothingManager.ScheduleAddTransformProperties()");
         private static readonly ProfilerMarker _pm_ScheduleClearTransformPropertiesQueue            = new("TickSmoothingManager.ScheduleClearTransformPropertiesQueue()");
         private static readonly ProfilerMarker _pm_ScheduleModifyTransformProperties                = new("TickSmoothingManager.ScheduleModifyTransformProperties()");
