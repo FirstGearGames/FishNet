@@ -34,6 +34,11 @@ namespace FishNet.Component.Transforming.Beta
         [Tooltip("Properties to smooth. Any value not selected will become offset with every movement.")]
         public TransformPropertiesFlag SmoothedProperties;
         /// <summary>
+        /// True to apply smoothing in local space for position and rotation. False to use world space.
+        /// </summary>
+        [Tooltip("True to apply smoothing in local space for position and rotation. False to use world space.")]
+        public bool UseLocalSpace;
+        /// <summary>
         /// True to keep non-smoothed properties at their original localspace every tick. A false value will keep the properties in the same world space as they were before each tick.
         /// </summary>
         [Tooltip("True to keep non-smoothed properties at their original localspace every tick. A false value will keep the properties in the same world space as they were before each tick.")]
@@ -46,6 +51,7 @@ namespace FishNet.Component.Transforming.Beta
             AdaptiveInterpolationValue = AdaptiveInterpolationType.Off;
             InterpolationValue = 2;
             SmoothedProperties = TransformPropertiesFlag.Everything;
+            UseLocalSpace = false;
             SnapNonSmoothedProperties = false;
         }
     }
