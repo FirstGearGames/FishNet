@@ -507,7 +507,7 @@ namespace FishNet.Object.Prediction
             if (worldSpace)
                 t.SetPositionAndRotation(pos, rot);
             else
-                t.SetLocalPositionAndRotation(pos, rot);
+                t.SetCorrectLocalPositionAndRotation(pos, rot);
         }
     }
 
