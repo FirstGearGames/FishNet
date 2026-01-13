@@ -69,8 +69,8 @@ namespace MonoFN.Cecil.PE
 
         public int GetCodedIndexSize(CodedIndex coded_index)
         {
-            var index = (int)coded_index;
-            var size = coded_index_sizes[index];
+            int index = (int)coded_index;
+            int size = coded_index_sizes[index];
             if (size != 0)
                 return size;
 
@@ -79,7 +79,7 @@ namespace MonoFN.Cecil.PE
 
         public uint ResolveVirtualAddress(RVA rva)
         {
-            var section = GetSectionAtVirtualAddress(rva);
+            Section section = GetSectionAtVirtualAddress(rva);
             if (section == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -93,10 +93,10 @@ namespace MonoFN.Cecil.PE
 
         public Section GetSection(string name)
         {
-            var sections = Sections;
+            Section[] sections = Sections;
             for (int i = 0; i < sections.Length; i++)
             {
-                var section = sections[i];
+                Section section = sections[i];
                 if (section.Name == name)
                     return section;
             }
@@ -106,10 +106,10 @@ namespace MonoFN.Cecil.PE
 
         public Section GetSectionAtVirtualAddress(RVA rva)
         {
-            var sections = Sections;
+            Section[] sections = Sections;
             for (int i = 0; i < sections.Length; i++)
             {
-                var section = sections[i];
+                Section section = sections[i];
                 if (rva >= section.VirtualAddress && rva < section.VirtualAddress + section.SizeOfRawData)
                     return section;
             }
@@ -119,21 +119,21 @@ namespace MonoFN.Cecil.PE
 
         private BinaryStreamReader GetReaderAt(RVA rva)
         {
-            var section = GetSectionAtVirtualAddress(rva);
+            Section section = GetSectionAtVirtualAddress(rva);
             if (section == null)
                 return null;
 
-            var reader = new BinaryStreamReader(Stream.value);
+            BinaryStreamReader reader = new(Stream.value);
             reader.MoveTo(ResolveVirtualAddressInSection(rva, section));
             return reader;
         }
 
         public TRet GetReaderAt<TItem, TRet>(RVA rva, TItem item, Func<TItem, BinaryStreamReader, TRet> read) where TRet : class
         {
-            var position = Stream.value.Position;
+            long position = Stream.value.Position;
             try
             {
-                var reader = GetReaderAt(rva);
+                BinaryStreamReader reader = GetReaderAt(rva);
                 if (reader == null)
                     return null;
 

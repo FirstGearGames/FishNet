@@ -64,7 +64,7 @@ namespace MonoFN.Cecil.PE
 
         public DataDirectory GetDataDirectory(TextSegment segment)
         {
-            var range = map[(int)segment];
+            Range range = map[(int)segment];
 
             return new(range.Length == 0 ? 0 : range.Start, range.Length);
         }
@@ -76,7 +76,7 @@ namespace MonoFN.Cecil.PE
 
         public RVA GetNextRVA(TextSegment segment)
         {
-            var i = (int)segment;
+            int i = (int)segment;
             return map[i].Start + map[i].Length;
         }
 
@@ -87,7 +87,7 @@ namespace MonoFN.Cecil.PE
 
         private RVA GetStart(TextSegment segment)
         {
-            var index = (int)segment;
+            int index = (int)segment;
             return index == 0 ? ImageWriter.text_rva : ComputeStart(index);
         }
 
@@ -99,7 +99,7 @@ namespace MonoFN.Cecil.PE
 
         public uint GetLength()
         {
-            var range = map[(int)TextSegment.StartupStub];
+            Range range = map[(int)TextSegment.StartupStub];
             return range.Start - ImageWriter.text_rva + range.Length;
         }
     }

@@ -859,7 +859,13 @@ namespace FishNet.Component.Transforming
                         _initializedRigidbodyInterpolation2d = c.interpolation;
 
                     bool isKinematic = CanMakeKinematic();
+                    
+                    #if UNITY_6000_1_OR_NEWER
+                    c.bodyType = isKinematic ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
+                    #else
                     c.isKinematic = isKinematic;
+                    #endif
+                    
                     c.simulated = !isKinematic;
 
                     if (isKinematic)

@@ -1133,7 +1133,7 @@ namespace FishNet.Serializing
         /// <param name = "value"> </param>
         public void WriteUnsignedPackedWhole(ulong value)
         {
-            EnsureBufferLength(9);
+            EnsureBufferLength(10);
             while (value > 127)
             {
                 _buffer[Position++] = (byte)((value & 0x7F) | 0x80);

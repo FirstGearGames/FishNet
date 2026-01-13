@@ -67,16 +67,16 @@ namespace MonoFN.Cecil.Cil
 
         private RVA WriteUnresolvedMethodBody(MethodDefinition method)
         {
-            var code_reader = metadata.module.reader.code;
+            CodeReader code_reader = metadata.module.reader.code;
 
             int code_size;
             MetadataToken local_var_token;
-            var raw_body = code_reader.PatchRawMethodBody(method, this, out code_size, out local_var_token);
-            var fat_header = (raw_body.buffer[0] & 0x3) == 0x3;
+            ByteBuffer raw_body = code_reader.PatchRawMethodBody(method, this, out code_size, out local_var_token);
+            bool fat_header = (raw_body.buffer[0] & 0x3) == 0x3;
             if (fat_header)
                 Align(4);
 
-            var rva = BeginMethod();
+            RVA rva = BeginMethod();
 
             if (fat_header || !GetOrMapTinyMethodBody(raw_body, ref rva))
             {
@@ -86,7 +86,7 @@ namespace MonoFN.Cecil.Cil
             if (method.debug_info == null)
                 return rva;
 
-            var symbol_writer = metadata.symbol_writer;
+            ISymbolWriter symbol_writer = metadata.symbol_writer;
             if (symbol_writer != null)
             {
                 method.debug_info.code_size = code_size;
@@ -119,9 +119,9 @@ namespace MonoFN.Cecil.Cil
                 WriteByte((byte)(0x2 | (body.CodeSize << 2))); // tiny
                 WriteInstructions();
 
-                var start_position = (int)(rva - code_base);
-                var body_size = position - start_position;
-                var body_bytes = new byte [body_size];
+                int start_position = (int)(rva - code_base);
+                int body_size = position - start_position;
+                byte[] body_bytes = new byte [body_size];
 
                 Array.Copy(buffer, start_position, body_bytes, 0, body_size);
 
@@ -129,7 +129,7 @@ namespace MonoFN.Cecil.Cil
                     position = start_position;
             }
 
-            var symbol_writer = metadata.symbol_writer;
+            ISymbolWriter symbol_writer = metadata.symbol_writer;
             if (symbol_writer != null && method.debug_info != null)
             {
                 method.debug_info.code_size = body.CodeSize;
@@ -155,7 +155,7 @@ namespace MonoFN.Cecil.Cil
 
         private void WriteFatHeader()
         {
-            var body = this.body;
+            MethodBody body = this.body;
             byte flags = 0x3; // fat
             if (body.InitLocals)
                 flags |= 0x10; // init locals
@@ -172,13 +172,13 @@ namespace MonoFN.Cecil.Cil
 
         private void WriteInstructions()
         {
-            var instructions = body.Instructions;
-            var items = instructions.items;
-            var size = instructions.size;
+            Collection<Instruction> instructions = body.Instructions;
+            Instruction[] items = instructions.items;
+            int size = instructions.size;
 
             for (int i = 0; i < size; i++)
             {
-                var instruction = items[i];
+                Instruction instruction = items[i];
                 WriteOpCode(instruction.opcode);
                 WriteOperand(instruction);
             }
@@ -199,12 +199,12 @@ namespace MonoFN.Cecil.Cil
 
         private void WriteOperand(Instruction instruction)
         {
-            var opcode = instruction.opcode;
-            var operand_type = opcode.OperandType;
+            OpCode opcode = instruction.opcode;
+            OperandType operand_type = opcode.OperandType;
             if (operand_type == OperandType.InlineNone)
                 return;
 
-            var operand = instruction.operand;
+            object operand = instruction.operand;
             if (operand == null && !(operand_type == OperandType.InlineBrTarget || operand_type == OperandType.ShortInlineBrTarget))
             {
                 throw new ArgumentException();
@@ -214,24 +214,24 @@ namespace MonoFN.Cecil.Cil
             {
                 case OperandType.InlineSwitch:
                 {
-                    var targets = (Instruction[])operand;
+                    Instruction[] targets = (Instruction[])operand;
                     WriteInt32(targets.Length);
-                    var diff = instruction.Offset + opcode.Size + 4 * (targets.Length + 1);
+                    int diff = instruction.Offset + opcode.Size + 4 * (targets.Length + 1);
                     for (int i = 0; i < targets.Length; i++)
                         WriteInt32(GetTargetOffset(targets[i]) - diff);
                     break;
                 }
                 case OperandType.ShortInlineBrTarget:
                 {
-                    var target = (Instruction)operand;
-                    var offset = target != null ? GetTargetOffset(target) : body.code_size;
+                    Instruction target = (Instruction)operand;
+                    int offset = target != null ? GetTargetOffset(target) : body.code_size;
                     WriteSByte((sbyte)(offset - (instruction.Offset + opcode.Size + 1)));
                     break;
                 }
                 case OperandType.InlineBrTarget:
                 {
-                    var target = (Instruction)operand;
-                    var offset = target != null ? GetTargetOffset(target) : body.code_size;
+                    Instruction target = (Instruction)operand;
+                    int offset = target != null ? GetTargetOffset(target) : body.code_size;
                     WriteInt32(offset - (instruction.Offset + opcode.Size + 4));
                     break;
                 }
@@ -286,7 +286,7 @@ namespace MonoFN.Cecil.Cil
         {
             if (instruction == null)
             {
-                var last = body.instructions[body.instructions.size - 1];
+                Instruction last = body.instructions[body.instructions.size - 1];
                 return last.offset + last.GetSize();
             }
 
@@ -321,18 +321,18 @@ namespace MonoFN.Cecil.Cil
 
         private bool RequiresFatHeader()
         {
-            var body = this.body;
+            MethodBody body = this.body;
             return body.CodeSize >= 64 || body.InitLocals || body.HasVariables || body.HasExceptionHandlers || body.MaxStackSize > 8;
         }
 
         private void ComputeHeader()
         {
             int offset = 0;
-            var instructions = body.instructions;
-            var items = instructions.items;
-            var count = instructions.size;
-            var stack_size = 0;
-            var max_stack = 0;
+            Collection<Instruction> instructions = body.instructions;
+            Instruction[] items = instructions.items;
+            int count = instructions.size;
+            int stack_size = 0;
+            int max_stack = 0;
             Dictionary<Instruction, int> stack_sizes = null;
 
             if (body.HasExceptionHandlers)
@@ -340,7 +340,7 @@ namespace MonoFN.Cecil.Cil
 
             for (int i = 0; i < count; i++)
             {
-                var instruction = items[i];
+                Instruction instruction = items[i];
                 instruction.offset = offset;
                 offset += instruction.GetSize();
 
@@ -353,11 +353,11 @@ namespace MonoFN.Cecil.Cil
 
         private void ComputeExceptionHandlerStackSize(ref Dictionary<Instruction, int> stack_sizes)
         {
-            var exception_handlers = body.ExceptionHandlers;
+            Collection<ExceptionHandler> exception_handlers = body.ExceptionHandlers;
 
             for (int i = 0; i < exception_handlers.Count; i++)
             {
-                var exception_handler = exception_handlers[i];
+                ExceptionHandler exception_handler = exception_handlers[i];
 
                 switch (exception_handler.HandlerType)
                 {
@@ -409,7 +409,7 @@ namespace MonoFN.Cecil.Cil
                     CopyBranchStackSize(ref stack_sizes, (Instruction)instruction.operand, stack_size);
                     break;
                 case OperandType.InlineSwitch:
-                    var targets = (Instruction[])instruction.operand;
+                    Instruction[] targets = (Instruction[])instruction.operand;
                     for (int i = 0; i < targets.Length; i++)
                         CopyBranchStackSize(ref stack_sizes, targets[i], stack_size);
                     break;
@@ -448,7 +448,7 @@ namespace MonoFN.Cecil.Cil
             {
                 case FlowControl.Call:
                 {
-                    var method = (IMethodSignature)instruction.operand;
+                    IMethodSignature method = (IMethodSignature)instruction.operand;
                     // pop 'this' argument
                     if (method.HasImplicitThis() && instruction.opcode.Code != Code.Newobj)
                         stack_size--;
@@ -525,7 +525,7 @@ namespace MonoFN.Cecil.Cil
         {
             Align(4);
 
-            var handlers = body.ExceptionHandlers;
+            Collection<ExceptionHandler> handlers = body.ExceptionHandlers;
 
             if (handlers.Count < 0x15 && !RequiresFatSection(handlers))
                 WriteSmallSection(handlers);
@@ -537,7 +537,7 @@ namespace MonoFN.Cecil.Cil
         {
             for (int i = 0; i < handlers.Count; i++)
             {
-                var handler = handlers[i];
+                ExceptionHandler handler = handlers[i];
 
                 if (IsFatRange(handler.TryStart, handler.TryEnd))
                     return true;
@@ -593,7 +593,7 @@ namespace MonoFN.Cecil.Cil
         {
             for (int i = 0; i < handlers.Count; i++)
             {
-                var handler = handlers[i];
+                ExceptionHandler handler = handlers[i];
 
                 write_entry((int)handler.HandlerType);
 
@@ -625,15 +625,15 @@ namespace MonoFN.Cecil.Cil
 
         public MetadataToken GetStandAloneSignature(Collection<VariableDefinition> variables)
         {
-            var signature = metadata.GetLocalVariableBlobIndex(variables);
+            uint signature = metadata.GetLocalVariableBlobIndex(variables);
 
             return GetStandAloneSignatureToken(signature);
         }
 
         public MetadataToken GetStandAloneSignature(CallSite call_site)
         {
-            var signature = metadata.GetCallSiteBlobIndex(call_site);
-            var token = GetStandAloneSignatureToken(signature);
+            uint signature = metadata.GetCallSiteBlobIndex(call_site);
+            MetadataToken token = GetStandAloneSignatureToken(signature);
             call_site.MetadataToken = token;
             return token;
         }

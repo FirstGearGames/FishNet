@@ -75,8 +75,8 @@ namespace MonoFN.Cecil.PE
         public void Align(int align)
         {
             align--;
-            var position = Position;
-            var bytes = ((position + align) & ~align) - position;
+            int position = Position;
+            int bytes = ((position + align) & ~align) - position;
 
             for (int i = 0; i < bytes; i++)
                 WriteByte(0);

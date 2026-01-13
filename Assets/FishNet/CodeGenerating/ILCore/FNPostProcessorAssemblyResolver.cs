@@ -33,29 +33,29 @@ namespace FishNet.CodeGenerating
                     return m_SelfAssembly;
                 }
 
-                var fileName = FindFile(name);
+                string fileName = FindFile(name);
                 if (fileName == null)
                 {
                     return null;
                 }
 
-                var lastWriteTime = File.GetLastWriteTime(fileName);
-                var cacheKey = $"{fileName}{lastWriteTime}";
-                if (m_AssemblyCache.TryGetValue(cacheKey, out var result))
+                DateTime lastWriteTime = File.GetLastWriteTime(fileName);
+                string cacheKey = $"{fileName}{lastWriteTime}";
+                if (m_AssemblyCache.TryGetValue(cacheKey, out AssemblyDefinition result))
                 {
                     return result;
                 }
 
                 parameters.AssemblyResolver = this;
 
-                var ms = MemoryStreamFor(fileName);
-                var pdb = $"{fileName}.pdb";
+                MemoryStream ms = MemoryStreamFor(fileName);
+                string pdb = $"{fileName}.pdb";
                 if (File.Exists(pdb))
                 {
                     parameters.SymbolStream = MemoryStreamFor(pdb);
                 }
 
-                var assemblyDefinition = AssemblyDefinition.ReadAssembly(ms, parameters);
+                AssemblyDefinition assemblyDefinition = AssemblyDefinition.ReadAssembly(ms, parameters);
                 m_AssemblyCache.Add(cacheKey, assemblyDefinition);
 
                 return assemblyDefinition;
@@ -64,7 +64,7 @@ namespace FishNet.CodeGenerating
 
         private string FindFile(AssemblyNameReference name)
         {
-            var fileName = m_AssemblyReferences.FirstOrDefault(r => Path.GetFileName(r) == $"{name.Name}.dll");
+            string fileName = m_AssemblyReferences.FirstOrDefault(r => Path.GetFileName(r) == $"{name.Name}.dll");
             if (fileName != null)
             {
                 return fileName;
@@ -92,10 +92,10 @@ namespace FishNet.CodeGenerating
             return Retry(10, TimeSpan.FromSeconds(1), () =>
             {
                 byte[] byteArray;
-                using (var fs = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (FileStream fs = new(fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     byteArray = new byte[fs.Length];
-                    var readLength = fs.Read(byteArray, 0, (int)fs.Length);
+                    int readLength = fs.Read(byteArray, 0, (int)fs.Length);
                     if (readLength != fs.Length)
                     {
                         throw new InvalidOperationException("File read length is not full length of file.");

@@ -27,7 +27,7 @@ namespace MonoFN.Cecil.Metadata
             if (length > data.Length - position)
                 return Empty<byte>.Array;
 
-            var buffer = new byte [length];
+            byte[] buffer = new byte [length];
 
             Buffer.BlockCopy(data, position, buffer, 0, length);
 

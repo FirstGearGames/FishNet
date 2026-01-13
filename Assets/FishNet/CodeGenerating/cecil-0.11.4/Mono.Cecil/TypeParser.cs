@@ -11,6 +11,7 @@
 using MonoFN.Cecil.Metadata;
 using System;
 using System.Text;
+using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil
 {
@@ -41,7 +42,7 @@ namespace MonoFN.Cecil
 
         private Type ParseType(bool fq_name)
         {
-            var type = new Type();
+            Type type = new();
             type.type_fullname = ParsePart();
 
             type.nested_names = ParseNestedNames();
@@ -63,7 +64,7 @@ namespace MonoFN.Cecil
 
             TryAddArity(type.type_fullname, ref arity);
 
-            var nested_names = type.nested_names;
+            string[] nested_names = type.nested_names;
             if (!nested_names.IsNullOrEmpty())
             {
                 for (int i = 0; i < nested_names.Length; i++)
@@ -77,7 +78,7 @@ namespace MonoFN.Cecil
         private static bool TryGetArity(string name, out int arity)
         {
             arity = 0;
-            var index = name.LastIndexOf('`');
+            int index = name.LastIndexOf('`');
             if (index == -1)
                 return false;
 
@@ -100,7 +101,7 @@ namespace MonoFN.Cecil
 
         private string ParsePart()
         {
-            var part = new StringBuilder();
+            StringBuilder part = new();
             while (position < length && !IsDelimiter(fullname[position]))
             {
                 if (fullname[position] == '\\')
@@ -177,7 +178,7 @@ namespace MonoFN.Cecil
                                 Add(ref specs, 1);
                                 break;
                             default:
-                                var rank = 1;
+                                int rank = 1;
                                 while (TryParse(','))
                                     rank++;
 
@@ -206,7 +207,7 @@ namespace MonoFN.Cecil
 
             for (int i = 0; i < arity; i++)
             {
-                var fq_argument = TryParse('[');
+                bool fq_argument = TryParse('[');
                 Add(ref generic_arguments, ParseType(fq_argument));
                 if (fq_argument)
                     TryParse(']');
@@ -227,10 +228,10 @@ namespace MonoFN.Cecil
 
             TryParseWhiteSpace();
 
-            var start = position;
+            int start = position;
             while (position < length)
             {
-                var chr = fullname[position];
+                char chr = fullname[position];
                 if (chr == '[' || chr == ']')
                     break;
 
@@ -245,7 +246,7 @@ namespace MonoFN.Cecil
             if (string.IsNullOrEmpty(fullname))
                 return null;
 
-            var parser = new TypeParser(fullname);
+            TypeParser parser = new(fullname);
             return GetTypeReference(module, parser.ParseType(true), typeDefinitionOnly);
         }
 
@@ -267,7 +268,7 @@ namespace MonoFN.Cecil
         {
             type = TryCreateGenericInstanceType(type, type_info);
 
-            var specs = type_info.specs;
+            int[] specs = type_info.specs;
             if (specs.IsNullOrEmpty())
                 return type;
 
@@ -285,7 +286,7 @@ namespace MonoFN.Cecil
                         type = new ArrayType(type);
                         break;
                     default:
-                        var array = new ArrayType(type);
+                        ArrayType array = new(type);
                         array.Dimensions.Clear();
 
                         for (int j = 0; j < specs[i]; j++)
@@ -301,12 +302,12 @@ namespace MonoFN.Cecil
 
         private static TypeReference TryCreateGenericInstanceType(TypeReference type, Type type_info)
         {
-            var generic_arguments = type_info.generic_arguments;
+            Type[] generic_arguments = type_info.generic_arguments;
             if (generic_arguments.IsNullOrEmpty())
                 return type;
 
-            var instance = new GenericInstanceType(type, generic_arguments.Length);
-            var instance_arguments = instance.GenericArguments;
+            GenericInstanceType instance = new(type, generic_arguments.Length);
+            Collection<TypeReference> instance_arguments = instance.GenericArguments;
 
             for (int i = 0; i < generic_arguments.Length; i++)
                 instance_arguments.Add(GetTypeReference(type.Module, generic_arguments[i], false));
@@ -316,7 +317,7 @@ namespace MonoFN.Cecil
 
         public static void SplitFullName(string fullname, out string @namespace, out string name)
         {
-            var last_dot = fullname.LastIndexOf('.');
+            int last_dot = fullname.LastIndexOf('.');
 
             if (last_dot == -1)
             {
@@ -335,12 +336,12 @@ namespace MonoFN.Cecil
             string @namespace, name;
             SplitFullName(type_info.type_fullname, out @namespace, out name);
 
-            var type = new TypeReference(@namespace, name, module, scope);
+            TypeReference type = new(@namespace, name, module, scope);
             MetadataSystem.TryProcessPrimitiveTypeReference(type);
 
             AdjustGenericParameters(type);
 
-            var nested_names = type_info.nested_names;
+            string[] nested_names = type_info.nested_names;
             if (nested_names.IsNullOrEmpty())
                 return type;
 
@@ -373,7 +374,7 @@ namespace MonoFN.Cecil
                 return module.TypeSystem.CoreLibrary;
 
             AssemblyNameReference match;
-            var reference = AssemblyNameReference.Parse(type_info.assembly);
+            AssemblyNameReference reference = AssemblyNameReference.Parse(type_info.assembly);
 
             return module.TryGetAssemblyNameReference(reference, out match) ? match : reference;
         }
@@ -384,16 +385,16 @@ namespace MonoFN.Cecil
             if (!TryCurrentModule(module, type_info))
                 return false;
 
-            var typedef = module.GetType(type_info.type_fullname);
+            TypeDefinition typedef = module.GetType(type_info.type_fullname);
             if (typedef == null)
                 return false;
 
-            var nested_names = type_info.nested_names;
+            string[] nested_names = type_info.nested_names;
             if (!nested_names.IsNullOrEmpty())
             {
                 for (int i = 0; i < nested_names.Length; i++)
                 {
-                    var nested_type = typedef.GetNestedType(nested_names[i]);
+                    TypeDefinition nested_type = typedef.GetNestedType(nested_names[i]);
                     if (nested_type == null)
                         return false;
 
@@ -421,14 +422,14 @@ namespace MonoFN.Cecil
             if (type == null)
                 return null;
 
-            var name = new StringBuilder();
+            StringBuilder name = new();
             AppendType(type, name, true, top_level);
             return name.ToString();
         }
 
         private static void AppendNamePart(string part, StringBuilder name)
         {
-            foreach (var c in part)
+            foreach (char c in part)
             {
                 if (IsDelimiter(c))
                     name.Append('\\');
@@ -439,16 +440,16 @@ namespace MonoFN.Cecil
 
         private static void AppendType(TypeReference type, StringBuilder name, bool fq_name, bool top_level)
         {
-            var element_type = type.GetElementType();
+            TypeReference element_type = type.GetElementType();
 
-            var declaring_type = element_type.DeclaringType;
+            TypeReference declaring_type = element_type.DeclaringType;
             if (declaring_type != null)
             {
                 AppendType(declaring_type, name, false, top_level);
                 name.Append('+');
             }
 
-            var @namespace = type.Namespace;
+            string @namespace = type.Namespace;
             if (!string.IsNullOrEmpty(@namespace))
             {
                 AppendNamePart(@namespace, name);
@@ -472,7 +473,7 @@ namespace MonoFN.Cecil
 
         private static string GetScopeFullName(TypeReference type)
         {
-            var scope = type.Scope;
+            IMetadataScope scope = type.Scope;
             switch (scope.MetadataScopeType)
             {
                 case MetadataScopeType.AssemblyNameReference:
@@ -499,7 +500,7 @@ namespace MonoFN.Cecil
                     break;
                 case ElementType.SzArray:
                 case ElementType.Array:
-                    var array = (ArrayType)type;
+                    ArrayType array = (ArrayType)type;
                     if (array.IsVector)
                     {
                         name.Append("[]");
@@ -513,8 +514,8 @@ namespace MonoFN.Cecil
                     }
                     break;
                 case ElementType.GenericInst:
-                    var instance = (GenericInstanceType)type;
-                    var arguments = instance.GenericArguments;
+                    GenericInstanceType instance = (GenericInstanceType)type;
+                    Collection<TypeReference> arguments = instance.GenericArguments;
 
                     name.Append('[');
 
@@ -523,8 +524,8 @@ namespace MonoFN.Cecil
                         if (i > 0)
                             name.Append(',');
 
-                        var argument = arguments[i];
-                        var requires_fqname = argument.Scope != argument.Module;
+                        TypeReference argument = arguments[i];
+                        bool requires_fqname = argument.Scope != argument.Module;
 
                         if (requires_fqname)
                             name.Append('[');

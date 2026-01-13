@@ -45,7 +45,7 @@ namespace LiteNetLib.Utils
         {
             if (copy)
             {
-                var netDataWriter = new NetDataWriter(true, bytes.Length);
+                NetDataWriter netDataWriter = new(true, bytes.Length);
                 netDataWriter.Put(bytes);
                 return netDataWriter;
             }
@@ -60,14 +60,14 @@ namespace LiteNetLib.Utils
         /// <param name = "length">Length of array</param>
         public static NetDataWriter FromBytes(byte[] bytes, int offset, int length)
         {
-            var netDataWriter = new NetDataWriter(true, bytes.Length);
+            NetDataWriter netDataWriter = new(true, bytes.Length);
             netDataWriter.Put(bytes, offset, length);
             return netDataWriter;
         }
 
         public static NetDataWriter FromString(string value)
         {
-            var netDataWriter = new NetDataWriter();
+            NetDataWriter netDataWriter = new();
             netDataWriter.Put(value);
             return netDataWriter;
         }

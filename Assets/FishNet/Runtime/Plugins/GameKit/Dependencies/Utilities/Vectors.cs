@@ -151,9 +151,9 @@ namespace GameKit.Dependencies.Utilities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float FastDistance(Vector3 a, Vector3 b)
         {
-            var distx = a.x - b.x;
-            var disty = a.y - b.y;
-            var distz = a.z - b.z;
+            float distx = a.x - b.x;
+            float disty = a.y - b.y;
+            float distz = a.z - b.z;
             return (float)Math.Sqrt(distx * distx + disty * disty + distz * distz);
         }
 

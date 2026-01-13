@@ -23,7 +23,7 @@ namespace MonoFN.Cecil
     {
         public static bool ContainsGenericParameter(this IGenericInstance self)
         {
-            var arguments = self.GenericArguments;
+            Collection<TypeReference> arguments = self.GenericArguments;
 
             for (int i = 0; i < arguments.Count; i++)
                 if (arguments[i].ContainsGenericParameter)
@@ -35,7 +35,7 @@ namespace MonoFN.Cecil
         public static void GenericInstanceFullName(this IGenericInstance self, StringBuilder builder)
         {
             builder.Append("<");
-            var arguments = self.GenericArguments;
+            Collection<TypeReference> arguments = self.GenericArguments;
             for (int i = 0; i < arguments.Count; i++)
             {
                 if (i > 0)

@@ -64,7 +64,7 @@ namespace MonoFN.Cecil
 
         private static void InitializePrimitives()
         {
-            var types = new Dictionary<string, Row<ElementType, bool>>(18, StringComparer.Ordinal)
+            Dictionary<string, Row<ElementType, bool>> types = new(18, StringComparer.Ordinal)
             {
                 { "Void", new(ElementType.Void, false) },
                 { "Boolean", new(ElementType.Boolean, true) },
@@ -94,7 +94,7 @@ namespace MonoFN.Cecil
             if (type.Namespace != "System")
                 return;
 
-            var scope = type.scope;
+            IMetadataScope scope = type.scope;
             if (scope == null || scope.MetadataScopeType != MetadataScopeType.AssemblyNameReference)
                 return;
 
@@ -432,8 +432,8 @@ namespace MonoFN.Cecil
             while (min <= max)
             {
                 int mid = min + (max - min) / 2;
-                var type = types[mid];
-                var range = field ? type.fields_range : type.methods_range;
+                TypeDefinition type = types[mid];
+                Range range = field ? type.fields_range : type.methods_range;
 
                 if (rid < range.Start)
                     max = mid - 1;

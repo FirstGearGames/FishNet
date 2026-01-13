@@ -29,7 +29,7 @@ namespace LiteNetLib
                 long packetHoldTime = currentTime - _lastPacketSendTime;
                 if (packetHoldTime >= Peer.ResendDelay * TimeSpan.TicksPerMillisecond)
                 {
-                    var packet = _lastPacket;
+                    NetPacket packet = _lastPacket;
                     if (packet != null)
                     {
                         _lastPacketSendTime = currentTime;

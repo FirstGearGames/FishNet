@@ -35,7 +35,7 @@ namespace LiteNetLib
             if (hostStr == "localhost")
                 return IPAddress.Loopback;
 
-            if (!IPAddress.TryParse(hostStr, out var ipAddress))
+            if (!IPAddress.TryParse(hostStr, out IPAddress ipAddress))
             {
                 if (NetManager.IPv6Support)
                     ipAddress = ResolveAddress(hostStr, AddressFamily.InterNetworkV6);
@@ -86,7 +86,7 @@ namespace LiteNetLib
             {
                 // Sort networks interfaces so it prefer Wifi over Cellular networks
                 // Most cellulars networks seems to be incompatible with NAT Punch
-                var networks = NetworkInterface.GetAllNetworkInterfaces();
+                NetworkInterface[] networks = NetworkInterface.GetAllNetworkInterfaces();
                 Array.Sort(networks, NetworkSorter);
 
                 foreach (NetworkInterface ni in networks)
@@ -95,7 +95,7 @@ namespace LiteNetLib
                     if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback || ni.OperationalStatus != OperationalStatus.Up)
                         continue;
 
-                    var ipProps = ni.GetIPProperties();
+                    IPInterfaceProperties ipProps = ni.GetIPProperties();
 
                     // Skip address without gateway
                     if (ipProps.GatewayAddresses.Count == 0)
@@ -103,7 +103,7 @@ namespace LiteNetLib
 
                     foreach (UnicastIPAddressInformation ip in ipProps.UnicastAddresses)
                     {
-                        var address = ip.Address;
+                        IPAddress address = ip.Address;
                         if ((ipv4 && address.AddressFamily == AddressFamily.InterNetwork) || (ipv6 && address.AddressFamily == AddressFamily.InterNetworkV6))
                             targetList.Add(address.ToString());
                     }
@@ -198,22 +198,22 @@ namespace LiteNetLib
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
         public int Compare(NetworkInterface a, NetworkInterface b)
         {
-            var isCellularA = a.NetworkInterfaceType == NetworkInterfaceType.Wman || a.NetworkInterfaceType == NetworkInterfaceType.Wwanpp || a.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2;
+            bool isCellularA = a.NetworkInterfaceType == NetworkInterfaceType.Wman || a.NetworkInterfaceType == NetworkInterfaceType.Wwanpp || a.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2;
 
-            var isCellularB = b.NetworkInterfaceType == NetworkInterfaceType.Wman || b.NetworkInterfaceType == NetworkInterfaceType.Wwanpp || b.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2;
+            bool isCellularB = b.NetworkInterfaceType == NetworkInterfaceType.Wman || b.NetworkInterfaceType == NetworkInterfaceType.Wwanpp || b.NetworkInterfaceType == NetworkInterfaceType.Wwanpp2;
 
-            var isWifiA = a.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
-            var isWifiB = b.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+            bool isWifiA = a.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
+            bool isWifiB = b.NetworkInterfaceType == NetworkInterfaceType.Wireless80211;
 
-            var isEthernetA = a.NetworkInterfaceType == NetworkInterfaceType.Ethernet || a.NetworkInterfaceType == NetworkInterfaceType.Ethernet3Megabit || a.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet || a.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx || a.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
+            bool isEthernetA = a.NetworkInterfaceType == NetworkInterfaceType.Ethernet || a.NetworkInterfaceType == NetworkInterfaceType.Ethernet3Megabit || a.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet || a.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx || a.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
 
-            var isEthernetB = b.NetworkInterfaceType == NetworkInterfaceType.Ethernet || b.NetworkInterfaceType == NetworkInterfaceType.Ethernet3Megabit || b.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet || b.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx || b.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
+            bool isEthernetB = b.NetworkInterfaceType == NetworkInterfaceType.Ethernet || b.NetworkInterfaceType == NetworkInterfaceType.Ethernet3Megabit || b.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet || b.NetworkInterfaceType == NetworkInterfaceType.FastEthernetFx || b.NetworkInterfaceType == NetworkInterfaceType.FastEthernetT;
 
-            var isOtherA = !isCellularA && !isWifiA && !isEthernetA;
-            var isOtherB = !isCellularB && !isWifiB && !isEthernetB;
+            bool isOtherA = !isCellularA && !isWifiA && !isEthernetA;
+            bool isOtherB = !isCellularB && !isWifiB && !isEthernetB;
 
-            var priorityA = isEthernetA ? 3 : isWifiA ? 2 : isOtherA ? 1 : 0;
-            var priorityB = isEthernetB ? 3 : isWifiB ? 2 : isOtherB ? 1 : 0;
+            int priorityA = isEthernetA ? 3 : isWifiA ? 2 : isOtherA ? 1 : 0;
+            int priorityB = isEthernetB ? 3 : isWifiB ? 2 : isOtherB ? 1 : 0;
 
             return priorityA > priorityB ? -1 : priorityA < priorityB ? 1 : 0;
         }

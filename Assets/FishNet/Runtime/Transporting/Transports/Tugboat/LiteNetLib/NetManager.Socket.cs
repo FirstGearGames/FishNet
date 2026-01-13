@@ -19,14 +19,14 @@ namespace LiteNetLib
         private Thread _receiveThread;
         private IPEndPoint _bufferEndPointv4;
         private IPEndPoint _bufferEndPointv6;
-#if UNITY_SOCKET_FIX
+        #if UNITY_SOCKET_FIX
         private PausedSocketFix _pausedSocketFix;
         private bool _useSocketFix;
-#endif
-#if NET8_0_OR_GREATER
+        #endif
+        #if NET8_0_OR_GREATER
         private readonly SocketAddress _sockAddrCacheV4 = new SocketAddress(AddressFamily.InterNetwork);
         private readonly SocketAddress _sockAddrCacheV6 = new SocketAddress(AddressFamily.InterNetworkV6);
-#endif
+        #endif
         private const int SioUdpConnreset = -1744830452; // SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12
         private static readonly IPAddress MulticastAddressV6 = IPAddress.Parse("ff02::1");
         public static readonly bool IPv6Support;
@@ -37,30 +37,30 @@ namespace LiteNetLib
         {
             get
             {
-#if UNITY_SWITCH
+                #if UNITY_SWITCH
                 return 0;
-#else
+                #else
                 return _udpSocketv4.Ttl;
-#endif
+                #endif
             }
             internal set
             {
-#if !UNITY_SWITCH
+                #if !UNITY_SWITCH
                 _udpSocketv4.Ttl = value;
-#endif
+                #endif
             }
         }
 
         static NetManager()
         {
-#if DISABLE_IPV6
+            #if DISABLE_IPV6
             IPv6Support = false;
-#elif !UNITY_2019_1_OR_NEWER && !UNITY_2018_4_OR_NEWER && (!UNITY_EDITOR && ENABLE_IL2CPP)
+            #elif !UNITY_2019_1_OR_NEWER && !UNITY_2018_4_OR_NEWER && (!UNITY_EDITOR && ENABLE_IL2CPP)
             string version = UnityEngine.Application.unityVersion;
             IPv6Support = Socket.OSSupportsIPv6 && int.Parse(version.Remove(version.IndexOf('f')).Split('.')[2]) >= 6;
-#else
+            #else
             IPv6Support = Socket.OSSupportsIPv6;
-#endif
+            #endif
         }
 
         private bool ProcessError(SocketException ex)
@@ -121,11 +121,11 @@ namespace LiteNetLib
             IntPtr socketHandle6 = _udpSocketv6?.Handle ?? IntPtr.Zero;
             byte[] addrBuffer4 = new byte[NativeSocket.IPv4AddrSize];
             byte[] addrBuffer6 = new byte[NativeSocket.IPv6AddrSize];
-            var tempEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            var selectReadList = new List<Socket>(2);
-            var socketv4 = _udpSocketv4;
-            var socketV6 = _udpSocketv6;
-            var packet = PoolGetPacket(NetConstants.MaxPacketSize);
+            IPEndPoint tempEndPoint = new(IPAddress.Any, 0);
+            List<Socket> selectReadList = new(2);
+            Socket socketv4 = _udpSocketv4;
+            Socket socketV6 = _udpSocketv6;
+            NetPacket packet = PoolGetPacket(NetConstants.MaxPacketSize);
 
             while (IsRunning)
             {
@@ -203,13 +203,13 @@ namespace LiteNetLib
                 if ((NativeSocket.UnixMode && family == NativeSocket.AF_INET6) || (!NativeSocket.UnixMode && (AddressFamily)family == AddressFamily.InterNetworkV6))
                 {
                     uint scope = unchecked((uint)((address[27] << 24) + (address[26] << 16) + (address[25] << 8) + address[24]));
-#if NETCOREAPP || NETSTANDARD2_1 || NETSTANDARD2_1_OR_GREATER
+                    #if NETCOREAPP || NETSTANDARD2_1 || NETSTANDARD2_1_OR_GREATER
                     tempEndPoint.Address = new(new ReadOnlySpan<byte>(address, 8, 16), scope);
-#else
+                    #else
                     byte[] addrBuffer = new byte[16];
                     Buffer.BlockCopy(address, 8, addrBuffer, 0, 16);
                     tempEndPoint.Address = new(addrBuffer, scope);
-#endif
+                    #endif
                 }
                 else // IPv4
                 {
@@ -217,7 +217,7 @@ namespace LiteNetLib
                     tempEndPoint.Address = new(ipv4Addr);
                 }
 
-                if (TryGetPeer(tempEndPoint, out var peer))
+                if (TryGetPeer(tempEndPoint, out NetPeer peer))
                 {
                     // use cached native ep
                     OnMessageReceived(packet, peer);
@@ -234,24 +234,24 @@ namespace LiteNetLib
 
         private void ReceiveFrom(Socket s, ref EndPoint bufferEndPoint)
         {
-            var packet = PoolGetPacket(NetConstants.MaxPacketSize);
-#if NET8_0_OR_GREATER
+            NetPacket packet = PoolGetPacket(NetConstants.MaxPacketSize);
+            #if NET8_0_OR_GREATER
             var sockAddr = s.AddressFamily == AddressFamily.InterNetwork ? _sockAddrCacheV4 : _sockAddrCacheV6;
             packet.Size = s.ReceiveFrom(packet, SocketFlags.None, sockAddr);
             OnMessageReceived(packet, TryGetPeer(sockAddr, out var peer) ? peer : (IPEndPoint)bufferEndPoint.Create(sockAddr));
-#else
+            #else
             packet.Size = s.ReceiveFrom(packet.RawData, 0, NetConstants.MaxPacketSize, SocketFlags.None, ref bufferEndPoint);
             OnMessageReceived(packet, (IPEndPoint)bufferEndPoint);
-#endif
+            #endif
         }
 
         private void ReceiveLogic()
         {
             EndPoint bufferEndPoint4 = new IPEndPoint(IPAddress.Any, 0);
             EndPoint bufferEndPoint6 = new IPEndPoint(IPAddress.IPv6Any, 0);
-            var selectReadList = new List<Socket>(2);
-            var socketv4 = _udpSocketv4;
-            var socketV6 = _udpSocketv6;
+            List<Socket> selectReadList = new(2);
+            Socket socketv4 = _udpSocketv4;
+            Socket socketV6 = _udpSocketv6;
 
             while (IsRunning)
             {
@@ -333,10 +333,10 @@ namespace LiteNetLib
 
             LocalPort = ((IPEndPoint)_udpSocketv4.LocalEndPoint).Port;
 
-#if UNITY_SOCKET_FIX
+            #if UNITY_SOCKET_FIX
             if (_useSocketFix && _pausedSocketFix == null)
                 _pausedSocketFix = new(this, addressIPv4, addressIPv6, port, manualMode);
-#endif
+            #endif
 
             IsRunning = true;
             if (_manualMode)
@@ -448,9 +448,9 @@ namespace LiteNetLib
                 {
                     try
                     {
-#if !UNITY_SOCKET_FIX
+                        #if !UNITY_SOCKET_FIX
                         socket.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, new IPv6MulticastOption(MulticastAddressV6));
-#endif
+                        #endif
                     }
                     catch (Exception)
                     {
@@ -518,7 +518,7 @@ namespace LiteNetLib
                 message = expandedPacket.RawData;
             }
 
-            var socket = _udpSocketv4;
+            Socket socket = _udpSocketv4;
             if (remoteEndPoint.AddressFamily == AddressFamily.InterNetworkV6 && IPv6Support)
             {
                 socket = _udpSocketv6;
@@ -543,11 +543,11 @@ namespace LiteNetLib
                 }
                 else
                 {
-#if NET8_0_OR_GREATER
+                    #if NET8_0_OR_GREATER
                     result = socket.SendTo(new ReadOnlySpan<byte>(message, start, length), SocketFlags.None, remoteEndPoint.Serialize());
-#else
+                    #else
                     result = socket.SendTo(message, start, length, SocketFlags.None, remoteEndPoint);
-#endif
+                    #endif
                 }
                 // NetDebug.WriteForce("[S]Send packet to {0}, result: {1}", remoteEndPoint, result);
             }
@@ -622,11 +622,11 @@ namespace LiteNetLib
             NetPacket packet;
             if (_extraPacketLayer != null)
             {
-                var headerSize = NetPacket.GetHeaderSize(PacketProperty.Broadcast);
+                int headerSize = NetPacket.GetHeaderSize(PacketProperty.Broadcast);
                 packet = PoolGetPacket(headerSize + length + _extraPacketLayer.ExtraPacketSizeForLayer);
                 packet.Property = PacketProperty.Broadcast;
                 Buffer.BlockCopy(data, start, packet.RawData, headerSize, length);
-                var checksumComputeStart = 0;
+                int checksumComputeStart = 0;
                 int preCrcLength = length + headerSize;
                 IPEndPoint emptyEp = null;
                 _extraPacketLayer.ProcessOutBoundPacket(ref emptyEp, ref packet.RawData, ref checksumComputeStart, ref preCrcLength);

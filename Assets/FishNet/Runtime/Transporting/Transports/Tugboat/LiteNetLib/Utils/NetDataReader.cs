@@ -215,7 +215,7 @@ namespace LiteNetLib.Utils
             T[] result = new T[length];
             for (int i = 0; i < length; i++)
             {
-                var item = new T();
+                T item = new();
                 item.Deserialize(this);
                 result[i] = item;
             }
@@ -417,14 +417,14 @@ namespace LiteNetLib.Utils
 
         public T Get<T>() where T : struct, INetSerializable
         {
-            var obj = default(T);
+            T obj = default(T);
             obj.Deserialize(this);
             return obj;
         }
 
         public T Get<T>(Func<T> constructor) where T : class, INetSerializable
         {
-            var obj = constructor();
+            T obj = constructor();
             obj.Deserialize(this);
             return obj;
         }

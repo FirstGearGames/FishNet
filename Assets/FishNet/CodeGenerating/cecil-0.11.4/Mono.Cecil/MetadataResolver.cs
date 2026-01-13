@@ -36,11 +36,11 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var type = Member as TypeReference;
+                TypeReference type = Member as TypeReference;
                 if (type != null)
                     return type.Scope;
 
-                var declaring_type = Member.DeclaringType;
+                TypeReference declaring_type = Member.DeclaringType;
                 if (declaring_type != null)
                     return declaring_type.Scope;
 
@@ -87,7 +87,7 @@ namespace MonoFN.Cecil
 
             type = type.GetElementType();
 
-            var scope = type.Scope;
+            IMetadataScope scope = type.Scope;
 
             if (scope == null)
                 return null;
@@ -95,7 +95,7 @@ namespace MonoFN.Cecil
             switch (scope.MetadataScopeType)
             {
                 case MetadataScopeType.AssemblyNameReference:
-                    var assembly = AssemblyResolver.Resolve((AssemblyNameReference)scope);
+                    AssemblyDefinition assembly = AssemblyResolver.Resolve((AssemblyNameReference)scope);
                     if (assembly == null)
                         return null;
 
@@ -106,11 +106,11 @@ namespace MonoFN.Cecil
                     if (type.Module.Assembly == null)
                         return null;
 
-                    var modules = type.Module.Assembly.Modules;
-                    var module_ref = (ModuleReference)scope;
+                    Collection<ModuleDefinition> modules = type.Module.Assembly.Modules;
+                    ModuleReference module_ref = (ModuleReference)scope;
                     for (int i = 0; i < modules.Count; i++)
                     {
-                        var netmodule = modules[i];
+                        ModuleDefinition netmodule = modules[i];
                         if (netmodule.Name == module_ref.Name)
                             return GetType(netmodule, type);
                     }
@@ -122,18 +122,18 @@ namespace MonoFN.Cecil
 
         private static TypeDefinition GetType(ModuleDefinition module, TypeReference reference)
         {
-            var type = GetTypeDefinition(module, reference);
+            TypeDefinition type = GetTypeDefinition(module, reference);
             if (type != null)
                 return type;
 
             if (!module.HasExportedTypes)
                 return null;
 
-            var exported_types = module.ExportedTypes;
+            Collection<ExportedType> exported_types = module.ExportedTypes;
 
             for (int i = 0; i < exported_types.Count; i++)
             {
-                var exported_type = exported_types[i];
+                ExportedType exported_type = exported_types[i];
                 if (exported_type.Name != reference.Name)
                     continue;
 
@@ -151,7 +151,7 @@ namespace MonoFN.Cecil
             if (!type.IsNested)
                 return module.GetType(type.Namespace, type.Name);
 
-            var declaring_type = type.DeclaringType.Resolve();
+            TypeDefinition declaring_type = type.DeclaringType.Resolve();
             if (declaring_type == null)
                 return null;
 
@@ -162,7 +162,7 @@ namespace MonoFN.Cecil
         {
             Mixin.CheckField(field);
 
-            var type = Resolve(field.DeclaringType);
+            TypeDefinition type = Resolve(field.DeclaringType);
             if (type == null)
                 return null;
 
@@ -176,7 +176,7 @@ namespace MonoFN.Cecil
         {
             while (type != null)
             {
-                var field = GetField(type.Fields, reference);
+                FieldDefinition field = GetField(type.Fields, reference);
                 if (field != null)
                     return field;
 
@@ -193,7 +193,7 @@ namespace MonoFN.Cecil
         {
             for (int i = 0; i < fields.Count; i++)
             {
-                var field = fields[i];
+                FieldDefinition field = fields[i];
 
                 if (field.Name != reference.Name)
                     continue;
@@ -211,7 +211,7 @@ namespace MonoFN.Cecil
         {
             Mixin.CheckMethod(method);
 
-            var type = Resolve(method.DeclaringType);
+            TypeDefinition type = Resolve(method.DeclaringType);
             if (type == null)
                 return null;
 
@@ -227,7 +227,7 @@ namespace MonoFN.Cecil
         {
             while (type != null)
             {
-                var method = GetMethod(type.Methods, reference);
+                MethodDefinition method = GetMethod(type.Methods, reference);
                 if (method != null)
                     return method;
 
@@ -244,7 +244,7 @@ namespace MonoFN.Cecil
         {
             for (int i = 0; i < methods.Count; i++)
             {
-                var method = methods[i];
+                MethodDefinition method = methods[i];
 
                 if (method.Name != reference.Name)
                     continue;
@@ -281,7 +281,7 @@ namespace MonoFN.Cecil
 
         private static bool AreSame(Collection<ParameterDefinition> a, Collection<ParameterDefinition> b)
         {
-            var count = a.Count;
+            int count = a.Count;
 
             if (count != b.Count)
                 return false;
