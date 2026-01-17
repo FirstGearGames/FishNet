@@ -600,21 +600,20 @@ namespace FishNet.Object
         /// </summary>
         /// </summary>
         private void Replicate_NonAuthoritative<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
-        {
-            PredictionManager predictionManager = PredictionManager;
+        { PredictionManager predictionManager = PredictionManager;
 
             bool isServerStarted = _networkObjectCache.IsServerStarted;
             bool isServerWithoutOwner = isServerStarted && !Owner.IsValid;
+            
             /* Both owner and server when no owner should run
              * authoritative replicate. */
             if (isServerWithoutOwner)
                 return;
-
             /* If not state forwarding and not server then exit method.
              * The server still needs to run inputs even if not authoritative. */
-            if (!_networkObjectCache.EnableStateForwarding)
+            if (!isServerStarted && !_networkObjectCache.EnableStateForwarding)
                 return;
-
+            
             TimeManager tm = _networkObjectCache.TimeManager;
             uint localTick = tm.LocalTick;
 
@@ -622,7 +621,7 @@ namespace FishNet.Object
              * run default input and exit. With inserted order client only runs
              * during replays. Server never replays, so it still runs
              * as current even with inserted order. */
-            if (!predictionManager.IsAppendedStateOrder)
+            if (!isServerStarted && !predictionManager.IsAppendedStateOrder)
             {
                 ReplicateDefaultData();
                 return;
@@ -1285,6 +1284,8 @@ namespace FishNet.Object
                 return;
             if (!_networkObjectCache.PredictionManager.CreateLocalStates)
                 return;
+            if (!IsOwner && !_networkObjectCache.EnableStateForwarding)
+                return;
 
             /* This is called by the local client when creating
              * a local reconcile state. These states should always
@@ -1334,6 +1335,8 @@ namespace FishNet.Object
         internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, RingBuffer<ReplicateDataContainer<T2>> replicatesHistory, RingBuffer<LocalReconcile<T>> reconcilesHistory, T data) where T : IReconcileData where T2 : IReplicateData, new()
         {
             bool isBehaviourReconciling = IsBehaviourReconciling;
+            if (!isBehaviourReconciling)
+                return;
 
             const long unsetHistoryIndex = -1;
             long historyIndex = unsetHistoryIndex;
@@ -1368,19 +1371,6 @@ namespace FishNet.Object
                     uint lrTick = reconcilesHistory[(int)historyIndex].Tick;
                     if (lrTick != reconcileTick)
                         historyIndex = unsetHistoryIndex;
-
-                    //If index is set and behaviour is not reconciling then apply data.
-                    if (!isBehaviourReconciling && historyIndex != unsetHistoryIndex)
-                    {
-                        LocalReconcile<T> localReconcile = reconcilesHistory[(int)historyIndex];
-                        //Before disposing get the writer and call reconcile reader so it's parsed.
-                        PooledWriter reconcileWritten = localReconcile.Writer;
-                        /* Although this is actually from the local client the datasource is being set to server since server
-                         * is what typically sends reconciles. */
-                        PooledReader reader = ReaderPool.Retrieve(reconcileWritten.GetArraySegment(), _networkObjectCache.NetworkManager, Reader.DataSource.Server);
-                        data = Reconcile_Reader_Local<T>(localReconcile.Tick, reader);
-                        ReaderPool.Store(reader);
-                    }
                 }
             }
 
