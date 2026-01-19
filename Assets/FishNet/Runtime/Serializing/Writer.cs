@@ -857,6 +857,17 @@ namespace FishNet.Serializing
         /// </summary>
         /// <param name = "value"></param>
         [DefaultWriter]
+        public void WriteGuid(Guid value)
+        {
+            byte[] data = Guids.Buffer;
+            value.TryWriteBytes(data);
+            WriteUInt8Array(data, 0, data.Length);
+        }
+        
+        /// <summary>
+        /// Writes a Guid.
+        /// </summary>
+        /// <param name = "value"></param>
         public void WriteGuidAllocated(Guid value)
         {
             byte[] data = value.ToByteArray();
