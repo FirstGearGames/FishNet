@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: -2060332294883903109}
   - component: {fileID: 201277550}
   - component: {fileID: 4148834954576211901}
+  - component: {fileID: 8534672635240368605}
   m_Layer: 0
   m_Name: CharacterControllerPrediction
   m_TagString: Untagged
@@ -77,7 +78,7 @@ MonoBehaviour:
   - {fileID: 8022627623488540705}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects:
-  - {fileID: 8013474958425823559}
+  - {fileID: 0}
   RuntimeParentNetworkBehaviour: {fileID: 0}
   RuntimeChildNetworkBehaviours: []
   _isNetworked: 1
@@ -90,6 +91,7 @@ MonoBehaviour:
   NetworkObserver: {fileID: 0}
   _enablePrediction: 1
   _predictionType: 0
+  _localReconcileCorrectionType: 2
   _graphicalObject: {fileID: 0}
   _detachGraphicalObject: 0
   _enableStateForwarding: 1
@@ -128,6 +130,20 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
+--- !u!136 &8534672635240368605
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 303449598114786579}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  m_Radius: 0.5
+  m_Height: 2
+  m_Direction: 1
+  m_Center: {x: 0, y: 1, z: 0}
 --- !u!1 &2693313506199881053
 GameObject:
   m_ObjectHideFlags: 0
@@ -139,7 +155,6 @@ GameObject:
   - component: {fileID: 7416592246441027450}
   - component: {fileID: 1810266687591957409}
   - component: {fileID: 2367975056509727580}
-  - component: {fileID: 8013474958425823559}
   m_Layer: 4
   m_Name: SphereCollider
   m_TagString: Untagged
@@ -188,67 +203,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _componentIndexCache: 0
-  _addedNetworkObject: {fileID: 8013474958425823559}
-  _networkObjectCache: {fileID: 8013474958425823559}
+  _addedNetworkObject: {fileID: 201277550}
+  _networkObjectCache: {fileID: 0}
   MaximumSimultaneousHits: 16
   AdditionalSize: 0.1
   Layers:
     serializedVersion: 2
     m_Bits: 1
---- !u!114 &8013474958425823559
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2693313506199881053}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  <IsNested>k__BackingField: 1
-  WasActiveDuringEdit: 1
-  WasActiveDuringEdit_Set1: 1
-  <ComponentIndex>k__BackingField: 1
-  <PredictedSpawn>k__BackingField: {fileID: 0}
-  <PredictedOwner>k__BackingField: {fileID: 0}
-  NetworkBehaviours:
-  - {fileID: 2367975056509727580}
-  InitializedParentNetworkBehaviour: {fileID: -2060332294883903109}
-  InitializedNestedNetworkObjects: []
-  RuntimeParentNetworkBehaviour: {fileID: 0}
-  RuntimeChildNetworkBehaviours: []
-  _isNetworked: 1
-  _isSpawnable: 1
-  _isGlobal: 0
-  _initializeOrder: 0
-  _preventDespawnOnDisconnect: 0
-  _defaultDespawnType: 0
-  _initializedTimestamp: -8584382207264223314
-  NetworkObserver: {fileID: 0}
-  _enablePrediction: 0
-  _predictionType: 0
-  _graphicalObject: {fileID: 0}
-  _detachGraphicalObject: 0
-  _enableStateForwarding: 1
-  _networkTransform: {fileID: 0}
-  _ownerInterpolation: 1
-  _ownerSmoothedProperties: 255
-  _adaptiveInterpolation: 3
-  _spectatorSmoothedProperties: 255
-  _spectatorInterpolation: 2
-  _enableTeleport: 0
-  _teleportThreshold: 1
-  <PrefabId>k__BackingField: 21
-  <SpawnableCollectionId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 16574675316859699392
-  SceneId: 0
-  SerializedTransformProperties:
-    Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    Scale: {x: 1, y: 1, z: 1}
-    IsValid: 1
 --- !u!1 &5873068582516782542
 GameObject:
   m_ObjectHideFlags: 0
@@ -260,7 +221,6 @@ GameObject:
   - component: {fileID: 6952090537135875148}
   - component: {fileID: 6605329024375725182}
   - component: {fileID: 9006911641345807741}
-  - component: {fileID: 4946798872430241371}
   - component: {fileID: 8022627623488540705}
   m_Layer: 0
   m_Name: Capsule
@@ -334,20 +294,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &4946798872430241371
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5873068582516782542}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &8022627623488540705
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -370,14 +316,14 @@ MonoBehaviour:
   _controllerMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
-    AdaptiveInterpolationValue: 4
+    AdaptiveInterpolationValue: 0
     InterpolationValue: 2
     SmoothedProperties: 4294967295
     SnapNonSmoothedProperties: 0
   _spectatorMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
-    AdaptiveInterpolationValue: 4
+    AdaptiveInterpolationValue: 0
     InterpolationValue: 2
     SmoothedProperties: 4294967295
     SnapNonSmoothedProperties: 0

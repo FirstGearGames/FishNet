@@ -93,7 +93,7 @@ namespace MonoFN.Cecil
                 if (module != null)
                     return module;
 
-                var declaring_type = DeclaringType;
+                TypeReference declaring_type = DeclaringType;
                 if (declaring_type != null)
                     return declaring_type.Module;
 
@@ -135,7 +135,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var declaring_type = DeclaringType;
+                TypeReference declaring_type = DeclaringType;
                 if (declaring_type != null)
                     return declaring_type.Scope;
 
@@ -143,7 +143,7 @@ namespace MonoFN.Cecil
             }
             set
             {
-                var declaring_type = DeclaringType;
+                TypeReference declaring_type = DeclaringType;
                 if (declaring_type != null)
                 {
                     if (IsWindowsRuntimeProjection && value != declaring_type.Scope)
@@ -179,7 +179,7 @@ namespace MonoFN.Cecil
                 if (fullname != null)
                     return fullname;
 
-                var new_fullname = this.TypeFullName();
+                string new_fullname = this.TypeFullName();
 
                 if (IsNested)
                     new_fullname = DeclaringType.FullName + "/" + new_fullname;
@@ -279,7 +279,7 @@ namespace MonoFN.Cecil
 
         public new virtual TypeDefinition Resolve()
         {
-            var module = Module;
+            ModuleDefinition module = Module;
             if (module == null)
                 throw new NotSupportedException();
 
@@ -347,7 +347,7 @@ namespace MonoFN.Cecil
 
         public static TypeDefinition CheckedResolve(this TypeReference self)
         {
-            var type = self.Resolve();
+            TypeDefinition type = self.Resolve();
             if (type == null)
                 throw new ResolutionException(self);
 

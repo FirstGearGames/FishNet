@@ -11,6 +11,7 @@
 #if !NET_CORE
 using System;
 using System.Security;
+using System.Security.Permissions;
 using SSP = System.Security.Permissions;
 
 namespace MonoFN.Cecil.Rocks
@@ -39,13 +40,13 @@ namespace MonoFN.Cecil.Rocks
             if (!declaration.HasSecurityAttributes && declaration.SecurityAttributes.Count != 1)
                 return false;
 
-            var security_attribute = declaration.SecurityAttributes[0];
+            SecurityAttribute security_attribute = declaration.SecurityAttributes[0];
             if (!security_attribute.AttributeType.IsTypeOf("System.Security.Permissions", "PermissionSetAttribute"))
                 return false;
 
-            var attribute = new SSP.PermissionSetAttribute((SSP.SecurityAction)declaration.Action);
+            PermissionSetAttribute attribute = new((SSP.SecurityAction)declaration.Action);
 
-            var named_argument = security_attribute.Properties[0];
+            CustomAttributeNamedArgument named_argument = security_attribute.Properties[0];
             string value = (string)named_argument.Argument.Value;
             switch (named_argument.Name)
             {
@@ -65,11 +66,11 @@ namespace MonoFN.Cecil.Rocks
 
         private static PermissionSet CreatePermissionSet(SecurityDeclaration declaration)
         {
-            var set = new PermissionSet(SSP.PermissionState.None);
+            PermissionSet set = new(SSP.PermissionState.None);
 
-            foreach (var attribute in declaration.SecurityAttributes)
+            foreach (SecurityAttribute attribute in declaration.SecurityAttributes)
             {
-                var permission = CreatePermission(declaration, attribute);
+                IPermission permission = CreatePermission(declaration, attribute);
                 set.AddPermission(permission);
             }
 
@@ -78,11 +79,11 @@ namespace MonoFN.Cecil.Rocks
 
         private static IPermission CreatePermission(SecurityDeclaration declaration, SecurityAttribute attribute)
         {
-            var attribute_type = Type.GetType(attribute.AttributeType.FullName);
+            Type attribute_type = Type.GetType(attribute.AttributeType.FullName);
             if (attribute_type == null)
                 throw new ArgumentException("attribute");
 
-            var security_attribute = CreateSecurityAttribute(attribute_type, declaration);
+            System.Security.Permissions.SecurityAttribute security_attribute = CreateSecurityAttribute(attribute_type, declaration);
             if (security_attribute == null)
                 throw new InvalidOperationException();
 
@@ -102,17 +103,17 @@ namespace MonoFN.Cecil.Rocks
 
         private static void CompleteSecurityAttributeFields(SSP.SecurityAttribute security_attribute, SecurityAttribute attribute)
         {
-            var type = security_attribute.GetType();
+            Type type = security_attribute.GetType();
 
-            foreach (var named_argument in attribute.Fields)
+            foreach (CustomAttributeNamedArgument named_argument in attribute.Fields)
                 type.GetField(named_argument.Name).SetValue(security_attribute, named_argument.Argument.Value);
         }
 
         private static void CompleteSecurityAttributeProperties(SSP.SecurityAttribute security_attribute, SecurityAttribute attribute)
         {
-            var type = security_attribute.GetType();
+            Type type = security_attribute.GetType();
 
-            foreach (var named_argument in attribute.Properties)
+            foreach (CustomAttributeNamedArgument named_argument in attribute.Properties)
                 type.GetProperty(named_argument.Name).SetValue(security_attribute, named_argument.Argument.Value, null);
         }
 
@@ -138,9 +139,9 @@ namespace MonoFN.Cecil.Rocks
             if (module == null)
                 throw new ArgumentNullException("module");
 
-            var declaration = new SecurityDeclaration(action);
+            SecurityDeclaration declaration = new(action);
 
-            var attribute = new SecurityAttribute(module.TypeSystem.LookupType("System.Security.Permissions", "PermissionSetAttribute"));
+            SecurityAttribute attribute = new(module.TypeSystem.LookupType("System.Security.Permissions", "PermissionSetAttribute"));
 
             attribute.Properties.Add(new("XML", new(module.TypeSystem.String, self.ToXml().ToString())));
 

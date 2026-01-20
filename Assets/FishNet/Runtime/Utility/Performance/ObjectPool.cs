@@ -74,7 +74,6 @@ namespace FishNet.Utility.Performance
         /// <param name = "prefab">Prefab to cache.</param>
         /// <param name = "count">Quantity to spawn.</param>
         /// <param name = "asServer">True if storing prefabs for the server collection. This is only applicable when using DualPrefabObjects.</param>
-        [Obsolete("Use AddPrefabObjects.")]
         public virtual void CacheObjects(NetworkObject prefab, int count, bool asServer) { }
 
         /// <summary>

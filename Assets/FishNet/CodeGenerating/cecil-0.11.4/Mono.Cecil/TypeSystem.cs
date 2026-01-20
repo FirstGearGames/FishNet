@@ -10,6 +10,7 @@
 
 using MonoFN.Cecil.Metadata;
 using System;
+using MonoFN.Collections.Generic;
 
 namespace MonoFN.Cecil
 {
@@ -21,7 +22,7 @@ namespace MonoFN.Cecil
 
             internal override TypeReference LookupType(string @namespace, string name)
             {
-                var type = LookupTypeDefinition(@namespace, name) ?? LookupTypeForwarded(@namespace, name);
+                TypeReference type = LookupTypeDefinition(@namespace, name) ?? LookupTypeForwarded(@namespace, name);
                 if (type != null)
                     return type;
 
@@ -30,20 +31,20 @@ namespace MonoFN.Cecil
 
             private TypeReference LookupTypeDefinition(string @namespace, string name)
             {
-                var metadata = module.MetadataSystem;
+                MetadataSystem metadata = module.MetadataSystem;
                 if (metadata.Types == null)
                     Initialize(module.Types);
 
                 return module.Read(new Row<string, string>(@namespace, name), (row, reader) =>
                 {
-                    var types = reader.metadata.Types;
+                    TypeDefinition[] types = reader.metadata.Types;
 
                     for (int i = 0; i < types.Length; i++)
                     {
                         if (types[i] == null)
                             types[i] = reader.GetTypeDefinition((uint)i + 1);
 
-                        var type = types[i];
+                        TypeDefinition type = types[i];
 
                         if (type.Name == row.Col2 && type.Namespace == row.Col1)
                             return type;
@@ -58,10 +59,10 @@ namespace MonoFN.Cecil
                 if (!module.HasExportedTypes)
                     return null;
 
-                var exported_types = module.ExportedTypes;
+                Collection<ExportedType> exported_types = module.ExportedTypes;
                 for (int i = 0; i < exported_types.Count; i++)
                 {
-                    var exported_type = exported_types[i];
+                    ExportedType exported_type = exported_types[i];
 
                     if (exported_type.Name == name && exported_type.Namespace == @namespace)
                         return exported_type.CreateReference();
@@ -166,7 +167,7 @@ namespace MonoFN.Cecil
             {
                 if (reference != null)
                     return reference;
-                var type = LookupType("System", name);
+                TypeReference type = LookupType("System", name);
                 type.etype = element_type;
                 return reference = type;
             }
@@ -178,7 +179,7 @@ namespace MonoFN.Cecil
             {
                 if (typeRef != null)
                     return typeRef;
-                var type = LookupType("System", name);
+                TypeReference type = LookupType("System", name);
                 type.etype = element_type;
                 type.KnownValueType();
                 return typeRef = type;
@@ -194,7 +195,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var common = this as CommonTypeSystem;
+                CommonTypeSystem common = this as CommonTypeSystem;
                 if (common == null)
                     return module;
 
@@ -284,7 +285,7 @@ namespace MonoFN.Cecil
 
         public static bool TryGetCoreLibraryReference(this ModuleDefinition module, out AssemblyNameReference reference)
         {
-            var references = module.AssemblyReferences;
+            Collection<AssemblyNameReference> references = module.AssemblyReferences;
 
             for (int i = 0; i < references.Count; i++)
             {
@@ -319,7 +320,7 @@ namespace MonoFN.Cecil
 
         private static bool IsCoreLibrary(AssemblyNameReference reference)
         {
-            var name = reference.Name;
+            string name = reference.Name;
             return name == mscorlib || name == system_runtime || name == system_private_corelib || name == netstandard;
         }
     }

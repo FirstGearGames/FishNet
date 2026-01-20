@@ -110,7 +110,7 @@ namespace LiteNetLib
         {
             int error = Marshal.GetLastWin32Error();
             if (UnixMode)
-                return NativeErrorToSocketError.TryGetValue(error, out var err) ? err : SocketError.SocketError;
+                return NativeErrorToSocketError.TryGetValue(error, out SocketError err) ? err : SocketError.SocketError;
             return (SocketError)error;
         }
 
@@ -118,7 +118,7 @@ namespace LiteNetLib
         {
             int error = Marshal.GetLastWin32Error();
             if (UnixMode)
-                return NativeErrorToSocketError.TryGetValue(error, out var err) ? new((int)err) : new SocketException((int)SocketError.SocketError);
+                return NativeErrorToSocketError.TryGetValue(error, out SocketError err) ? new((int)err) : new SocketException((int)SocketError.SocketError);
             return new(error);
         }
 

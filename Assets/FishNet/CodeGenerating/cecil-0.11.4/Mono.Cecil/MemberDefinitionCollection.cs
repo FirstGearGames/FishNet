@@ -49,7 +49,7 @@ namespace MonoFN.Cecil
 
         protected sealed override void OnClear()
         {
-            foreach (var definition in this)
+            foreach (T definition in this)
                 Detach(definition);
         }
 

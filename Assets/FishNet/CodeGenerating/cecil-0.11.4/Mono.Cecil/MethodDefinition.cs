@@ -93,7 +93,7 @@ namespace MonoFN.Cecil
             if (sem_attrs_ready)
                 return;
 
-            var module = Module;
+            ModuleDefinition module = Module;
             if (module == null)
                 return;
 
@@ -149,7 +149,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var local = body;
+                MethodBody local = body;
                 if (local != null)
                     return local;
 
@@ -165,7 +165,7 @@ namespace MonoFN.Cecil
             }
             set
             {
-                var module = Module;
+                ModuleDefinition module = Module;
                 if (module == null)
                 {
                     body = value;
@@ -520,7 +520,7 @@ namespace MonoFN.Cecil
     {
         public static ParameterDefinition GetParameter(this MethodBody self, int index)
         {
-            var method = self.method;
+            MethodDefinition method = self.method;
 
             if (method.HasThis)
             {
@@ -530,7 +530,7 @@ namespace MonoFN.Cecil
                 index--;
             }
 
-            var parameters = method.Parameters;
+            Collection<ParameterDefinition> parameters = method.Parameters;
 
             if (index < 0 || index >= parameters.size)
                 return null;
@@ -540,7 +540,7 @@ namespace MonoFN.Cecil
 
         public static VariableDefinition GetVariable(this MethodBody self, int index)
         {
-            var variables = self.Variables;
+            Collection<VariableDefinition> variables = self.Variables;
 
             if (index < 0 || index >= variables.size)
                 return null;

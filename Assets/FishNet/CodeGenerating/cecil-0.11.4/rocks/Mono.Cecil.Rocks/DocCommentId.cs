@@ -213,11 +213,11 @@ namespace MonoFN.Cecil.Rocks
                 id.Append('.');
             }
 
-            var name = type.Name;
+            string name = type.Name;
 
             if (stripGenericArity)
             {
-                var index = name.LastIndexOf('`');
+                int index = name.LastIndexOf('`');
                 if (index > 0)
                     name = name.Substring(0, index);
             }
@@ -240,7 +240,7 @@ namespace MonoFN.Cecil.Rocks
             if (member == null)
                 throw new ArgumentNullException("member");
 
-            var documentId = new DocCommentId();
+            DocCommentId documentId = new();
 
             switch (member.MetadataToken.TokenType)
             {

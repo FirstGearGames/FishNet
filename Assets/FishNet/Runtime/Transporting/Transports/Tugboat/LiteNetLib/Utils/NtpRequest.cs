@@ -27,7 +27,7 @@ namespace LiteNetLib.Utils
             {
                 return false;
             }
-            var packet = new NtpPacket();
+            NtpPacket packet = new();
             try
             {
                 int sendCount = socket.SendTo(packet.Bytes, 0, packet.Bytes.Length, SocketFlags.None, _ntpEndPoint);

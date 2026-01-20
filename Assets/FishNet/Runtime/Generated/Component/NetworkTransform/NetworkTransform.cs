@@ -385,12 +385,12 @@ namespace FishNet.Component.Transforming
             Rotation = AutoPackType.Packed,
             Scale = AutoPackType.Unpacked
         };
+        /// <summary>
         /// True to use scaled deltaTime when smoothing.
         /// </summary>
         [Tooltip("True to use scaled deltaTime when smoothing.")]
         [SerializeField]
         private bool _useScaledTime = true;
-        /// <summary>
         /// <summary>
         /// How many ticks to interpolate.
         /// </summary>
@@ -876,7 +876,13 @@ namespace FishNet.Component.Transforming
                         _initializedRigidbodyInterpolation2d = c.interpolation;
 
                     bool isKinematic = CanMakeKinematic();
+
+                    #if UNITY_6000_1_OR_NEWER
+                    c.bodyType = isKinematic ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
+                    #else
                     c.isKinematic = isKinematic;
+                    #endif
+
                     c.simulated = !isKinematic;
 
                     if (isKinematic)
@@ -1085,9 +1091,7 @@ namespace FishNet.Component.Transforming
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ForceSend(uint ticks)
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
             using (_pm_ForceSend1.Auto())
-#endif
             {
                 /* If there is a pending delayed force send then queue it
                  * immediately and set a new delay tick. */
@@ -1656,23 +1660,7 @@ namespace FishNet.Component.Transforming
                 if (!IsServerInitialized && !IsClientInitialized)
                     return;
 
-                //If client auth and the owner don't move towards target.
-                if (_clientAuthoritative)
-                {
-                    if (IsOwner || TakenOwnership)
-                        return;
-                }
-                else
-                {
-                    //If not client authoritative, is owner, and don't sync to owner.
-                    if (IsOwner && !_sendToOwner)
-                        return;
-                }
-
-                //True if not client controlled.
-                bool controlledByClient = _clientAuthoritative && Owner.IsActive;
-                //If not controlled by client and is server then no reason to move.
-                if (!controlledByClient && IsServerInitialized)
+                if (!DoSettingsAllowSmoothing())
                     return;
 
                 /* Once here it's safe to assume the object will be moving.
@@ -1756,7 +1744,7 @@ namespace FishNet.Component.Transforming
                     //No more in buffer, see if can extrapolate.
                     else
                     {
-                            /* If everything matches up then end queue.
+                        /* If everything matches up then end queue.
                              * Otherwise let it play out until stuff
                              * aligns. Generally the time remaining is enough
                              * but every once in awhile something goes funky
@@ -1764,10 +1752,37 @@ namespace FishNet.Component.Transforming
                             if (!HasChanged(td))
                                 _currentGoalData = null;
                             OnInterpolationComplete?.Invoke();
-
-                    }
+                            }
                 }
             }
+        }
+
+        /// <summary>
+        /// True if settings are configured to smooth with the current network state.
+        /// </summary>
+        /// <returns></returns>
+        public bool DoSettingsAllowSmoothing() 
+        {
+            //If client auth and the owner don't move towards target.
+            if (_clientAuthoritative)
+            {
+                if (IsOwner || TakenOwnership)
+                    return false;
+            }
+            else
+            {
+                //If not client authoritative, is owner, and don't sync to owner.
+                if (IsOwner && !_sendToOwner)
+                    return false;
+            }
+
+            //True if not client controlled.
+            bool controlledByClient = _clientAuthoritative && Owner.IsActive;
+            //If not controlled by client and is server then no reason to move.
+            if (!controlledByClient && IsServerInitialized)
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -2083,7 +2098,6 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Sets move rates which will occur instantly.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetInstantRates(RateData rd, uint tickDifference, float timeRemaining)
         {
             //Was default to 1 tickDiff and -1 time remaining.

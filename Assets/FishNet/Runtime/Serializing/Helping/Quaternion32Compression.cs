@@ -135,7 +135,7 @@ namespace FishNet.Serializing.Helping
             bool largestIsNegative = axesFlippingEnabled ? false : reader.ReadBoolean();
             uint compressed = reader.ReadUInt32Unpacked();
 
-            var largestComponentType = (ComponentType)(compressed >> LargestComponentShift);
+            ComponentType largestComponentType = (ComponentType)(compressed >> LargestComponentShift);
             uint integerA = (compressed >> AShift) & IntMask;
             uint integerB = (compressed >> BShift) & IntMask;
             uint integerC = compressed & IntMask;

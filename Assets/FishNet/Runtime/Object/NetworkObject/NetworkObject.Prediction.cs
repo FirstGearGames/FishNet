@@ -14,9 +14,10 @@ using UnityEngine;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
+// ReSharper disable once CheckNamespace
 namespace FishNet.Object
 {
-    public partial class NetworkObject : MonoBehaviour
+    public partial class NetworkObject
     {
         #region Types.
         /// <summary>
@@ -28,6 +29,75 @@ namespace FishNet.Object
             Other = 0,
             Rigidbody = 1,
             Rigidbody2D = 2
+        }
+
+        /// <summary>
+        /// How to correct, or reset a rigidbody transform after a reconcile when the reconcile state is local, and the rigidbody has near nil differences from when the reconcile started.
+        /// </summary>
+        /// <remarks>Due to physics not being deterministic a reconcile can cause a rigidbody to finish with different results than what it started it, even if the rigidbody did not experience any difference in forces. These options allow FishNet to reset the rigidbody to as it were before the reconcile if the differences are minor enough. By resetting values de-synchronization and subtly observed shaking can be prevented or significantly reduced.</remarks>
+        [Serializable]
+        internal enum RigidbodyLocalReconcileCorrectionType : byte
+        {
+            /// <summary>
+            /// Do not make corrections.
+            /// </summary>
+            Disabled = 0,
+            /// <summary>
+            /// Only reset the transform.
+            /// </summary>
+            TransformOnly = 1,
+            /* Velocities support will be available next release.
+             * To support velocities as well PreReconcilingTransformProperties must
+             * also store each rigidbody associated with the transform. This should not
+             * be too difficult given we already check for a rb to exist before adding
+             * the transform.
+             *
+             * When adding velocities support only add velocity data if feature
+             * it set to reset velocities; same applies when comparing and resetting.
+             * */
+            /// <summary>
+            /// Reset the transform and rigidbody velocities.
+            /// </summary>
+            /// <remarks>This setting is included even though it is not yet functional so that it becomes effective immediately on availability should it be the selected option.</remarks>
+            TransformAndVelocities = 2
+        }
+
+        /// <summary>
+        /// Properties of a Transform and properties associated with it.
+        /// </summary>
+        internal class PreReconcilingTransformProperties : IResettable
+        {
+            /// <summary>
+            /// NetworkBehaviours that are predicted on the transform.
+            /// </summary>
+            public readonly List<NetworkBehaviour> NetworkBehaviours = new();
+            /// <summary>
+            /// Transform on the first added NetworkBehaviour.
+            /// </summary>
+            public Transform Transform { get; private set; }
+            /// <summary>
+            /// Properties of the transform during PreReconcile.
+            /// </summary>
+            public TransformProperties Properties;
+
+            // ReSharper disable once EmptyConstructor
+            public PreReconcilingTransformProperties() { }
+
+            public void AddNetworkBehaviour(NetworkBehaviour networkBehaviour)
+            {
+                NetworkBehaviours.Add(networkBehaviour);
+
+                if (Transform == null)
+                    Transform = networkBehaviour.transform;
+            }
+
+            public void ResetState()
+            {
+                NetworkBehaviours.Clear();
+                Transform = null;
+            }
+
+            public void InitializeState() { }
         }
         #endregion
 
@@ -49,6 +119,10 @@ namespace FishNet.Object
         /// </summary>
         public RigidbodyPauser RigidbodyPauser => _rigidbodyPauser;
         private RigidbodyPauser _rigidbodyPauser;
+        /// <summary>
+        /// True if PredictionType is set to a rigidbody value.
+        /// </summary>
+        internal bool IsRigidbodyPredictionType;
         #endregion
 
         #region Serialized.
@@ -65,6 +139,12 @@ namespace FishNet.Object
         [Tooltip("What type of component is being used for prediction? If not using rigidbodies set to other.")]
         [SerializeField]
         private PredictionType _predictionType = PredictionType.Other;
+        /// <summary>
+        /// Object state corrections to apply after replaying from a local state when non-deterministic physics have possibly provided a different result under the same conditions.
+        /// </summary>
+        [Tooltip("Object state corrections to apply after replaying from a local state when non-deterministic physics have possibly provided a different result under the same conditions.")]
+        [SerializeField]
+        private RigidbodyLocalReconcileCorrectionType _localReconcileCorrectionType = RigidbodyLocalReconcileCorrectionType.TransformAndVelocities;
         /// <summary>
         /// Object containing graphics when using prediction. This should be child of the predicted root.
         /// </summary>
@@ -109,6 +189,7 @@ namespace FishNet.Object
         [Tooltip("NetworkTransform to configure for prediction. Specifying this is optional.")]
         [SerializeField]
         private NetworkTransform _networkTransform;
+        internal NetworkTransform PredictionNetworkTransform => _networkTransform;
         /// <summary>
         /// How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
         /// </summary>
@@ -156,9 +237,21 @@ namespace FishNet.Object
 
         #region Private.
         /// <summary>
+        /// True if prediction behaviours have already been registered.
+        /// </summary>
+        private bool _predictionBehavioursRegistered;
+        /// <summary>
         /// NetworkBehaviours which use prediction.
         /// </summary>
-        private List<NetworkBehaviour> _predictionBehaviours = new();
+        private HashSet<NetworkBehaviour> _predictionBehaviours;
+        /// <summary>
+        /// Properties of a transform before reconcile when the transform may be affected by a rigidbody.
+        /// </summary>
+        private Dictionary<Transform, PreReconcilingTransformProperties> _rigidbodyTransformsPreReconcileProperties;
+        /// <summary>
+        /// Values which were updated within <see cref="_rigidbodyTransformsPreReconcileProperties"/> during preReconcile.
+        /// </summary>
+        private List<PreReconcilingTransformProperties> _updatedPreReconcilingTransformProperties;
         #endregion
 
         #region Private Profiler Markers
@@ -180,7 +273,7 @@ namespace FishNet.Object
                 PredictionSmoother.OnUpdate();
         }
 
-        private void InitializePredictionEarly(NetworkManager manager, bool asServer)
+        private void InitializeEarly_Prediction(NetworkManager manager, bool asServer)
         {
             if (!_enablePrediction)
                 return;
@@ -188,17 +281,23 @@ namespace FishNet.Object
             if (!_enableStateForwarding && _networkTransform != null)
                 _networkTransform.ConfigureForPrediction(_predictionType);
 
-            if (asServer)
-                return;
+            IsRigidbodyPredictionType = _predictionType == PredictionType.Rigidbody || _predictionType == PredictionType.Rigidbody2D;
 
-            InitializeSmoothers();
-
-            if (_predictionBehaviours.Count > 0)
+            if (!_predictionBehavioursRegistered)
             {
-                ChangePredictionSubscriptions(true, manager);
-                foreach (NetworkBehaviour item in _predictionBehaviours)
-                    item.Preinitialize_Prediction(asServer);
+                foreach (NetworkBehaviour behaviour in NetworkBehaviours)
+                {
+                    TryRegisterPredictionBehaviour(behaviour);
+                    RegisterPredictionRigidbodyTransform(behaviour);
+                }
+
+                _predictionBehavioursRegistered = true;
             }
+
+            if (!asServer)
+                InitializeSmoothers();
+
+            ChangePredictionSubscriptions(true, manager, asServer);
         }
 
         private void Deinitialize_Prediction(bool asServer)
@@ -207,23 +306,24 @@ namespace FishNet.Object
                 return;
 
             DeinitializeSmoothers();
-            /* Only the client needs to unsubscribe from these but
-             * asServer may not invoke as false if the client is suddenly
-             * dropping their connection. */
-            if (_predictionBehaviours.Count > 0)
-            {
-                ChangePredictionSubscriptions(subscribe: false, NetworkManager);
-                foreach (NetworkBehaviour item in _predictionBehaviours)
-                    item.Deinitialize_Prediction(asServer);
-            }
+            ChangePredictionSubscriptions(subscribe: false, NetworkManager, asServer);
         }
 
         /// <summary>
         /// Changes subscriptions to use callbacks for prediction.
         /// </summary>
-        private void ChangePredictionSubscriptions(bool subscribe, NetworkManager manager)
+        private void ChangePredictionSubscriptions(bool subscribe, NetworkManager manager, bool asServer)
         {
+            /* Only the client needs to unsubscribe from these but
+             * asServer may not invoke as false if the client is suddenly
+             * dropping their connection. */
+            if (asServer && subscribe)
+                return;
+
             if (manager == null)
+                return;
+
+            if (_predictionBehaviours.Count == 0)
                 return;
 
             if (subscribe)
@@ -253,13 +353,11 @@ namespace FishNet.Object
         /// </summary>
         private void InitializeSmoothers()
         {
-            bool usesRb = _predictionType == PredictionType.Rigidbody;
-            bool usesRb2d = _predictionType == PredictionType.Rigidbody2D;
-            if (usesRb || usesRb2d)
+            if (IsRigidbodyPredictionType)
             {
                 _rigidbodyPauser = ResettableObjectCaches<RigidbodyPauser>.Retrieve();
-                RigidbodyType rbType = usesRb ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
-                _rigidbodyPauser.UpdateRigidbodies(transform, rbType, true);
+                RigidbodyType rbType = _predictionType == PredictionType.Rigidbody ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
+                _rigidbodyPauser.UpdateRigidbodies(transform, rbType, getInChildren: true);
             }
 
             if (_graphicalObject == null)
@@ -270,6 +368,7 @@ namespace FishNet.Object
             {
                 if (PredictionSmoother == null)
                     PredictionSmoother = ResettableObjectCaches<TransformTickSmoother>.Retrieve();
+
                 InitializeTickSmoother();
             }
         }
@@ -281,6 +380,7 @@ namespace FishNet.Object
         {
             if (PredictionSmoother == null)
                 return;
+
             float teleportT = _enableTeleport ? _teleportThreshold : MoveRates.UNSET_VALUE;
             PredictionSmoother.InitializeNetworked(this, _graphicalObject, _detachGraphicalObject, teleportT, (float)TimeManager.TickDelta, _ownerInterpolation, _ownerSmoothedProperties, _spectatorInterpolation, _spectatorSmoothedProperties, _adaptiveInterpolation);
         }
@@ -301,12 +401,10 @@ namespace FishNet.Object
 
         private void InvokeStartCallbacks_Prediction(bool asServer)
         {
-            if (_predictionBehaviours.Count == 0)
-                return;
-
             if (!asServer)
             {
                 TimeManager.OnUpdate += TimeManager_Update;
+
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnStartClient();
             }
@@ -314,16 +412,14 @@ namespace FishNet.Object
 
         private void InvokeStopCallbacks_Prediction(bool asServer)
         {
-            if (_predictionBehaviours.Count == 0)
+            if (!asServer)
                 return;
 
-            if (!asServer)
-            {
-                if (TimeManager != null)
-                    TimeManager.OnUpdate -= TimeManager_Update;
-                if (PredictionSmoother != null)
-                    PredictionSmoother.OnStopClient();
-            }
+            if (TimeManager != null)
+                TimeManager.OnUpdate -= TimeManager_Update;
+
+            if (PredictionSmoother != null)
+                PredictionSmoother.OnStopClient();
         }
 
         private void TimeManager_OnPreTick()
@@ -357,6 +453,40 @@ namespace FishNet.Object
         {
             using (_pm_OnPreReconcile.Auto())
             {
+                if (IsClientInitialized)
+                {
+                    /* Always call clear. It's cheap and will prevent possible issues
+                     * should users be toggling related settings during testing. */
+                    _updatedPreReconcilingTransformProperties.Clear();
+
+                    //Rigidbody corrections.
+                    if (_localReconcileCorrectionType != RigidbodyLocalReconcileCorrectionType.Disabled)
+                    {
+                        foreach (KeyValuePair<Transform, PreReconcilingTransformProperties> kvp in _rigidbodyTransformsPreReconcileProperties)
+                        {
+                            PreReconcilingTransformProperties tpc = kvp.Value;
+                            bool addedEntry = false;
+
+                            foreach (NetworkBehaviour nb in tpc.NetworkBehaviours)
+                            {
+                                //Only update transform data if reconciling using local data.
+                                if (nb.IsBehaviourReconciling && !nb.IsReconcileRemote)
+                                {
+                                    tpc.Properties.Update(kvp.Key);
+                                    _updatedPreReconcilingTransformProperties.Add(tpc);
+
+                                    addedEntry = true;
+                                    break;
+                                }
+                            }
+
+                            //Can exit after updating when any NetworkBehaviour is reconciling for the Transform.
+                            if (addedEntry)
+                                break;
+                        }
+                    }
+                }
+
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPreReconcile();
             }
@@ -366,12 +496,15 @@ namespace FishNet.Object
         {
             using (_pm_OnReconcile.Auto())
             {
+                if (!IsClientInitialized)
+                    return;
+
                 /* Tell all prediction behaviours to set/validate their
                  * reconcile data now. This will use reconciles from the server
                  * whenever possible, and local reconciles if a server reconcile
                  * is not available. */
-                for (int i = 0; i < _predictionBehaviours.Count; i++)
-                    _predictionBehaviours[i].Reconcile_Client_Start();
+                foreach (NetworkBehaviour networkBehaviour in _predictionBehaviours)
+                    networkBehaviour.Reconcile_Client_Start();
 
                 /* If still not reconciling then pause rigidbody.
                  * This shouldn't happen unless the user is not calling
@@ -386,10 +519,47 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
+            foreach (NetworkBehaviour nbb in _predictionBehaviours)
+                nbb.IsReconcileRemote = false;
+
             using (_pm_OnPostReconcile.Auto())
             {
-                for (int i = 0; i < _predictionBehaviours.Count; i++)
-                    _predictionBehaviours[i].Reconcile_Client_End();
+                if (!IsClientInitialized)
+                    return;
+
+                if (_localReconcileCorrectionType != RigidbodyLocalReconcileCorrectionType.Disabled)
+                {
+                    /* Check changes in transform for every transform
+                     * which utilizes prediction and a rigidbody, and
+                     * may have changed since preReconcile. */
+                    foreach (PreReconcilingTransformProperties prtp in _updatedPreReconcilingTransformProperties)
+                    {
+                        /* If transform has not changed enough to matter
+                         * then reset values as they were before the reconcile. */
+                        if (!LHasTransformChanged())
+                            prtp.Properties.SetWorldProperties(prtp.Transform);
+
+                        bool LHasTransformChanged()
+                        {
+                            const float v3Distance = 0.000025f;
+                            const float angleDistance = 0.2f;
+
+                            bool hasChanged = (transform.position - prtp.Properties.Position).sqrMagnitude >= v3Distance;
+                            if (!hasChanged)
+                                hasChanged = transform.rotation.Angle(prtp.Properties.Rotation, precise: true) >= angleDistance;
+
+                            return hasChanged;
+                        }
+                    }
+                }
+
+                //This is cleared before the reconcile as well, but no point to keep behaviours in memory if not needed.
+                /* Always call clear. It's cheap and will prevent possible issues
+                 * should users be toggling related settings during testing. */
+                _updatedPreReconcilingTransformProperties.Clear();
+
+                foreach (NetworkBehaviour networkBehaviour in _predictionBehaviours)
+                    networkBehaviour.Reconcile_Client_End();
 
                 /* Unpause rigidbody pauser. It's okay to do that here rather
                  * than per NB, where the pausing occurs, because once here
@@ -406,20 +576,53 @@ namespace FishNet.Object
         {
             using (_pm_OnReplicateReplay.Auto())
             {
+                if (!IsClientInitialized)
+                    return;
+
                 uint replayTick = IsOwner ? clientTick : serverTick;
 
-                for (int i = 0; i < _predictionBehaviours.Count; i++)
-                    _predictionBehaviours[i].Replicate_Replay_Start(replayTick);
+                foreach (NetworkBehaviour networkBehaviour in _predictionBehaviours)
+                    networkBehaviour.Replicate_Replay_Start(replayTick);
             }
         }
 
         /// <summary>
-        /// Registers a NetworkBehaviour that uses prediction with the NetworkObject.
-        /// This method should only be called once throughout the entire lifetime of this object.
+        /// Registers a NetworkBehaviour if it uses prediction.
         /// </summary>
-        internal void RegisterPredictionBehaviourOnce(NetworkBehaviour nb)
+        /// <returns>True if behavior was registered or already registered.</returns>
+        // ReSharper disable once UnusedMethodReturnValue.Local
+        private bool TryRegisterPredictionBehaviour(NetworkBehaviour nb)
         {
+            if (!nb.UsesPrediction)
+                return false;
+
             _predictionBehaviours.Add(nb);
+            return true;
+        }
+
+        /// <summary>
+        /// Registers a NetworkBehaviour's Transform if the behaviour uses prediction and has a rigidbody on it.
+        /// </summary>
+        /// <returns>True if behavior was just registered, or already registered.</returns>
+        private void RegisterPredictionRigidbodyTransform(NetworkBehaviour nb)
+        {
+            if (!nb.UsesPrediction)
+                return;
+
+            Transform t = nb.transform;
+
+            /* Check if the transform is already registered. This will prevent
+             * checking for rigidbodies multiple times on the same transform if more
+             * than one prediction script exist on the same transform. */
+            if (!_rigidbodyTransformsPreReconcileProperties.TryGetValueIL2CPP(t, out PreReconcilingTransformProperties prtp))
+            {
+                prtp = ResettableObjectCaches<PreReconcilingTransformProperties>.Retrieve();
+                _rigidbodyTransformsPreReconcileProperties[t] = prtp;
+            }
+
+            //Only transforms with rigidbodies need to be registered.
+            if (t.TryGetComponent(out Rigidbody _) || t.TryGetComponent(out Rigidbody2D _))
+                prtp.AddNetworkBehaviour(nb);
         }
 
         /// <summary>
@@ -428,8 +631,8 @@ namespace FishNet.Object
         /// </summary>
         internal void EmptyReplicatesQueueIntoHistory()
         {
-            for (int i = 0; i < _predictionBehaviours.Count; i++)
-                _predictionBehaviours[i].EmptyReplicatesQueueIntoHistory_Start();
+            foreach (NetworkBehaviour networkBehaviour in _predictionBehaviours)
+                networkBehaviour.EmptyReplicatesQueueIntoHistory_Start();
         }
 
         /// <summary>
@@ -439,13 +642,9 @@ namespace FishNet.Object
         internal void SetReplicateTick(uint value, bool createdReplicate)
         {
             if (createdReplicate && Owner.IsValid)
+                // ReSharper disable once RedundantArgumentDefaultValue
                 Owner.ReplicateTick.Update(NetworkManager.TimeManager, value, EstimatedTick.OldTickOption.Discard);
         }
-
-        /// <summary>
-        /// ResetState for prediction values.
-        /// </summary>
-        private void ResetState_Prediction(bool asServer) { }
     }
 
     /// <summary>

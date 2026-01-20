@@ -22,7 +22,7 @@ namespace MonoFN.Cecil.Metadata
             if (length < 1)
                 return string.Empty;
 
-            var chars = new char [length / 2];
+            char[] chars = new char [length / 2];
 
             for (int i = start, j = 0; i < start + length; i += 2)
                 chars[j++] = (char)(data[i] | (data[i + 1] << 8));

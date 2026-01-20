@@ -280,7 +280,11 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public void Velocity(Vector3 force)
         {
+            #if UNITY_6000_1_OR_NEWER
+            Rigidbody2D.linearVelocity = force;
+            #else
             Rigidbody2D.velocity = force;
+            #endif
             RemoveForces(true);
         }
 
@@ -348,16 +352,25 @@ namespace FishNet.Object.Prediction
         }
 
         /// <summary>
-        /// Manually clears pending forces.
+        /// Clears current and pending forces for velocity and angularVelocity.
         /// </summary>
-        /// <param name = "velocity">True to clear velocities, false to clear angular velocities.</param>
-        public void ClearPendingForces(bool velocity)
+        public void ClearVelocities() 
         {
-            RemoveForces(velocity);
+            Velocity(Vector3.zero);
+            AngularVelocity(0f);
         }
 
         /// <summary>
-        /// Clears pending velocity and angular velocity forces.
+        /// Clears pending forces for velocity, or angular velocity.
+        /// </summary>
+        /// <param name = "nonRotational">True to clear velocities, false to clear angular velocities.</param>
+        public void ClearPendingForces(bool nonRotational)
+        {
+            RemoveForces(nonRotational);
+        }
+
+        /// <summary>
+        /// Clears pending forces for velocity and angularVelocity.
         /// </summary>
         public void ClearPendingForces()
         {
@@ -383,8 +396,8 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Removes forces from pendingForces.
         /// </summary>
-        /// <param name = "velocity">True to remove if velocity, false if to remove angular velocity.</param>
-        private void RemoveForces(bool velocity)
+        /// <param name = "nonAngular">True to remove if velocity, false if to remove angular velocity.</param>
+        private void RemoveForces(bool nonAngular)
         {
             if (_pendingForces.Count > 0)
             {
@@ -393,7 +406,7 @@ namespace FishNet.Object.Prediction
                 List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
                 foreach (EntryData item in _pendingForces)
                 {
-                    if (VelocityApplicationTypesContains(item.Type) == !velocity)
+                    if (VelocityApplicationTypesContains(item.Type) == !nonAngular)
                         newDatas.Add(item);
                 }
                 // Add back to _pendingForces if changed.

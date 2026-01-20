@@ -288,7 +288,7 @@ namespace LiteNetLib
         public int GetPacketsCountInReliableQueue(byte channelNumber, bool ordered)
         {
             int idx = channelNumber * NetConstants.ChannelTypeCount + (byte)(ordered ? DeliveryMethod.ReliableOrdered : DeliveryMethod.ReliableUnordered);
-            var channel = _channels[idx];
+            BaseChannel channel = _channels[idx];
             return channel != null ? ((ReliableChannel)channel).PacketsInQueue : 0;
         }
 
@@ -302,7 +302,7 @@ namespace LiteNetLib
         {
             // multithreaded variable
             int mtu = Mtu;
-            var packet = NetManager.PoolGetPacket(mtu);
+            NetPacket packet = NetManager.PoolGetPacket(mtu);
             if (deliveryMethod == DeliveryMethod.Unreliable)
             {
                 packet.Property = PacketProperty.Unreliable;
@@ -880,7 +880,7 @@ namespace LiteNetLib
                     return ShutdownResult.None;
                 }
 
-                var result = ConnectionState == ConnectionState.Connected ? ShutdownResult.WasConnected : ShutdownResult.Success;
+                ShutdownResult result = ConnectionState == ConnectionState.Connected ? ShutdownResult.WasConnected : ShutdownResult.Success;
 
                 // don't send anything
                 if (force)
@@ -927,7 +927,7 @@ namespace LiteNetLib
                 //Get needed array from dictionary
                 ushort packetFragId = p.FragmentId;
                 byte packetChannelId = p.ChannelId;
-                if (!_holdedFragments.TryGetValue(packetFragId, out var incomingFragments))
+                if (!_holdedFragments.TryGetValue(packetFragId, out IncomingFragments incomingFragments))
                 {
                     incomingFragments = new()
                     {
@@ -938,7 +938,7 @@ namespace LiteNetLib
                 }
 
                 //Cache
-                var fragments = incomingFragments.Fragments;
+                NetPacket[] fragments = incomingFragments.Fragments;
 
                 //Error check
                 if (p.FragmentPart >= fragments.Length || fragments[p.FragmentPart] != null || p.ChannelId != incomingFragments.ChannelId)
@@ -966,7 +966,7 @@ namespace LiteNetLib
                 int pos = 0;
                 for (int i = 0; i < incomingFragments.ReceivedCount; i++)
                 {
-                    var fragment = fragments[i];
+                    NetPacket fragment = fragments[i];
                     int writtenSize = fragment.Size - NetConstants.FragmentedHeaderTotalSize;
 
                     if (pos + writtenSize > resultingPacket.RawData.Length)
@@ -1067,7 +1067,7 @@ namespace LiteNetLib
 
                 //Send increased packet
                 int newMtu = NetConstants.PossibleMtu[_mtuIdx + 1] - NetManager.ExtraPacketSizeForLayer;
-                var p = NetManager.PoolGetPacket(newMtu);
+                NetPacket p = NetManager.PoolGetPacket(newMtu);
                 p.Property = PacketProperty.MtuCheck;
                 FastBitConverter.GetBytes(p.RawData, 1, newMtu); //place into start
                 FastBitConverter.GetBytes(p.RawData, p.Size - 4, newMtu); //and end of packet
@@ -1093,7 +1093,7 @@ namespace LiteNetLib
                     //slow rare case check
                     if (connRequest.ConnectionTime == ConnectTime)
                     {
-                        var localBytes = connRequest.TargetAddress;
+                        byte[] localBytes = connRequest.TargetAddress;
                         for (int i = _cachedSocketAddr.Size - 1; i >= 0; i--)
                         {
                             byte rb = _cachedSocketAddr[i];
@@ -1209,7 +1209,7 @@ namespace LiteNetLib
                         NetManager.PoolRecycle(packet);
                         break;
                     }
-                    var channel = _channels[packet.ChannelId] ?? (packet.Property == PacketProperty.Ack ? null : CreateChannel(packet.ChannelId));
+                    BaseChannel channel = _channels[packet.ChannelId] ?? (packet.Property == PacketProperty.Ack ? null : CreateChannel(packet.ChannelId));
                     if (channel != null)
                     {
                         if (!channel.ProcessPacket(packet))
@@ -1369,7 +1369,7 @@ namespace LiteNetLib
             int count = _channelSendQueue.Count;
             while (count-- > 0)
             {
-                if (!_channelSendQueue.TryDequeue(out var channel))
+                if (!_channelSendQueue.TryDequeue(out BaseChannel channel))
                     break;
                 if (channel.SendAndCheckQueue())
                 {
@@ -1383,7 +1383,7 @@ namespace LiteNetLib
                 int unreliableCount = _unreliableChannel.Count;
                 for (int i = 0; i < unreliableCount; i++)
                 {
-                    var packet = _unreliableChannel.Dequeue();
+                    NetPacket packet = _unreliableChannel.Dequeue();
                     SendUserData(packet);
                     NetManager.PoolRecycle(packet);
                 }

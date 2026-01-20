@@ -341,7 +341,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         internal static MethodDefinition AddMethod(this TypeDefinition typeDef, string methodName, MethodAttributes attributes, TypeReference typeReference)
         {
-            var method = new MethodDefinition(methodName, attributes, typeReference);
+            MethodDefinition method = new(methodName, attributes, typeReference);
             typeDef.Methods.Add(method);
             return method;
         }

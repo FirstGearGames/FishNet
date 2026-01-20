@@ -74,8 +74,8 @@ namespace MonoFN.Cecil
 
             if (stream.CanSeek)
             {
-                var length = (int)stream.Length;
-                var data = new byte [length];
+                int length = (int)stream.Length;
+                byte[] data = new byte [length];
                 int offset = 0;
 
                 while ((read = stream.Read(data, offset, length - offset)) > 0)
@@ -84,8 +84,8 @@ namespace MonoFN.Cecil
                 return data;
             }
 
-            var buffer = new byte [1024 * 8];
-            var memory = new MemoryStream();
+            byte[] buffer = new byte [1024 * 8];
+            MemoryStream memory = new();
             while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
                 memory.Write(buffer, 0, read);
 
