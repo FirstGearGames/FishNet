@@ -160,7 +160,7 @@ namespace MonoFN.Collections.Generic
             if (index < 0 || index >= size)
                 throw new ArgumentOutOfRangeException();
 
-            var item = items[index];
+            T item = items[index];
 
             OnRemove(item, index);
 
@@ -170,7 +170,7 @@ namespace MonoFN.Collections.Generic
 
         public bool Remove(T item)
         {
-            var index = IndexOf(item);
+            int index = IndexOf(item);
             if (index == -1)
                 return false;
 
@@ -198,7 +198,7 @@ namespace MonoFN.Collections.Generic
 
         public T[] ToArray()
         {
-            var array = new T [size];
+            T[] array = new T [size];
             Array.Copy(items, 0, array, 0, size);
             return array;
         }

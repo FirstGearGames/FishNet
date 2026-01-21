@@ -134,7 +134,7 @@ namespace MonoFN.Cecil
 
         private void InitializeMethods()
         {
-            var module = Module;
+            ModuleDefinition module = Module;
             if (module == null)
                 return;
 

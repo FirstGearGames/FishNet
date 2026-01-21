@@ -272,6 +272,41 @@ namespace GameKit.Dependencies.Utilities
 
             EditorGUI.indentLevel -= indent;
         }
+        
+        /// <summary>
+        /// Draws a help box.
+        /// </summary>
+        public void DrawHelpBox(string message, MessageType type = MessageType.Info, int indent = 0)
+        {
+            PropertiesDrawn++;
+
+            if (indent != 0)
+                EditorGUI.indentLevel += indent;
+
+            // Calculate how much height the help box needs based on the current width
+            // We subtract the indent spacing from the width to ensure text wrapping is calculated correctly
+            float indentSpacing = indent * 15f; 
+            float height = EditorStyles.helpBox.CalcHeight(new(message), Position.width - indentSpacing);
+
+            // Get the rect and draw
+            EditorGUI.HelpBox(GetRectForHelpBox(height), message, type);
+
+            if (indent != 0)
+                EditorGUI.indentLevel -= indent;
+        }
+
+        /// <summary>
+        /// Specialized Rect getter for elements with variable heights like HelpBoxes.
+        /// </summary>
+        private Rect GetRectForHelpBox(float height)
+        {
+            Rect result = new(Position.x, Position.y + _additionalPositionY, Position.width, height);
+
+            // Advance the Y position by the specific height of the box + standard spacing
+            _additionalPositionY += height + EditorGUIUtility.standardVerticalSpacing;
+
+            return result;
+        }
 
         /// <summary>
         /// Gets the next Rect to draw at.

@@ -139,6 +139,10 @@ namespace FishNet.Demo.Prediction.Rigidbodies
         protected override void TimeManager_OnTick()
         {
             PerformReplicate(BuildMoveData());
+        }
+
+        protected override void TimeManager_OnPostTick()
+        {
             CreateReconcile();
         }
 

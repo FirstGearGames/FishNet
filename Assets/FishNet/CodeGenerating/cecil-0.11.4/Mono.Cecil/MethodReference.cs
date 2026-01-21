@@ -41,8 +41,8 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var declaring_type = DeclaringType;
-                var instance = declaring_type as GenericInstanceType;
+                TypeReference declaring_type = DeclaringType;
+                GenericInstanceType instance = declaring_type as GenericInstanceType;
                 if (instance != null)
                     return instance.ElementType;
 
@@ -75,12 +75,12 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var return_type = MethodReturnType;
+                MethodReturnType return_type = MethodReturnType;
                 return return_type != null ? return_type.ReturnType : null;
             }
             set
             {
-                var return_type = MethodReturnType;
+                MethodReturnType return_type = MethodReturnType;
                 if (return_type != null)
                     return_type.ReturnType = value;
             }
@@ -94,7 +94,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var builder = new StringBuilder();
+                StringBuilder builder = new();
                 builder.Append(ReturnType.FullName).Append(" ").Append(MemberFullName());
                 this.MethodSignatureFullName(builder);
                 return builder.ToString();
@@ -114,7 +114,7 @@ namespace MonoFN.Cecil
                 if (!HasParameters)
                     return false;
 
-                var parameters = Parameters;
+                Collection<ParameterDefinition> parameters = Parameters;
 
                 for (int i = 0; i < parameters.Count; i++)
                     if (parameters[i].ParameterType.ContainsGenericParameter)
@@ -158,7 +158,7 @@ namespace MonoFN.Cecil
 
         public new virtual MethodDefinition Resolve()
         {
-            var module = Module;
+            ModuleDefinition module = Module;
             if (module == null)
                 throw new NotSupportedException();
 
@@ -178,7 +178,7 @@ namespace MonoFN.Cecil
             if (!self.HasParameters)
                 return -1;
 
-            var parameters = self.Parameters;
+            Collection<ParameterDefinition> parameters = self.Parameters;
             for (int i = 0; i < parameters.Count; i++)
                 if (parameters[i].ParameterType.IsSentinel)
                     return i;

@@ -379,6 +379,10 @@ namespace FishNet.Object
 
         protected virtual void Awake()
         {
+            _predictionBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveHashSet();
+            _rigidbodyTransformsPreReconcileProperties = ResettableT2CollectionCaches<Transform, PreReconcilingTransformProperties>.RetrieveDictionary();
+            _updatedPreReconcilingTransformProperties = ResettableCollectionCaches<PreReconcilingTransformProperties>.RetrieveList();
+
             _isStatic = gameObject.isStatic;
 
             /* If networkBehaviours are not yet initialized then do so now.
@@ -416,6 +420,10 @@ namespace FishNet.Object
 
         private void OnDestroy()
         {
+            CollectionCaches<NetworkBehaviour>.Store(_predictionBehaviours);
+            ResettableT2CollectionCaches<Transform, PreReconcilingTransformProperties>.Store(_rigidbodyTransformsPreReconcileProperties);
+            CollectionCaches<PreReconcilingTransformProperties>.Store(_updatedPreReconcilingTransformProperties);
+
             SetIsDestroying(DespawnType.Destroy);
 
             // The object never initialized for use.
@@ -668,7 +676,8 @@ namespace FishNet.Object
 
             _networkObserverInitiliazed = true;
 
-            InitializePredictionEarly(networkManager, asServer);
+            InitializeEarly_Prediction(networkManager, asServer);
+
             // Add to connections objects. Collection is a hashset so this can be called twice for clientHost.
             if (owner != null)
                 owner.AddObject(this);
@@ -859,7 +868,7 @@ namespace FishNet.Object
                 NetworkManager.LogError($"Method {nameof(SetInitializedValues)} should only be called at runtime.");
                 return;
             }
-            
+
             /* NetworkManager timestamp is not set yet -- this somehow was called before the NetworkManager.
              * The NetworkManager has the highest priority on initialization so it should be ready before
              * this is called by the scene load callbacks via Unity, and prefabs are initialized by the
@@ -916,7 +925,7 @@ namespace FishNet.Object
                 PredictedOwner = po;
 
             ComponentIndex = componentId;
-            
+
             /* Add an empty nb if needed. Do not add to NetworkBehaviours
              * since it will be picked up via nb finding below. */
             TryAddEmptyNetworkBehaviour(this, addToNetworkBehaviours: false, out _);
@@ -929,7 +938,7 @@ namespace FishNet.Object
             {
                 if (parentNob != parentNetworkObject)
                     NetworkManager.Log($"The provided parent NetworkObject {parentNob.ToString()} was expected to be the same as {parentNetworkObject.ToString()}, but was not. No issues will occur from this -- please report the stack trace of this message.");
-                
+
                 /* Try to add an emptyNetworkBehaviour to this objects parent
                  * if one does not already exist. This is so this networkObject can
                  * identify its parent properly. */
@@ -1027,7 +1036,7 @@ namespace FishNet.Object
         private bool TryAddEmptyNetworkBehaviour(NetworkObject nob, bool addToNetworkBehaviours, out NetworkBehaviour addedNetworkBehaviour)
         {
             Transform target = nob.transform;
-            
+
             // Add to target if it does not have a NB yet.
             if (!target.TryGetComponent(out addedNetworkBehaviour))
             {
@@ -1039,8 +1048,6 @@ namespace FishNet.Object
                 }
 
                 addedNetworkBehaviour = target.gameObject.AddComponent<EmptyNetworkBehaviour>();
-                if (nob.name.StartsWith("Issue-"))
-                    Debug.LogWarning($"Adding EmptyNetworkBehaviour to [{nob.name}] AddToNetworkBehaviours [{addToNetworkBehaviours}]");
                 if (addToNetworkBehaviours)
                 {
                     nob.NetworkBehaviours.Add(addedNetworkBehaviour);
@@ -1067,9 +1074,9 @@ namespace FishNet.Object
         {
             if (NetworkManager == null)
                 return false;
-            else if (asServer && !IsServerInitialized)
+            if (asServer && !IsServerInitialized)
                 return false;
-            else if (!asServer && !IsClientInitialized)
+            if (!asServer && !IsClientInitialized)
                 return false;
 
             return true;
@@ -1126,7 +1133,6 @@ namespace FishNet.Object
             for (int i = 0; i < count; i++)
                 NetworkBehaviours[i].ResetState(asServer);
 
-            ResetState_Prediction(asServer);
             ResetState_Observers(asServer);
 
             /* If nested only unset state if despawned.

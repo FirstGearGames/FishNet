@@ -26,10 +26,10 @@ namespace MonoFN.Cecil.Rocks
             if (self.IsNewSlot)
                 return self;
 
-            var base_type = ResolveBaseType(self.DeclaringType);
+            TypeDefinition base_type = ResolveBaseType(self.DeclaringType);
             while (base_type != null)
             {
-                var @base = GetMatchingMethod(base_type, self);
+                MethodDefinition @base = GetMatchingMethod(base_type, self);
                 if (@base != null)
                     return @base;
 
@@ -46,7 +46,7 @@ namespace MonoFN.Cecil.Rocks
 
             while (true)
             {
-                var @base = self.GetBaseMethod();
+                MethodDefinition @base = self.GetBaseMethod();
                 if (@base == self)
                     return self;
 
@@ -59,7 +59,7 @@ namespace MonoFN.Cecil.Rocks
             if (type == null)
                 return null;
 
-            var base_type = type.BaseType;
+            TypeReference base_type = type.BaseType;
             if (base_type == null)
                 return null;
 

@@ -317,7 +317,7 @@ namespace LiteNetLib.Utils
 
         private DateTime? GetDateTime64(int offset)
         {
-            var field = GetUInt64BE(offset);
+            ulong field = GetUInt64BE(offset);
             if (field == 0)
                 return null;
             return new DateTime(Epoch.Ticks + Convert.ToInt64(field * (1.0 / (1L << 32) * 10000000.0)));

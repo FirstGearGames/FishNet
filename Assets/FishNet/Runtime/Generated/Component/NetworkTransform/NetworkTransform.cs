@@ -283,7 +283,7 @@ namespace FishNet.Component.Transforming
             public TransformData() { }
 
             internal void SetIsDefaultToFalse() => IsDefault = false;
-            
+
             internal void Update(TransformData copy)
             {
                 Update(copy.Tick, copy.Position, copy.Rotation, copy.Scale, copy.ExtrapolatedPosition, copy.ParentBehaviour);
@@ -646,9 +646,8 @@ namespace FishNet.Component.Transforming
         /// </summary>
         private TimeManager _timeManager;
         #endregion
-        
+
         #region Private Profiler Markers
-        
         private static readonly ProfilerMarker _pm_OnUpdate = new("NetworkTransform.TimeManager_OnUpdate()");
         private static readonly ProfilerMarker _pm_OnPostTick = new("NetworkTransform.TimeManager_OnPostTick()");
         private static readonly ProfilerMarker _pm_MoveToTarget = new("NetworkTransform.MoveToTarget(float)");
@@ -657,7 +656,6 @@ namespace FishNet.Component.Transforming
         private static readonly ProfilerMarker _pm_ForceSend1 = new("NetworkTransform.ForceSend(uint)");
         private static readonly ProfilerMarker _pm_SendToClients = new("NetworkTransform.SendToClients()");
         private static readonly ProfilerMarker _pm_SendToServer = new("NetworkTransform.SendToServer(TransformData)");
-        
         #endregion
 
         #region Const.
@@ -779,7 +777,6 @@ namespace FishNet.Component.Transforming
              * follow the queue. */
         }
 
-
         private void TimeManager_OnUpdate()
         {
             using (_pm_OnUpdate.Auto())
@@ -859,7 +856,13 @@ namespace FishNet.Component.Transforming
                         _initializedRigidbodyInterpolation2d = c.interpolation;
 
                     bool isKinematic = CanMakeKinematic();
+
+                    #if UNITY_6000_1_OR_NEWER
+                    c.bodyType = isKinematic ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
+                    #else
                     c.isKinematic = isKinematic;
+                    #endif
+
                     c.simulated = !isKinematic;
 
                     if (isKinematic)
@@ -1210,7 +1213,7 @@ namespace FishNet.Component.Transforming
             //Compressed axis value.
             float compressed;
             //Multiplier for compression.
-            float multiplier = 100f; 
+            float multiplier = 100f;
             /* Maximum value compressed may be
              * to send as compressed. */
             float maxValue = short.MaxValue - 1;
@@ -1614,119 +1617,131 @@ namespace FishNet.Component.Transforming
         {
             using (_pm_MoveToTarget.Auto())
             {
-            if (_currentGoalData == null)
-                return;
+                if (_currentGoalData == null)
+                    return;
 
-            //Cannot move if neither is active.
-            if (!IsServerInitialized && !IsClientInitialized)
-                return;
+                //Cannot move if neither is active.
+                if (!IsServerInitialized && !IsClientInitialized)
+                    return;
 
+                if (!DoSettingsAllowSmoothing())
+                    return;
+
+                /* Once here it's safe to assume the object will be moving.
+                 * Any checks which would stop it from moving be it client
+                 * auth and owner, or server controlled and server, ect,
+                 * would have already been run. */
+                TransformData td = _currentGoalData.Transforms;
+                RateData rd = _currentGoalData.Rates;
+
+                //Set parent.
+                if (_synchronizeParent)
+                    SetParent(td.ParentBehaviour, rd);
+
+                float multiplier = 1f;
+                int queueCount = _goalDataQueue.Count;
+                //Increase move rate slightly if over queue count.
+                if (queueCount > _interpolation + 1)
+                    multiplier += 0.05f;
+
+                //Rate to update. Changes per property.
+                float rate;
+                Transform t = _cachedTransform;
+
+                //Snap any bits of the transform that should be.
+                SnapProperties(td);
+
+                //Position.
+                if (_synchronizePosition)
+                {
+                    rate = rd.Position;
+                    Vector3 posGoal = td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable ? td.ExtrapolatedPosition : td.Position;
+                    // ReSharper disable once CompareOfFloatsByEqualityOperator
+                    if (rate == -1f)
+                        t.localPosition = td.Position;
+                    else
+                        t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, rate * delta * multiplier);
+                }
+
+                //Rotation.
+                if (_synchronizeRotation)
+                {
+                    rate = rd.Rotation;
+                    // ReSharper disable once CompareOfFloatsByEqualityOperator
+                    if (rate == -1f)
+                        t.localRotation = td.Rotation;
+                    else
+                        t.localRotation = Quaternion.RotateTowards(t.localRotation, td.Rotation, rate * delta);
+                }
+
+                //Scale.
+                if (_synchronizeScale)
+                {
+                    rate = rd.Scale;
+                    // ReSharper disable once CompareOfFloatsByEqualityOperator
+                    if (rate == -1f)
+                        t.localScale = td.Scale;
+                    else
+                        t.localScale = Vector3.MoveTowards(t.localScale, td.Scale, rate * delta);
+                }
+
+                float timeRemaining = rd.TimeRemaining - delta * multiplier;
+                if (timeRemaining < -delta)
+                    timeRemaining = -delta;
+                rd.TimeRemaining = timeRemaining;
+
+                if (rd.TimeRemaining <= 0f)
+                {
+                    float leftOver = Mathf.Abs(rd.TimeRemaining);
+                    //If more in buffer then run next buffer.
+                    if (queueCount > 0)
+                    {
+                        SetCurrentGoalData(_goalDataQueue.Dequeue());
+                        if (leftOver > 0f)
+                            MoveToTarget(leftOver);
+                    }
+                    //No more in buffer, see if can extrapolate.
+                    else
+                    {
+                        /* If everything matches up then end queue.
+                             * Otherwise let it play out until stuff
+                             * aligns. Generally the time remaining is enough
+                             * but every once in awhile something goes funky
+                             * and it's thrown off. */
+                            if (!HasChanged(td))
+                                _currentGoalData = null;
+                            OnInterpolationComplete?.Invoke();
+                            }
+                }
+            }
+        }
+
+        /// <summary>
+        /// True if settings are configured to smooth with the current network state.
+        /// </summary>
+        /// <returns></returns>
+        public bool DoSettingsAllowSmoothing() 
+        {
             //If client auth and the owner don't move towards target.
             if (_clientAuthoritative)
             {
                 if (IsOwner || TakenOwnership)
-                    return;
+                    return false;
             }
             else
             {
                 //If not client authoritative, is owner, and don't sync to owner.
                 if (IsOwner && !_sendToOwner)
-                    return;
+                    return false;
             }
 
             //True if not client controlled.
             bool controlledByClient = _clientAuthoritative && Owner.IsActive;
             //If not controlled by client and is server then no reason to move.
             if (!controlledByClient && IsServerInitialized)
-                return;
+                return false;
 
-            /* Once here it's safe to assume the object will be moving.
-             * Any checks which would stop it from moving be it client
-             * auth and owner, or server controlled and server, ect,
-             * would have already been run. */
-            TransformData td = _currentGoalData.Transforms;
-            RateData rd = _currentGoalData.Rates;
-
-            //Set parent.
-            if (_synchronizeParent)
-                SetParent(td.ParentBehaviour, rd);
-
-            float multiplier = 1f;
-            int queueCount = _goalDataQueue.Count;
-            //Increase move rate slightly if over queue count.
-            if (queueCount > _interpolation + 1)
-                multiplier += 0.05f;
-
-            //Rate to update. Changes per property.
-            float rate;
-            Transform t = _cachedTransform;
-
-            //Snap any bits of the transform that should be.
-            SnapProperties(td);
-
-            //Position.
-            if (_synchronizePosition)
-            {
-                rate = rd.Position;
-                Vector3 posGoal = td.ExtrapolationState == TransformData.ExtrapolateState.Active && !_lastReceiveReliable ? td.ExtrapolatedPosition : td.Position;
-                // ReSharper disable once CompareOfFloatsByEqualityOperator
-                if (rate == -1f)
-                    t.localPosition = td.Position;
-                else
-                    t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, rate * delta * multiplier);
-            }
-
-            //Rotation.
-            if (_synchronizeRotation)
-            {
-                rate = rd.Rotation;
-                // ReSharper disable once CompareOfFloatsByEqualityOperator
-                if (rate == -1f)
-                    t.localRotation = td.Rotation;
-                else
-                    t.localRotation = Quaternion.RotateTowards(t.localRotation, td.Rotation, rate * delta);
-            }
-
-            //Scale.
-            if (_synchronizeScale)
-            {
-                rate = rd.Scale;
-                // ReSharper disable once CompareOfFloatsByEqualityOperator
-                if (rate == -1f)
-                    t.localScale = td.Scale;
-                else
-                    t.localScale = Vector3.MoveTowards(t.localScale, td.Scale, rate * delta);
-            }
-
-            float timeRemaining = rd.TimeRemaining - delta * multiplier;
-            if (timeRemaining < -delta)
-                timeRemaining = -delta;
-            rd.TimeRemaining = timeRemaining;
-
-            if (rd.TimeRemaining <= 0f)
-            {
-                float leftOver = Mathf.Abs(rd.TimeRemaining);
-                //If more in buffer then run next buffer.
-                if (queueCount > 0)
-                {
-                    SetCurrentGoalData(_goalDataQueue.Dequeue());
-                    if (leftOver > 0f)
-                        MoveToTarget(leftOver);
-                }
-                //No more in buffer, see if can extrapolate.
-                else
-                {
-                    /* If everything matches up then end queue.
-                         * Otherwise let it play out until stuff
-                         * aligns. Generally the time remaining is enough
-                         * but every once in awhile something goes funky
-                         * and it's thrown off. */
-                        if (!HasChanged(td))
-                            _currentGoalData = null;
-                        OnInterpolationComplete?.Invoke();
-                        }
-            }
-            }
+            return true;
         }
 
         /// <summary>
@@ -1972,11 +1987,11 @@ namespace FishNet.Component.Transforming
 
             if (changed != ChangedDelta.Unset && ParentBehaviour != null)
                 changed |= ChangedDelta.Nested;
-            
+
             //If added scale or childed then also add extended.
             if (startChanged != changed)
                 changed |= ChangedDelta.Extended;
-            
+
             return changed;
         }
         #endregion

@@ -143,12 +143,12 @@ namespace MonoFN.Cecil
 
         private static Collection<ParameterDefinition> MirrorParameters(MethodDefinition method, int bound)
         {
-            var parameters = new Collection<ParameterDefinition>();
+            Collection<ParameterDefinition> parameters = new();
             if (!method.HasParameters)
                 return parameters;
 
-            var original_parameters = method.Parameters;
-            var end = original_parameters.Count - bound;
+            Collection<ParameterDefinition> original_parameters = method.Parameters;
+            int end = original_parameters.Count - bound;
 
             for (int i = 0; i < end; i++)
                 parameters.Add(original_parameters[i]);
@@ -207,14 +207,14 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var builder = new StringBuilder();
+                StringBuilder builder = new();
                 builder.Append(PropertyType.ToString());
                 builder.Append(' ');
                 builder.Append(MemberFullName());
                 builder.Append('(');
                 if (HasParameters)
                 {
-                    var parameters = Parameters;
+                    Collection<ParameterDefinition> parameters = Parameters;
                     for (int i = 0; i < parameters.Count; i++)
                     {
                         if (i > 0)
@@ -235,7 +235,7 @@ namespace MonoFN.Cecil
 
         private void InitializeMethods()
         {
-            var module = Module;
+            ModuleDefinition module = Module;
             if (module == null)
                 return;
 

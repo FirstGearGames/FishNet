@@ -48,7 +48,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var module = Module;
+                ModuleDefinition module = Module;
                 if (module == null)
                     return false;
 

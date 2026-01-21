@@ -39,14 +39,14 @@ namespace FishNet.Object
             get => _componentIndexCache;
             private set => _componentIndexCache = value;
         }
-#if UNITY_EDITOR
+        #if UNITY_EDITOR
         /// <summary>
         /// NetworkObject automatically added or discovered during edit time.
         /// </summary>
         [SerializeField]
         [HideInInspector]
         private NetworkObject _addedNetworkObject;
-#endif
+        #endif
         /// <summary>
         /// Cache of the TransportManager.
         /// </summary>
@@ -66,14 +66,14 @@ namespace FishNet.Object
         /// <summary>
         /// True if initialized at some point asServer.
         /// </summary>
+        #pragma warning disable CS0414 // Field is assigned but its value is never used
         private bool _initializedOnceServer;
-#pragma warning disable CS0414
         /// <summary>
         /// True if initialized at some point not asServer.
         /// </summary>
         private bool _initializedOnceClient;
-#pragma warning restore CS0414
-#if !UNITY_SERVER
+        #pragma warning restore CS0414 // Field is assigned but its value is never used
+        #if !UNITY_SERVER
         /// <summary>
         /// </summary>
         private NetworkTrafficStatistics _networkTrafficStatistics;
@@ -81,7 +81,7 @@ namespace FishNet.Object
         /// Name of this NetworkBehaviour.
         /// </summary>
         private string _typeName = string.Empty;
-#endif
+        #endif
         #endregion
 
         #region Consts.
@@ -115,17 +115,18 @@ namespace FishNet.Object
         /// </summary>
         internal void InitializeEarly(NetworkObject nob, bool asServer)
         {
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (_typeName == string.Empty)
                 _typeName = GetType().Name;
-#endif
+            #endif
 
+            _fiveSecondsToTicks = nob.TimeManager.TimeToTicks(5d);
             _transportManagerCache = nob.TransportManager;
             SyncTypes_Preinitialize(asServer);
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             nob.NetworkManager.StatisticsManager.TryGetNetworkTrafficStatistics(out _networkTrafficStatistics);
-#endif
+            #endif
             
             if (asServer)
             {
@@ -134,9 +135,6 @@ namespace FishNet.Object
             }
             else
             {
-                if (!_initializedOnceClient && nob.EnablePrediction && _usesPrediction)
-                    nob.RegisterPredictionBehaviourOnce(this);
-
                 _initializedOnceClient = true;
             }
         }
@@ -184,22 +182,22 @@ namespace FishNet.Object
         #region Editor.
         protected virtual void Reset()
         {
-#if UNITY_EDITOR
+            #if UNITY_EDITOR
             if (Application.isPlaying)
                 return;
 
             TryAddNetworkObject();
-#endif
+            #endif
         }
 
         protected virtual void OnValidate()
         {
-#if UNITY_EDITOR
+            #if UNITY_EDITOR
             if (Application.isPlaying)
                 return;
 
             TryAddNetworkObject();
-#endif
+            #endif
         }
 
         /// <summary>
@@ -218,7 +216,7 @@ namespace FishNet.Object
         /// </summary>
         private NetworkObject TryAddNetworkObject()
         {
-#if UNITY_EDITOR
+            #if UNITY_EDITOR
             if (Application.isPlaying)
                 return _addedNetworkObject;
 
@@ -274,9 +272,9 @@ namespace FishNet.Object
                         Debug.LogError($"Object {t.name} in scene {sceneName} has multiple NetworkObject components. Please remove the extra component(s) to prevent errors.{useMenu}");
                 }
             }
-#else
+            #else
             return null;
-#endif
+            #endif
         }
         #endregion
     }

@@ -6,8 +6,11 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing.Predicting;
 using FishNet.Managing.Statistic;
+using FishNet.Object;
 using Unity.Profiling;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
@@ -61,7 +64,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnPreTick;
         /// <summary>
-        /// Called when a tick occurs.
+        /// Called after PreTick and before OnPostTick, most similar to FixedUpdate. This is commonly where you run replicate or other network.
         /// </summary>
         public event Action OnTick;
         /// <summary>
@@ -739,14 +742,9 @@ namespace FishNet.Managing.Timing
 
                     if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
                     {
-                        using (_pm_OnPrePhysicsSimulation.Auto())
-                            OnPrePhysicsSimulation?.Invoke(tickDelta);
-                        using (_pm_PhysicsSimulate.Auto())
-                            Physics.Simulate(tickDelta);
-                        using (_pm_Physics2DSimulate.Auto())
-                            Physics2D.Simulate(tickDelta);
-                        using (_pm_OnPostPhysicsSimulation.Auto())
-                            OnPostPhysicsSimulation?.Invoke(tickDelta);
+                        InvokeOnSimulation(preSimulation: true, tickDelta);
+                        SimulatePhysics(tickDelta);
+                        InvokeOnSimulation(preSimulation: false, tickDelta);
                     }
 
                     using (_pm_OnPostTick.Auto())
@@ -1063,6 +1061,31 @@ namespace FishNet.Managing.Timing
             return (uint)result;
         }
         #endregion
+
+        /// <summary>
+        /// Invokes OnPreSimulation or OnPostSimulation.
+        /// </summary>
+        internal void InvokeOnSimulation(bool preSimulation, float delta)
+        {
+            if (preSimulation)
+            {
+                using (_pm_OnPrePhysicsSimulation.Auto())
+                    OnPrePhysicsSimulation?.Invoke(delta);
+            }
+            else
+            {
+                using (_pm_OnPostPhysicsSimulation.Auto())
+                    OnPostPhysicsSimulation?.Invoke(delta);
+            }
+        }
+
+        internal void SimulatePhysics(float delta)
+        {
+            using (_pm_PhysicsSimulate.Auto())
+                Physics.Simulate(delta);
+            using (_pm_Physics2DSimulate.Auto())
+                Physics2D.Simulate(delta);
+        }
 
         /// <summary>
         /// Tries to iterate incoming or outgoing data.

@@ -131,7 +131,7 @@ namespace FishNet.CodeGenerating.Helping
                     Replicate_Replay_MethodRef = ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Replicate_Reader))
                     Replicate_Reader_MethodRef = ImportReference(mi);
-                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Reader))
+                else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Reader_Remote))
                     Reconcile_Reader_MethodRef = ImportReference(mi);
                 else if (mi.Name == nameof(NetworkBehaviour.Reconcile_Server))
                     Reconcile_Server_MethodRef = ImportReference(mi);

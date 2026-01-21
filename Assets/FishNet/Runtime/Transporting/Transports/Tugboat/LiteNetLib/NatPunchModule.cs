@@ -169,7 +169,7 @@ namespace LiteNetLib
 
         public void NatIntroduce(IPEndPoint hostInternal, IPEndPoint hostExternal, IPEndPoint clientInternal, IPEndPoint clientExternal, string additionalInfo)
         {
-            var req = new NatIntroduceResponsePacket
+            NatIntroduceResponsePacket req = new()
             {
                 Token = additionalInfo
             };
@@ -193,12 +193,12 @@ namespace LiteNetLib
             if (_natPunchListener == null || (_successEvents.IsEmpty && _requestEvents.IsEmpty))
                 return;
 
-            while (_successEvents.TryDequeue(out var evt))
+            while (_successEvents.TryDequeue(out SuccessEventData evt))
             {
                 _natPunchListener.OnNatIntroductionSuccess(evt.TargetEndPoint, evt.Type, evt.Token);
             }
 
-            while (_requestEvents.TryDequeue(out var evt))
+            while (_requestEvents.TryDequeue(out RequestEventData evt))
             {
                 _natPunchListener.OnNatIntroductionRequest(evt.LocalEndPoint, evt.RemoteEndPoint, evt.Token);
             }
@@ -249,7 +249,7 @@ namespace LiteNetLib
             NetDebug.Write(NetLogLevel.Trace, "[NAT] introduction received");
 
             // send internal punch
-            var punchPacket = new NatPunchPacket { Token = req.Token };
+            NatPunchPacket punchPacket = new() { Token = req.Token };
             Send(punchPacket, req.Internal);
             NetDebug.Write(NetLogLevel.Trace, $"[NAT] internal punch sent to {req.Internal}");
 

@@ -51,8 +51,8 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var signature = new StringBuilder();
-                var method = ElementMethod;
+                StringBuilder signature = new();
+                MethodReference method = ElementMethod;
                 signature.Append(method.ReturnType.FullName).Append(" ").Append(method.DeclaringType.FullName).Append("::").Append(method.Name);
                 this.GenericInstanceFullName(signature);
                 this.MethodSignatureFullName(signature);

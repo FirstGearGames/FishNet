@@ -41,7 +41,7 @@ namespace MonoFN.Cecil
             if (assembly == null)
                 throw new ArgumentNullException("assembly");
 
-            var name = assembly.Name.FullName;
+            string name = assembly.Name.FullName;
             if (cache.ContainsKey(name))
                 return;
 
@@ -50,7 +50,7 @@ namespace MonoFN.Cecil
 
         protected override void Dispose(bool disposing)
         {
-            foreach (var assembly in cache.Values)
+            foreach (AssemblyDefinition assembly in cache.Values)
                 assembly.Dispose();
 
             cache.Clear();

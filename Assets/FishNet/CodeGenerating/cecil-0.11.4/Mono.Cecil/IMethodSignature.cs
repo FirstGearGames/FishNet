@@ -37,10 +37,10 @@ namespace MonoFN.Cecil
 
             if (self.HasParameters)
             {
-                var parameters = self.Parameters;
+                Collection<ParameterDefinition> parameters = self.Parameters;
                 for (int i = 0; i < parameters.Count; i++)
                 {
-                    var parameter = parameters[i];
+                    ParameterDefinition parameter = parameters[i];
                     if (i > 0)
                         builder.Append(",");
 

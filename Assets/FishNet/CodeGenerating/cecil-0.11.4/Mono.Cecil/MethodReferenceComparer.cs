@@ -44,8 +44,8 @@ namespace MonoFN.Cecil
             if (!TypeReferenceEqualityComparer.AreEqual(x.DeclaringType, y.DeclaringType))
                 return false;
 
-            var xGeneric = x as GenericInstanceMethod;
-            var yGeneric = y as GenericInstanceMethod;
+            GenericInstanceMethod xGeneric = x as GenericInstanceMethod;
+            GenericInstanceMethod yGeneric = y as GenericInstanceMethod;
             if (xGeneric != null || yGeneric != null)
             {
                 if (xGeneric == null || yGeneric == null)
@@ -59,8 +59,8 @@ namespace MonoFN.Cecil
                         return false;
             }
 
-            var xResolved = x.Resolve();
-            var yResolved = y.Resolve();
+            MethodDefinition xResolved = x.Resolve();
+            MethodDefinition yResolved = y.Resolve();
 
             if (xResolved != yResolved)
                 return false;
@@ -124,7 +124,7 @@ namespace MonoFN.Cecil
             if (x.GenericParameters.Count != y.GenericParameters.Count)
                 return false;
 
-            for (var i = 0; i < x.Parameters.Count; i++)
+            for (int i = 0; i < x.Parameters.Count; i++)
                 if (!TypeReferenceEqualityComparer.AreEqual(x.Parameters[i].ParameterType, y.Parameters[i].ParameterType, comparisonMode))
                     return false;
 
@@ -139,11 +139,11 @@ namespace MonoFN.Cecil
             // a very good prime number
             const int hashCodeMultiplier = 486187739;
 
-            var genericInstanceMethod = obj as GenericInstanceMethod;
+            GenericInstanceMethod genericInstanceMethod = obj as GenericInstanceMethod;
             if (genericInstanceMethod != null)
             {
-                var hashCode = GetHashCodeFor(genericInstanceMethod.ElementMethod);
-                for (var i = 0; i < genericInstanceMethod.GenericArguments.Count; i++)
+                int hashCode = GetHashCodeFor(genericInstanceMethod.ElementMethod);
+                for (int i = 0; i < genericInstanceMethod.GenericArguments.Count; i++)
                     hashCode = hashCode * hashCodeMultiplier + TypeReferenceEqualityComparer.GetHashCodeFor(genericInstanceMethod.GenericArguments[i]);
                 return hashCode;
             }
