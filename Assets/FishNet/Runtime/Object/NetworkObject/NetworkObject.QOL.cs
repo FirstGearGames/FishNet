@@ -68,7 +68,32 @@ namespace FishNet.Object
         /// True if this object has been initialized on the client side.
         /// This is set true right before client start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsClientInitialized { get; private set; }
+        private bool _isClientInitialized;
+        /// <summary>
+        /// True if this object has been initialized on the client side.
+        /// This is set true right before client start callbacks and after stop callbacks.
+        /// </summary>
+        public bool IsClientInitialized
+        {
+            get => _isClientInitialized;
+            private set
+            {
+                if (_isClientInitialized == value)
+                    return;
+
+                _isClientInitialized = value;
+                if (value)
+                {
+                    using (_pm_OnClientInitializedEvent.Auto())
+                        OnClientInitializedEvent?.Invoke(this);
+                }
+                else
+                {
+                    using (_pm_OnClientDeinitializedEvent.Auto())
+                        OnClientDeinitializedEvent?.Invoke(this);
+                }
+            }
+        }
         /// <summary>
         /// True if the client is started and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
         /// To check if this object has been initialized for the client use IsClientInitialized.
@@ -87,7 +112,32 @@ namespace FishNet.Object
         /// True if this object has been initialized on the server side.
         /// This is set true right before server start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsServerInitialized { get; private set; }
+        private bool _isServerInitialized;
+        /// <summary>
+        /// True if this object has been initialized on the server side.
+        /// This is set true right before server start callbacks and after stop callbacks.
+        /// </summary>
+        public bool IsServerInitialized
+        {
+            get => _isServerInitialized;
+            private set
+            {
+                if (_isServerInitialized == value)
+                    return;
+
+                _isServerInitialized = value;
+                if (value)
+                {
+                    using (_pm_OnServerInitializedEvent.Auto())
+                        OnServerInitializedEvent?.Invoke(this);
+                }
+                else
+                {
+                    using (_pm_OnServerDeinitializedEvent.Auto())
+                        OnServerDeinitializedEvent?.Invoke(this);
+                }
+            }
+        }
         /// <summary>
         /// True if the server is active. This will return true on clientHost even if the object is being deinitialized on the server.
         /// To check if this object has been initialized for the server use IsServerInitialized.

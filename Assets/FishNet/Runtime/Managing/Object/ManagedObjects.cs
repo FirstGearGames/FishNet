@@ -17,6 +17,7 @@ using System.Security.Cryptography;
 using FishNet.Managing.Statistic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Profiling;
 
 namespace FishNet.Managing.Object
 {
@@ -37,6 +38,11 @@ namespace FishNet.Managing.Object
         public event OnSpawnedChanged OnSpawnedRemove;
         public event Action OnSpawnedClear;
         
+        #endregion
+
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_ParseReplicateRpc =
+            new("ManagedObjects.ParseReplicateRpc(PooledReader, NetworkConnection, Channel)");
         #endregion
 
         #region Protected.
@@ -497,21 +503,26 @@ namespace FishNet.Managing.Object
         /// </summary>
         internal void ParseReplicateRpc(PooledReader reader, NetworkConnection conn, Channel channel)
         {
-#if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
-#endif
-            int readerStartAfterDebug = reader.Position;
+            using (_pm_ParseReplicateRpc.Auto())
+            {
+                #if DEVELOPMENT
+                NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining,
+                    out string rpcInformation, out uint expectedReadAmount);
+                #endif
+                int readerStartAfterDebug = reader.Position;
 
-            NetworkBehaviour nb = reader.ReadNetworkBehaviour();
-            int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
-            if (nb != null && nb.IsSpawned)
-                nb.OnReplicateRpc(readerStartAfterDebug, hash: null, reader, conn, channel);
-            else
-                SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
+                NetworkBehaviour nb = reader.ReadNetworkBehaviour();
+                int dataLength = Packets.GetPacketLength((ushort)PacketId.ServerRpc, reader, channel);
+                if (nb != null && nb.IsSpawned)
+                    nb.OnReplicateRpc(readerStartAfterDebug, hash: null, reader, conn, channel);
+                else
+                    SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
 
-#if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
-#endif
+                #if DEVELOPMENT
+                NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader,
+                    startReaderRemaining, rpcInformation, expectedReadAmount, channel);
+                #endif
+            }
         }
 
 #if DEVELOPMENT
@@ -541,5 +552,4 @@ namespace FishNet.Managing.Object
         }
 #endif
     }
-
 }

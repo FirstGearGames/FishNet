@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using FishNet.Managing.Statistic;
 using GameKit.Dependencies.Utilities;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace FishNet.Managing.Transporting
@@ -123,6 +124,11 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// </summary>
         [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
+        #endregion
+        
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_IterateIncoming = new("TimeManager.IterateIncoming(bool)");
+        private static readonly ProfilerMarker _pm_IterateOutgoing = new("TimeManager.IterateOutgoing(bool)");
         #endregion
 
         #region Consts.
@@ -746,9 +752,12 @@ namespace FishNet.Managing.Transporting
         /// <param name = "asServer">True to read data from clients, false to read data from the server.
         internal void IterateIncoming(bool asServer)
         {
-            OnIterateIncomingStart?.Invoke(asServer);
-            Transport.IterateIncoming(asServer);
-            OnIterateIncomingEnd?.Invoke(asServer);
+            using (_pm_IterateIncoming.Auto())
+            {
+                OnIterateIncomingStart?.Invoke(asServer);
+                Transport.IterateIncoming(asServer);
+                OnIterateIncomingEnd?.Invoke(asServer);
+            }
         }
 
         /// <summary>
@@ -757,61 +766,138 @@ namespace FishNet.Managing.Transporting
         /// <param name = "asServer">True to send data from the local server to clients, false to send from the local client to server.
         internal void IterateOutgoing(bool asServer)
         {
-            if (asServer && _networkManager.ServerManager.AreAllServersStopped())
-                return;
-
-            OnIterateOutgoingStart?.Invoke();
-            int channelCount = CHANNEL_COUNT;
-            ulong sentBytes = 0;
-#if DEVELOPMENT
-            bool latencySimulatorEnabled = LatencySimulator.CanSimulate;
-#endif
-            if (asServer)
-                SendAsServer();
-            else
-                SendAsClient();
-
-            // Sends data as server.
-            void SendAsServer()
+            using (_pm_IterateOutgoing.Auto())
             {
-                TimeManager tm = _networkManager.TimeManager;
-                uint localTick = tm.LocalTick;
-                // Write any dirty syncTypes.
-                _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
+                if (asServer && _networkManager.ServerManager.AreAllServersStopped())
+                    return;
 
-                int dirtyCount = _dirtyToClients.Count;
+                OnIterateOutgoingStart?.Invoke();
+                int channelCount = CHANNEL_COUNT;
+                ulong sentBytes = 0;
+#if DEVELOPMENT
+                bool latencySimulatorEnabled = LatencySimulator.CanSimulate;
+#endif
+                if (asServer)
+                    SendAsServer();
+                else
+                    SendAsClient();
 
-                // Run through all dirty connections to send data to.
-                for (int z = 0; z < dirtyCount; z++)
+                // Sends data as server.
+                void SendAsServer()
                 {
-                    NetworkConnection conn = _dirtyToClients[z];
-                    if (conn == null || !conn.IsValid)
-                        continue;
+                    TimeManager tm = _networkManager.TimeManager;
+                    uint localTick = tm.LocalTick;
+                    // Write any dirty syncTypes.
+                    _networkManager.ServerManager.Objects.WriteDirtySyncTypes();
 
-                    // Get packets for every channel.
+                    int dirtyCount = _dirtyToClients.Count;
+
+                    // Run through all dirty connections to send data to.
+                    for (int z = 0; z < dirtyCount; z++)
+                    {
+                        NetworkConnection conn = _dirtyToClients[z];
+                        if (conn == null || !conn.IsValid)
+                            continue;
+
+                        // Get packets for every channel.
+                        for (byte channel = 0; channel < channelCount; channel++)
+                        {
+                            if (conn.GetPacketBundle(channel, out PacketBundle pb))
+                            {
+                                ProcessPacketBundle(pb);
+                                ProcessPacketBundle(pb.GetSendLastBundle(), true);
+
+                                void ProcessPacketBundle(PacketBundle ppb, bool isLast = false)
+                                {
+                                    for (int i = 0; i < ppb.WrittenBuffers; i++)
+                                    {
+                                        // Length should always be more than 0 but check to be safe.
+                                        if (ppb.GetBuffer(i, out ByteBuffer bb))
+                                        {
+                                            ArraySegment<byte> segment = new(bb.Data, 0, bb.Length);
+                                            if (HasIntermediateLayer)
+                                                segment = ProcessIntermediateOutgoing(segment, false);
+#if DEVELOPMENT
+                                            if (latencySimulatorEnabled)
+                                                _latencySimulator.AddOutgoing(channel, segment, false, conn.ClientId);
+                                            else
+#endif
+                                                Transport.SendToClient(channel, segment, conn.ClientId);
+                                            sentBytes += (ulong)segment.Count;
+                                        }
+                                    }
+
+                                    ppb.Reset(false);
+                                }
+                            }
+                        }
+
+                        /* When marked as disconnecting data will still be sent
+                         * this iteration but the connection will be marked as invalid.
+                         * This will prevent future data from going out/coming in.
+                         * Also the connection will be added to a disconnecting collection
+                         * so it will it disconnected briefly later to allow data from
+                         * this tick to send. */
+                        if (conn.Disconnecting)
+                        {
+                            uint requiredTicks = tm.TimeToTicks(0.1d, TickRounding.RoundUp);
+                            /* Require 100ms or 2 ticks to pass
+                             * before disconnecting to allow for the
+                             * higher chance of success that remaining
+                             * data is sent. */
+                            requiredTicks = Math.Max(requiredTicks, 2);
+                            _disconnectingClients.Add(new(requiredTicks + localTick, conn));
+                        }
+
+                        conn.ResetServerDirty();
+                    }
+
+                    // Iterate disconnects.
+                    for (int i = 0; i < _disconnectingClients.Count; i++)
+                    {
+                        DisconnectingClient dc = _disconnectingClients[i];
+                        if (localTick >= dc.Tick)
+                        {
+                            _networkManager.TransportManager.Transport.StopConnection(dc.Connection.ClientId, true);
+                            _disconnectingClients.RemoveAt(i);
+                            i--;
+                        }
+                    }
+
+                    if (_networkTrafficStatistics != null)
+                        _networkTrafficStatistics.AddOutboundSocketData(sentBytes, asServer: true);
+
+                    if (dirtyCount == _dirtyToClients.Count)
+                        _dirtyToClients.Clear();
+                    else if (dirtyCount > 0)
+                        _dirtyToClients.RemoveRange(0, dirtyCount);
+                }
+
+                // Sends data as client.
+                void SendAsClient()
+                {
                     for (byte channel = 0; channel < channelCount; channel++)
                     {
-                        if (conn.GetPacketBundle(channel, out PacketBundle pb))
+                        if (PacketBundle.GetPacketBundle(channel, _toServerBundles, out PacketBundle pb))
                         {
                             ProcessPacketBundle(pb);
-                            ProcessPacketBundle(pb.GetSendLastBundle(), true);
+                            ProcessPacketBundle(pb.GetSendLastBundle());
 
-                            void ProcessPacketBundle(PacketBundle ppb, bool isLast = false)
+                            void ProcessPacketBundle(PacketBundle ppb)
                             {
                                 for (int i = 0; i < ppb.WrittenBuffers; i++)
                                 {
-                                    // Length should always be more than 0 but check to be safe.
                                     if (ppb.GetBuffer(i, out ByteBuffer bb))
                                     {
                                         ArraySegment<byte> segment = new(bb.Data, 0, bb.Length);
                                         if (HasIntermediateLayer)
-                                            segment = ProcessIntermediateOutgoing(segment, false);
+                                            segment = ProcessIntermediateOutgoing(segment, true);
 #if DEVELOPMENT
                                         if (latencySimulatorEnabled)
-                                            _latencySimulator.AddOutgoing(channel, segment, false, conn.ClientId);
+                                            _latencySimulator.AddOutgoing(channel, segment);
                                         else
 #endif
-                                            Transport.SendToClient(channel, segment, conn.ClientId);
+                                            Transport.SendToServer(channel, segment);
                                         sentBytes += (ulong)segment.Count;
                                     }
                                 }
@@ -821,92 +907,18 @@ namespace FishNet.Managing.Transporting
                         }
                     }
 
-                    /* When marked as disconnecting data will still be sent
-                     * this iteration but the connection will be marked as invalid.
-                     * This will prevent future data from going out/coming in.
-                     * Also the connection will be added to a disconnecting collection
-                     * so it will it disconnected briefly later to allow data from
-                     * this tick to send. */
-                    if (conn.Disconnecting)
-                    {
-                        uint requiredTicks = tm.TimeToTicks(0.1d, TickRounding.RoundUp);
-                        /* Require 100ms or 2 ticks to pass
-                         * before disconnecting to allow for the
-                         * higher chance of success that remaining
-                         * data is sent. */
-                        requiredTicks = Math.Max(requiredTicks, 2);
-                        _disconnectingClients.Add(new(requiredTicks + localTick, conn));
-                    }
-
-                    conn.ResetServerDirty();
+                    if (_networkTrafficStatistics != null)
+                        _networkTrafficStatistics.AddOutboundSocketData(sentBytes, asServer: false);
                 }
-
-                // Iterate disconnects.
-                for (int i = 0; i < _disconnectingClients.Count; i++)
-                {
-                    DisconnectingClient dc = _disconnectingClients[i];
-                    if (localTick >= dc.Tick)
-                    {
-                        _networkManager.TransportManager.Transport.StopConnection(dc.Connection.ClientId, true);
-                        _disconnectingClients.RemoveAt(i);
-                        i--;
-                    }
-                }
-
-                if (_networkTrafficStatistics != null)
-                    _networkTrafficStatistics.AddOutboundSocketData(sentBytes, asServer: true);
-
-                if (dirtyCount == _dirtyToClients.Count)
-                    _dirtyToClients.Clear();
-                else if (dirtyCount > 0)
-                    _dirtyToClients.RemoveRange(0, dirtyCount);
-            }
-
-            // Sends data as client.
-            void SendAsClient()
-            {
-                for (byte channel = 0; channel < channelCount; channel++)
-                {
-                    if (PacketBundle.GetPacketBundle(channel, _toServerBundles, out PacketBundle pb))
-                    {
-                        ProcessPacketBundle(pb);
-                        ProcessPacketBundle(pb.GetSendLastBundle());
-
-                        void ProcessPacketBundle(PacketBundle ppb)
-                        {
-                            for (int i = 0; i < ppb.WrittenBuffers; i++)
-                            {
-                                if (ppb.GetBuffer(i, out ByteBuffer bb))
-                                {
-                                    ArraySegment<byte> segment = new(bb.Data, 0, bb.Length);
-                                    if (HasIntermediateLayer)
-                                        segment = ProcessIntermediateOutgoing(segment, true);
-#if DEVELOPMENT
-                                    if (latencySimulatorEnabled)
-                                        _latencySimulator.AddOutgoing(channel, segment);
-                                    else
-#endif
-                                        Transport.SendToServer(channel, segment);
-                                    sentBytes += (ulong)segment.Count;
-                                }
-                            }
-
-                            ppb.Reset(false);
-                        }
-                    }
-                }
-
-                if (_networkTrafficStatistics != null)
-                    _networkTrafficStatistics.AddOutboundSocketData(sentBytes, asServer: false);
-            }
 
 #if DEVELOPMENT
-            if (latencySimulatorEnabled)
-                _latencySimulator.IterateOutgoing(asServer);
+                if (latencySimulatorEnabled)
+                    _latencySimulator.IterateOutgoing(asServer);
 #endif
 
-            Transport.IterateOutgoing(asServer);
-            OnIterateOutgoingEnd?.Invoke();
+                Transport.IterateOutgoing(asServer);
+                OnIterateOutgoingEnd?.Invoke();
+            }
         }
 
         #region Editor.

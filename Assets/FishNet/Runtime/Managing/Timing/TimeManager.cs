@@ -6,11 +6,8 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using FishNet.Managing.Predicting;
 using FishNet.Managing.Statistic;
-using FishNet.Object;
 using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
@@ -293,6 +290,7 @@ namespace FishNet.Managing.Timing
 
         #region Private Profiler Markers
         private static readonly ProfilerMarker _pm_IncreaseTick = new("TimeManager.IncreaseTick()");
+        private static readonly ProfilerMarker _pm_TryIterateData = new("TimeManager.TryIterateData(bool)");
         private static readonly ProfilerMarker _pm_OnFixedUpdate = new("TimeManager.OnFixedUpdate()");
         private static readonly ProfilerMarker _pm_OnPostPhysicsSimulation = new("TimeManager.OnPostPhysicsSimulation(float)");
         private static readonly ProfilerMarker _pm_OnPrePhysicsSimulation = new("TimeManager.OnPrePhysicsSimulation(float)");
@@ -1110,35 +1108,38 @@ namespace FishNet.Managing.Timing
             using (_pm_Physics2DSimulate.Auto())
                 Physics2D.Simulate(delta);
         }
-
+        
         /// <summary>
         /// Tries to iterate incoming or outgoing data.
         /// </summary>
         /// <param name = "incoming">True to iterate incoming.</param>
         private void TryIterateData(bool incoming)
         {
-            if (incoming)
+            using (_pm_TryIterateData.Auto())
             {
-                /* It's not possible for data to come in
-                 * more than once per frame but there could
-                 * be new data going out each tick, since
-                 * movement is often based off the tick system.
-                 * Because of this don't iterate incoming if
-                 * it's the same frame, but the outgoing
-                 * may iterate multiple times per frame due to
-                 * there possibly being multiple ticks per frame. */
-                int frameCount = Time.frameCount;
-                if (frameCount == _lastIncomingIterationFrame)
-                    return;
-                _lastIncomingIterationFrame = frameCount;
+                if (incoming)
+                {
+                    /* It's not possible for data to come in
+                     * more than once per frame but there could
+                     * be new data going out each tick, since
+                     * movement is often based off the tick system.
+                     * Because of this don't iterate incoming if
+                     * it's the same frame, but the outgoing
+                     * may iterate multiple times per frame due to
+                     * there possibly being multiple ticks per frame. */
+                    int frameCount = Time.frameCount;
+                    if (frameCount == _lastIncomingIterationFrame)
+                        return;
+                    _lastIncomingIterationFrame = frameCount;
 
-                NetworkManager.TransportManager.IterateIncoming(asServer: true);
-                NetworkManager.TransportManager.IterateIncoming(asServer: false);
-            }
-            else
-            {
-                NetworkManager.TransportManager.IterateOutgoing(asServer: true);
-                NetworkManager.TransportManager.IterateOutgoing(asServer: false);
+                    NetworkManager.TransportManager.IterateIncoming(asServer: true);
+                    NetworkManager.TransportManager.IterateIncoming(asServer: false);
+                }
+                else
+                {
+                    NetworkManager.TransportManager.IterateOutgoing(asServer: true);
+                    NetworkManager.TransportManager.IterateOutgoing(asServer: false);
+                }
             }
         }
 

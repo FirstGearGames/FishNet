@@ -8,6 +8,7 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using Unity.Profiling;
 
 namespace FishNet.Managing.Client
 {
@@ -23,6 +24,17 @@ namespace FishNet.Managing.Client
         private Dictionary<ushort, RpcLink> _rpcLinks = new();
         #endregion
 
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_ParseRpcLink =
+            new("ClientObjects.ParseRpcLink(PooledReader, ushort, Channel)");
+        private static readonly ProfilerMarker _pm_ParseRpcLink_TargetRpc =
+            new("NetworkBehaviour.ReadTargetRpc()");
+        private static readonly ProfilerMarker _pm_ParseRpcLink_ObserversRpc =
+            new("NetworkBehaviour.ReadObserversRpc()");
+        private static readonly ProfilerMarker _pm_ParseRpcLink_Reconcile =
+            new("NetworkBehaviour.OnReconcileRpc()");
+        #endregion
+
         /// <summary>
         /// Parses a received RPCLink.
         /// </summary>
@@ -30,49 +42,63 @@ namespace FishNet.Managing.Client
         /// <param name = "index"></param>
         internal void ParseRpcLink(PooledReader reader, ushort index, Channel channel)
         {
-#if DEVELOPMENT
-            NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
-#endif
-            int readerStartAfterDebug = reader.Position;
+            using (_pm_ParseRpcLink.Auto())
+            {
+                #if DEVELOPMENT
+                NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining,
+                    out string rpcInformation, out uint expectedReadAmount);
+                #endif
+                int readerStartAfterDebug = reader.Position;
 
-            int dataLength;
-            // Link index isn't stored.
-            if (!_rpcLinks.TryGetValueIL2CPP(index, out RpcLink link))
-            {
-                dataLength = Packets.GetPacketLength(ushort.MaxValue, reader, channel);
-                SkipDataLength(index, reader, dataLength);
-            }
-            // Found NetworkObject for link.
-            else if (Spawned.TryGetValueIL2CPP(link.ObjectId, out NetworkObject nob))
-            {
-                // Still call GetPacketLength to remove any extra bytes at the front of the reader.
-                NetworkBehaviour nb = nob.NetworkBehaviours[link.ComponentIndex];
-                if (link.RpcPacketId == PacketId.TargetRpc)
+                int dataLength;
+                // Link index isn't stored.
+                if (!_rpcLinks.TryGetValueIL2CPP(index, out RpcLink link))
                 {
-                    Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
-                    nb.ReadTargetRpc(readerStartAfterDebug, fromRpcLink: true, link.RpcHash, reader, channel);
+                    dataLength = Packets.GetPacketLength(ushort.MaxValue, reader, channel);
+                    SkipDataLength(index, reader, dataLength);
                 }
-                else if (link.RpcPacketId == PacketId.ObserversRpc)
+                // Found NetworkObject for link.
+                else if (Spawned.TryGetValueIL2CPP(link.ObjectId, out NetworkObject nob))
                 {
-                    Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
-                    nb.ReadObserversRpc(readerStartAfterDebug, fromRpcLink: true, link.RpcHash, reader, channel);
+                    // Still call GetPacketLength to remove any extra bytes at the front of the reader.
+                    NetworkBehaviour nb = nob.NetworkBehaviours[link.ComponentIndex];
+                    if (link.RpcPacketId == PacketId.TargetRpc)
+                    {
+                        Packets.GetPacketLength((ushort)PacketId.TargetRpc, reader, channel);
+                        using (_pm_ParseRpcLink_TargetRpc.Auto())
+                        {
+                            nb.ReadTargetRpc(readerStartAfterDebug, fromRpcLink: true, link.RpcHash, reader, channel);
+                        }
+                    }
+                    else if (link.RpcPacketId == PacketId.ObserversRpc)
+                    {
+                        Packets.GetPacketLength((ushort)PacketId.ObserversRpc, reader, channel);
+                        using (_pm_ParseRpcLink_ObserversRpc.Auto())
+                        {
+                            nb.ReadObserversRpc(readerStartAfterDebug, fromRpcLink: true, link.RpcHash, reader, channel);
+                        }
+                    }
+                    else if (link.RpcPacketId == PacketId.Reconcile)
+                    {
+                        Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
+                        using (_pm_ParseRpcLink_Reconcile.Auto())
+                        {
+                            nb.OnReconcileRpc(readerStartAfterDebug, link.RpcHash, reader, channel);
+                        }
+                    }
                 }
-                else if (link.RpcPacketId == PacketId.Reconcile)
+                // Could not find NetworkObject.
+                else
                 {
-                    Packets.GetPacketLength((ushort)PacketId.Reconcile, reader, channel);
-                    nb.OnReconcileRpc(readerStartAfterDebug, link.RpcHash, reader, channel);
+                    dataLength = Packets.GetPacketLength(index, reader, channel);
+                    SkipDataLength(index, reader, dataLength, link.ObjectId);
                 }
-            }
-            // Could not find NetworkObject.
-            else
-            {
-                dataLength = Packets.GetPacketLength(index, reader, channel);
-                SkipDataLength(index, reader, dataLength, link.ObjectId);
-            }
 
-#if DEVELOPMENT
-            NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: true, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
-#endif
+                #if DEVELOPMENT
+                NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: true, NetworkManager, reader,
+                    startReaderRemaining, rpcInformation, expectedReadAmount, channel);
+                #endif
+            }
         }
 
         /// <summary>

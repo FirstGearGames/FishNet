@@ -172,7 +172,6 @@ namespace FishNet.Managing.Server
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
 
-        /// <summary>
         /// Sets the maximum frame rate the client may run at. Calling this method will enable ChangeFrameRate.
         /// </summary>
         /// <param name = "value">New value.</param>
@@ -234,6 +233,12 @@ namespace FishNet.Managing.Server
 
         #region Private Profiler Markers
         private static readonly ProfilerMarker _pm_OnPostTick = new("ServerManager.TimeManager_OnPostTick()");
+        private static readonly ProfilerMarker _pm_Transport_OnServerConnectionState =
+            new("ServerManager.Transport_OnServerConnectionState(ServerConnectionStateArgs)");
+        private static readonly ProfilerMarker _pm_Transport_OnRemoteConnectionState =
+            new("ServerManager.Transport_OnRemoteConnectionState(RemoteConnectionStateArgs)");
+        private static readonly ProfilerMarker _pm_Transport_OnServerReceivedData =
+            new("ServerManager.Transport_OnServerReceivedData(ServerReceivedDataArgs)");
         #endregion
 
         #region Const.
@@ -523,38 +528,41 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void Transport_OnServerConnectionState(ServerConnectionStateArgs args)
         {
-            /* Let the client manager know the server state is changing first.
-             * This gives the client an opportunity to clean-up or prepare
-             * before the server completes it's actions. */
-            Started = IsAnyServerStarted();
-            NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
-            //If no servers are started then reset data.
-            if (!Started)
+            using (_pm_Transport_OnServerConnectionState.Auto())
             {
-                MatchCondition.StoreCollections(NetworkManager);
-                //Despawn without synchronizing network objects.
-                Objects.DespawnWithoutSynchronization(recursive: true, asServer: true);
-                //Clear all clients.
-                Clients.Clear();
-                //Clients as list.
-                _clientsList.Clear();
+                /* Let the client manager know the server state is changing first.
+                 * This gives the client an opportunity to clean-up or prepare
+                 * before the server completes it's actions. */
+                Started = IsAnyServerStarted();
+                NetworkManager.ClientManager.Objects.OnServerConnectionState(args);
+                //If no servers are started then reset data.
+                if (!Started)
+                {
+                    MatchCondition.StoreCollections(NetworkManager);
+                    //Despawn without synchronizing network objects.
+                    Objects.DespawnWithoutSynchronization(recursive: true, asServer: true);
+                    //Clear all clients.
+                    Clients.Clear();
+                    //Clients as list.
+                    _clientsList.Clear();
+                }
+                Objects.OnServerConnectionState(args);
+
+                LocalConnectionState state = args.ConnectionState;
+
+                if (NetworkManager.CanLog(LoggingType.Common))
+                {
+                    Transport t = NetworkManager.TransportManager.GetTransport(args.TransportIndex);
+                    string tName = t == null ? "Unknown" : t.GetType().Name;
+                    string socketInformation = string.Empty;
+                    if (state == LocalConnectionState.Starting)
+                        socketInformation = $" Listening on port {t.GetPort()}.";
+                    NetworkManager.Log($"Local server is {state.ToString().ToLower()} for {tName}.{socketInformation}");
+                }
+
+                NetworkManager.UpdateFramerate();
+                OnServerConnectionState?.Invoke(args);
             }
-            Objects.OnServerConnectionState(args);
-
-            LocalConnectionState state = args.ConnectionState;
-
-            if (NetworkManager.CanLog(LoggingType.Common))
-            {
-                Transport t = NetworkManager.TransportManager.GetTransport(args.TransportIndex);
-                string tName = t == null ? "Unknown" : t.GetType().Name;
-                string socketInformation = string.Empty;
-                if (state == LocalConnectionState.Starting)
-                    socketInformation = $" Listening on port {t.GetPort()}.";
-                NetworkManager.Log($"Local server is {state.ToString().ToLower()} for {tName}.{socketInformation}");
-            }
-
-            NetworkManager.UpdateFramerate();
-            OnServerConnectionState?.Invoke(args);
         }
 
         /// <summary>
@@ -609,47 +617,50 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void Transport_OnRemoteConnectionState(RemoteConnectionStateArgs args)
         {
-            //Sanity check to make sure transports are following proper types/ranges.
-            int id = args.ConnectionId;
-            if (id < 0 || id > NetworkConnection.MAXIMUM_CLIENTID_VALUE)
+            using (_pm_Transport_OnRemoteConnectionState.Auto())
             {
-                Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {NetworkConnection.MAXIMUM_CLIENTID_VALUE}. The client has been disconnected.");
-                return;
-            }
-            //Valid Id.
-            else
-            {
-                //If started then add to authenticated clients.
-                if (args.ConnectionState == RemoteConnectionState.Started)
+                //Sanity check to make sure transports are following proper types/ranges.
+                int id = args.ConnectionId;
+                if (id < 0 || id > NetworkConnection.MAXIMUM_CLIENTID_VALUE)
                 {
-                    NetworkManager.Log($"Remote connection started for Id {id}.");
-                    NetworkConnection conn = new(NetworkManager, id, args.TransportIndex, true);
-                    Clients.Add(args.ConnectionId, conn);
-                    _clientsList.Add(conn);
-                    OnRemoteConnectionState?.Invoke(conn, args);
-
-                    //Do nothing else until the client sends it's version.
+                    Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"The transport you are using supplied an invalid connection Id of {id}. Connection Id values must range between 0 and {NetworkConnection.MAXIMUM_CLIENTID_VALUE}. The client has been disconnected.");
+                    return;
                 }
-                //If stopping.
-                else if (args.ConnectionState == RemoteConnectionState.Stopped)
+                //Valid Id.
+                else
                 {
-                    /* If client's connection is found then clean
-                     * them up from server. */
-                    if (Clients.TryGetValueIL2CPP(id, out NetworkConnection conn))
+                    //If started then add to authenticated clients.
+                    if (args.ConnectionState == RemoteConnectionState.Started)
                     {
-                        conn.SetDisconnecting(true);
+                        NetworkManager.Log($"Remote connection started for Id {id}.");
+                        NetworkConnection conn = new(NetworkManager, id, args.TransportIndex, true);
+                        Clients.Add(args.ConnectionId, conn);
+                        _clientsList.Add(conn);
                         OnRemoteConnectionState?.Invoke(conn, args);
-                        Clients.Remove(id);
-                        _clientsList.Remove(conn);
-                        Objects.ClientDisconnected(conn);
-                        BroadcastClientConnectionChange(false, conn);
-                        //Return predictedObjectIds.
-                        Queue<int> pqId = conn.PredictedObjectIds;
-                        while (pqId.Count > 0)
-                            Objects.CacheObjectId(pqId.Dequeue());
 
-                        conn.ResetState();
-                        NetworkManager.Log($"Remote connection stopped for Id {id}.");
+                        //Do nothing else until the client sends it's version.
+                    }
+                    //If stopping.
+                    else if (args.ConnectionState == RemoteConnectionState.Stopped)
+                    {
+                        /* If client's connection is found then clean
+                         * them up from server. */
+                        if (Clients.TryGetValueIL2CPP(id, out NetworkConnection conn))
+                        {
+                            conn.SetDisconnecting(true);
+                            OnRemoteConnectionState?.Invoke(conn, args);
+                            Clients.Remove(id);
+                            _clientsList.Remove(conn);
+                            Objects.ClientDisconnected(conn);
+                            BroadcastClientConnectionChange(false, conn);
+                            //Return predictedObjectIds.
+                            Queue<int> pqId = conn.PredictedObjectIds;
+                            while (pqId.Count > 0)
+                                Objects.CacheObjectId(pqId.Dequeue());
+
+                            conn.ResetState();
+                            NetworkManager.Log($"Remote connection stopped for Id {id}.");
+                        }
                     }
                 }
             }
@@ -700,7 +711,10 @@ namespace FishNet.Managing.Server
         /// </summary>
         private void Transport_OnServerReceivedData(ServerReceivedDataArgs args)
         {
-            ParseReceived(args);
+            using (_pm_Transport_OnServerReceivedData.Auto())
+            {
+                ParseReceived(args);
+            }
         }
 
         /// <summary>

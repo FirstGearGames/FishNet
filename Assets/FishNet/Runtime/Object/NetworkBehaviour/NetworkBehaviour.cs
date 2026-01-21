@@ -1,7 +1,6 @@
 ﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #define DEVELOPMENT
 #endif
-using System;
 using FishNet.CodeGenerating;
 using FishNet.Documenting;
 using FishNet.Managing.Transporting;
@@ -77,7 +76,7 @@ namespace FishNet.Object
         #if !UNITY_SERVER
         /// <summary>
         /// </summary>
-        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
+        private NetworkTrafficStatistics _networkTrafficStatistics;
         /// <summary>
         /// Name of this NetworkBehaviour.
         /// </summary>
