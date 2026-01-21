@@ -955,7 +955,8 @@ namespace FishNet.Component.Transforming.Beta
                     clientTick             = clientTick,
                     teleportedTick         = _teleportedTick.AsArray(),
                     objectReconcilingMask  = _objectReconcilingMask.AsArray(),
-                    
+
+                    transformProperties = _transformProperties,
                     modifyTransformPropertiesPayloads = _modifyTransformPropertiesPayloads.AsArray()
                 };
                 
