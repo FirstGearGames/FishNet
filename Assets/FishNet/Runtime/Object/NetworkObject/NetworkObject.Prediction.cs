@@ -46,6 +46,7 @@ namespace FishNet.Object
             /// Only reset the transform.
             /// </summary>
             TransformOnly = 1,
+            
             /* Velocities support will be available next release.
              * To support velocities as well PreReconcilingTransformProperties must
              * also store each rigidbody associated with the transform. This should not
@@ -404,7 +405,7 @@ namespace FishNet.Object
             if (!asServer)
             {
                 TimeManager.OnUpdate += TimeManager_Update;
-
+                
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnStartClient();
             }
@@ -519,11 +520,11 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            foreach (NetworkBehaviour nbb in _predictionBehaviours)
-                nbb.IsReconcileRemote = false;
-
             using (_pm_OnPostReconcile.Auto())
             {
+                foreach (NetworkBehaviour nbb in _predictionBehaviours)
+                    nbb.IsReconcileRemote = false;
+                
                 if (!IsClientInitialized)
                     return;
 
@@ -532,8 +533,9 @@ namespace FishNet.Object
                     /* Check changes in transform for every transform
                      * which utilizes prediction and a rigidbody, and
                      * may have changed since preReconcile. */
-                    foreach (PreReconcilingTransformProperties prtp in _updatedPreReconcilingTransformProperties)
+                    for (var i = 0; i < _updatedPreReconcilingTransformProperties.Count; i++)
                     {
+                        var prtp = _updatedPreReconcilingTransformProperties[i];
                         /* If transform has not changed enough to matter
                          * then reset values as they were before the reconcile. */
                         if (!LHasTransformChanged())
@@ -544,9 +546,11 @@ namespace FishNet.Object
                             const float v3Distance = 0.000025f;
                             const float angleDistance = 0.2f;
 
-                            bool hasChanged = (transform.position - prtp.Properties.Position).sqrMagnitude >= v3Distance;
+                            bool hasChanged = (transform.position - (Vector3)prtp.Properties.Position).sqrMagnitude >=
+                                v3Distance;
                             if (!hasChanged)
-                                hasChanged = transform.rotation.Angle(prtp.Properties.Rotation, precise: true) >= angleDistance;
+                                hasChanged = transform.rotation.Angle(prtp.Properties.Rotation, precise: true) >=
+                                    angleDistance;
 
                             return hasChanged;
                         }
