@@ -183,7 +183,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var fullname = string.IsNullOrEmpty(Namespace) ? Name : Namespace + '.' + Name;
+                string fullname = string.IsNullOrEmpty(Namespace) ? Name : Namespace + '.' + Name;
 
                 if (DeclaringType != null)
                     return DeclaringType.FullName + "/" + fullname;

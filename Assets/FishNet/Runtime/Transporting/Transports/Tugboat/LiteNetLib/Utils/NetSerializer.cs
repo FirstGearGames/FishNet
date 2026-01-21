@@ -75,7 +75,7 @@ namespace LiteNetLib.Utils
             protected TProperty[] ReadArrayHelper(TClass inf, NetDataReader r)
             {
                 ushort count = r.GetUShort();
-                var arr = GetterArr(inf);
+                TProperty[] arr = GetterArr(inf);
                 arr = arr == null || arr.Length != count ? new TProperty[count] : arr;
                 SetterArr(inf, arr);
                 return arr;
@@ -83,7 +83,7 @@ namespace LiteNetLib.Utils
 
             protected TProperty[] WriteArrayHelper(TClass inf, NetDataWriter w)
             {
-                var arr = GetterArr(inf);
+                TProperty[] arr = GetterArr(inf);
                 w.Put((ushort)arr.Length);
                 return arr;
             }
@@ -91,7 +91,7 @@ namespace LiteNetLib.Utils
             protected List<TProperty> ReadListHelper(TClass inf, NetDataReader r, out int len)
             {
                 len = r.GetUShort();
-                var list = GetterList(inf);
+                List<TProperty> list = GetterList(inf);
                 if (list == null)
                 {
                     list = new(len);
@@ -102,7 +102,7 @@ namespace LiteNetLib.Utils
 
             protected List<TProperty> WriteListHelper(TClass inf, NetDataWriter w, out int len)
             {
-                var list = GetterList(inf);
+                List<TProperty> list = GetterList(inf);
                 if (list == null)
                 {
                     len = 0;
@@ -142,26 +142,26 @@ namespace LiteNetLib.Utils
 
             public override void Read(TClass inf, NetDataReader r)
             {
-                ElementRead(r, out var elem);
+                ElementRead(r, out TProperty elem);
                 Setter(inf, elem);
             }
 
             public override void Write(TClass inf, NetDataWriter w)
             {
-                var elem = Getter(inf);
+                TProperty elem = Getter(inf);
                 ElementWrite(w, ref elem);
             }
 
             public override void ReadArray(TClass inf, NetDataReader r)
             {
-                var arr = ReadArrayHelper(inf, r);
+                TProperty[] arr = ReadArrayHelper(inf, r);
                 for (int i = 0; i < arr.Length; i++)
                     ElementRead(r, out arr[i]);
             }
 
             public override void WriteArray(TClass inf, NetDataWriter w)
             {
-                var arr = WriteArrayHelper(inf, w);
+                TProperty[] arr = WriteArrayHelper(inf, w);
                 for (int i = 0; i < arr.Length; i++)
                     ElementWrite(w, ref arr[i]);
             }
@@ -190,7 +190,7 @@ namespace LiteNetLib.Utils
 
             public override void ReadList(TClass inf, NetDataReader r)
             {
-                var list = ReadListHelper(inf, r, out int len);
+                List<TProperty> list = ReadListHelper(inf, r, out int len);
                 int listCount = list.Count;
                 for (int i = 0; i < len; i++)
                 {
@@ -205,14 +205,14 @@ namespace LiteNetLib.Utils
 
             public override void WriteList(TClass inf, NetDataWriter w)
             {
-                var list = WriteListHelper(inf, w, out int len);
+                List<TProperty> list = WriteListHelper(inf, w, out int len);
                 for (int i = 0; i < len; i++)
                     _writer(w, list[i]);
             }
 
             public override void ReadArray(TClass inf, NetDataReader r)
             {
-                var arr = ReadArrayHelper(inf, r);
+                TProperty[] arr = ReadArrayHelper(inf, r);
                 int len = arr.Length;
                 for (int i = 0; i < len; i++)
                     arr[i] = _reader(r);
@@ -220,7 +220,7 @@ namespace LiteNetLib.Utils
 
             public override void WriteArray(TClass inf, NetDataWriter w)
             {
-                var arr = WriteArrayHelper(inf, w);
+                TProperty[] arr = WriteArrayHelper(inf, w);
                 int len = arr.Length;
                 for (int i = 0; i < len; i++)
                     _writer(w, arr[i]);
@@ -245,11 +245,11 @@ namespace LiteNetLib.Utils
 
             public override void ReadList(TClass inf, NetDataReader r)
             {
-                var list = ReadListHelper(inf, r, out int len);
+                List<TProperty> list = ReadListHelper(inf, r, out int len);
                 int listCount = list.Count;
                 for (int i = 0; i < len; i++)
                 {
-                    var itm = default(TProperty);
+                    TProperty itm = default(TProperty);
                     itm.Deserialize(r);
                     if (i < listCount)
                         list[i] = itm;
@@ -262,14 +262,14 @@ namespace LiteNetLib.Utils
 
             public override void WriteList(TClass inf, NetDataWriter w)
             {
-                var list = WriteListHelper(inf, w, out int len);
+                List<TProperty> list = WriteListHelper(inf, w, out int len);
                 for (int i = 0; i < len; i++)
                     list[i].Serialize(w);
             }
 
             public override void ReadArray(TClass inf, NetDataReader r)
             {
-                var arr = ReadArrayHelper(inf, r);
+                TProperty[] arr = ReadArrayHelper(inf, r);
                 int len = arr.Length;
                 for (int i = 0; i < len; i++)
                     arr[i].Deserialize(r);
@@ -277,7 +277,7 @@ namespace LiteNetLib.Utils
 
             public override void WriteArray(TClass inf, NetDataWriter w)
             {
-                var arr = WriteArrayHelper(inf, w);
+                TProperty[] arr = WriteArrayHelper(inf, w);
                 int len = arr.Length;
                 for (int i = 0; i < len; i++)
                     arr[i].Serialize(w);
@@ -295,20 +295,20 @@ namespace LiteNetLib.Utils
 
             public override void Read(TClass inf, NetDataReader r)
             {
-                var p = _constructor();
+                TProperty p = _constructor();
                 p.Deserialize(r);
                 Setter(inf, p);
             }
 
             public override void Write(TClass inf, NetDataWriter w)
             {
-                var p = Getter(inf);
+                TProperty p = Getter(inf);
                 p?.Serialize(w);
             }
 
             public override void ReadList(TClass inf, NetDataReader r)
             {
-                var list = ReadListHelper(inf, r, out int len);
+                List<TProperty> list = ReadListHelper(inf, r, out int len);
                 int listCount = list.Count;
                 for (int i = 0; i < len; i++)
                 {
@@ -318,7 +318,7 @@ namespace LiteNetLib.Utils
                     }
                     else
                     {
-                        var itm = _constructor();
+                        TProperty itm = _constructor();
                         itm.Deserialize(r);
                         list.Add(itm);
                     }
@@ -329,14 +329,14 @@ namespace LiteNetLib.Utils
 
             public override void WriteList(TClass inf, NetDataWriter w)
             {
-                var list = WriteListHelper(inf, w, out int len);
+                List<TProperty> list = WriteListHelper(inf, w, out int len);
                 for (int i = 0; i < len; i++)
                     list[i].Serialize(w);
             }
 
             public override void ReadArray(TClass inf, NetDataReader r)
             {
-                var arr = ReadArrayHelper(inf, r);
+                TProperty[] arr = ReadArrayHelper(inf, r);
                 int len = arr.Length;
                 for (int i = 0; i < len; i++)
                 {
@@ -347,7 +347,7 @@ namespace LiteNetLib.Utils
 
             public override void WriteArray(TClass inf, NetDataWriter w)
             {
-                var arr = WriteArrayHelper(inf, w);
+                TProperty[] arr = WriteArrayHelper(inf, w);
                 int len = arr.Length;
                 for (int i = 0; i < len; i++)
                     arr[i].Serialize(w);
@@ -736,7 +736,7 @@ namespace LiteNetLib.Utils
             {
                 for (int i = 0; i < _membersCount; i++)
                 {
-                    var s = _serializers[i];
+                    FastCall<T> s = _serializers[i];
                     if (s.Type == CallType.Basic)
                         s.Write(obj, writer);
                     else if (s.Type == CallType.Array)
@@ -750,7 +750,7 @@ namespace LiteNetLib.Utils
             {
                 for (int i = 0; i < _membersCount; i++)
                 {
-                    var s = _serializers[i];
+                    FastCall<T> s = _serializers[i];
                     if (s.Type == CallType.Basic)
                         s.Read(obj, reader);
                     else if (s.Type == CallType.Array)
@@ -854,15 +854,15 @@ namespace LiteNetLib.Utils
             if (ClassInfo<T>.Instance != null)
                 return ClassInfo<T>.Instance;
 
-            var props = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.SetProperty);
-            var serializers = new List<FastCall<T>>();
+            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.SetProperty);
+            List<FastCall<T>> serializers = new();
             for (int i = 0; i < props.Length; i++)
             {
-                var property = props[i];
-                var propertyType = property.PropertyType;
+                PropertyInfo property = props[i];
+                Type propertyType = property.PropertyType;
 
-                var elementType = propertyType.IsArray ? propertyType.GetElementType() : propertyType;
-                var callType = propertyType.IsArray ? CallType.Array : CallType.Basic;
+                Type elementType = propertyType.IsArray ? propertyType.GetElementType() : propertyType;
+                CallType callType = propertyType.IsArray ? CallType.Array : CallType.Basic;
 
                 if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>))
                 {
@@ -873,15 +873,15 @@ namespace LiteNetLib.Utils
                 if (Attribute.IsDefined(property, typeof(IgnoreDataMemberAttribute)))
                     continue;
 
-                var getMethod = property.GetGetMethod();
-                var setMethod = property.GetSetMethod();
+                MethodInfo getMethod = property.GetGetMethod();
+                MethodInfo setMethod = property.GetSetMethod();
                 if (getMethod == null || setMethod == null)
                     continue;
 
                 FastCall<T> serialzer = null;
                 if (propertyType.IsEnum)
                 {
-                    var underlyingType = Enum.GetUnderlyingType(propertyType);
+                    Type underlyingType = Enum.GetUnderlyingType(propertyType);
                     if (underlyingType == typeof(byte))
                         serialzer = new EnumByteSerializer<T>(property, propertyType);
                     else if (underlyingType == typeof(int))
@@ -947,7 +947,7 @@ namespace LiteNetLib.Utils
                 }
                 else
                 {
-                    _registeredTypes.TryGetValue(elementType, out var customType);
+                    _registeredTypes.TryGetValue(elementType, out CustomType customType);
                     if (customType != null)
                         serialzer = customType.Get<T>();
                 }
@@ -988,8 +988,8 @@ namespace LiteNetLib.Utils
 #endif
             T>(NetDataReader reader) where T : class, new()
         {
-            var info = RegisterInternal<T>();
-            var result = new T();
+            ClassInfo<T> info = RegisterInternal<T>();
+            T result = new();
             try
             {
                 info.Read(result, reader);
@@ -1014,7 +1014,7 @@ namespace LiteNetLib.Utils
 #endif
             T>(NetDataReader reader, T target) where T : class, new()
         {
-            var info = RegisterInternal<T>();
+            ClassInfo<T> info = RegisterInternal<T>();
             try
             {
                 info.Read(target, reader);

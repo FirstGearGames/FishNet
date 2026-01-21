@@ -19,8 +19,8 @@ namespace MonoFN.Cecil.PE
             if (x.length != y.length)
                 return false;
 
-            var x_buffer = x.buffer;
-            var y_buffer = y.buffer;
+            byte[] x_buffer = x.buffer;
+            byte[] y_buffer = y.buffer;
 
             for (int i = 0; i < x.length; i++)
                 if (x_buffer[i] != y_buffer[i])
@@ -35,8 +35,8 @@ namespace MonoFN.Cecil.PE
             const int fnv_offset_bias = unchecked((int)2166136261);
             const int fnv_prime = 16777619;
 
-            var hash_code = fnv_offset_bias;
-            var bytes = buffer.buffer;
+            int hash_code = fnv_offset_bias;
+            byte[] bytes = buffer.buffer;
 
             for (int i = 0; i < buffer.length; i++)
                 hash_code = unchecked((hash_code ^ bytes[i]) * fnv_prime);

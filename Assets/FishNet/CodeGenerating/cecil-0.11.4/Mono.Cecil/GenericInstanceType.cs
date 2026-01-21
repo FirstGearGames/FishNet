@@ -42,7 +42,7 @@ namespace MonoFN.Cecil
         {
             get
             {
-                var name = new StringBuilder();
+                StringBuilder name = new();
                 name.Append(base.FullName);
                 this.GenericInstanceFullName(name);
                 return name.ToString();

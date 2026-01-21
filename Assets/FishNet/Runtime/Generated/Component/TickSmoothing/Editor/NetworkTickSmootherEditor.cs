@@ -10,6 +10,7 @@ namespace FishNet.Component.Transforming.Beta
     {
         private SerializedProperty _initializationSettings;
         private SerializedProperty _controllerMovementSettings;
+        private SerializedProperty _favorPredictionNetworkTransform;
         private SerializedProperty _spectatorMovementSettings;
         private bool _showControllerSmoothingSettings;
         private bool _showSpectatorSmoothingSettings;
@@ -17,6 +18,7 @@ namespace FishNet.Component.Transforming.Beta
         protected virtual void OnEnable()
         {
             _initializationSettings = serializedObject.FindProperty(nameof(_initializationSettings));
+            _favorPredictionNetworkTransform = serializedObject.FindProperty(nameof(_favorPredictionNetworkTransform));
             _controllerMovementSettings = serializedObject.FindProperty(nameof(_controllerMovementSettings));
             _spectatorMovementSettings = serializedObject.FindProperty(nameof(_spectatorMovementSettings));
         }
@@ -29,17 +31,19 @@ namespace FishNet.Component.Transforming.Beta
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTickSmoother)target), typeof(NetworkTickSmoother), false);
             GUI.enabled = true;
 
-            // EditorGUILayout.LabelField("Initialization Settings", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_favorPredictionNetworkTransform);
 
             EditorGUILayout.PropertyField(_initializationSettings);
 
-            _showControllerSmoothingSettings = EditorGUILayout.Foldout(_showControllerSmoothingSettings, new GUIContent("Controller Smoothing", "Smoothing applied when object controller. This would be the owner, or if there is no owner and are also server."));
+            _showControllerSmoothingSettings = EditorGUILayout.Foldout(_showControllerSmoothingSettings, new GUIContent("Controller", "Smoothing applied when object controller. This would be the owner, or if there is no owner and are also server."));
             if (_showControllerSmoothingSettings)
                 EditorGUILayout.PropertyField(_controllerMovementSettings);
 
             _showSpectatorSmoothingSettings = EditorGUILayout.Foldout(_showSpectatorSmoothingSettings, new GUIContent("Spectator Smoothing", "Smoothing applied when object not the owner. This is when server and there is an owner, or when client and not the owner."));
             if (_showSpectatorSmoothingSettings)
+            {
                 EditorGUILayout.PropertyField(_spectatorMovementSettings);
+            }
 
 
             // EditorGUI.indentLevel--;

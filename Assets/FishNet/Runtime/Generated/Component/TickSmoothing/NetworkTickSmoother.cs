@@ -1,6 +1,7 @@
 ﻿using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -30,6 +31,12 @@ namespace FishNet.Component.Transforming.Beta
         [SerializeField]
         private MovementSettings _controllerMovementSettings = new(true);
         /// <summary>
+        /// True to disable smoothing when the NetworkObject enables prediction, specifies a NetworkTransform to use, and that NetworkTransform is currently smoothing.
+        /// </summary>
+        [Tooltip("True to disable smoothing when the NetworkObject enables prediction, specifies a NetworkTransform to use, and that NetworkTransform is currently smoothing.")]
+        [SerializeField]
+        private bool _favorPredictionNetworkTransform = true;
+        /// <summary>
         /// How smoothing occurs when spectating the object.
         /// </summary>
         [Tooltip("How smoothing occurs when spectating the object.")]
@@ -46,8 +53,8 @@ namespace FishNet.Component.Transforming.Beta
         public override void OnStartClient()
         {
             RetrieveControllers();
-
-            _initializationSettings.SetNetworkedRuntimeValues(initializingNetworkBehaviour: this, graphicalTransform: transform);
+            
+            _initializationSettings.SetNetworkedRuntimeValues(initializingNetworkBehaviour: this, graphicalTransform: transform, _favorPredictionNetworkTransform);
             SmootherController.Initialize(_initializationSettings, _controllerMovementSettings, _spectatorMovementSettings);
 
             SmootherController.StartSmoother();

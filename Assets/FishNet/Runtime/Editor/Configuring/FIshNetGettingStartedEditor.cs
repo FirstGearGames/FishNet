@@ -20,7 +20,7 @@ namespace FishNet.Editing
             window.position = new(0, 0, 320, 355);
             Rect mainPos;
             mainPos = EditorGUIUtility.GetMainWindowPosition();
-            var pos = window.position;
+            Rect pos = window.position;
             float w = (mainPos.width - pos.width) * 0.5f;
             float h = (mainPos.height - pos.height) * 0.5f;
             pos.x = mainPos.x + w;

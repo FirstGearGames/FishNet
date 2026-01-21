@@ -19,6 +19,7 @@ namespace FishNet.Object.Editing
         private SerializedProperty _enableStateForwarding;
         private SerializedProperty _networkTransform;
         private SerializedProperty _predictionType;
+        private SerializedProperty _localReconcileCorrectionType;
         private SerializedProperty _graphicalObject;
         private SerializedProperty _detachGraphicalObject;
         private SerializedProperty _ownerSmoothedProperties;
@@ -48,6 +49,7 @@ namespace FishNet.Object.Editing
             _enableStateForwarding = serializedObject.FindProperty(nameof(_enableStateForwarding));
             _networkTransform = serializedObject.FindProperty(nameof(_networkTransform));
             _predictionType = serializedObject.FindProperty(nameof(_predictionType));
+            _localReconcileCorrectionType = serializedObject.FindProperty(nameof(_localReconcileCorrectionType));
             _graphicalObject = serializedObject.FindProperty(nameof(_graphicalObject));
             _detachGraphicalObject = serializedObject.FindProperty(nameof(_detachGraphicalObject));
 
@@ -105,6 +107,15 @@ namespace FishNet.Object.Editing
                 {
                     EditorGUI.indentLevel++;
                     EditorGUILayout.PropertyField(_predictionType);
+
+                    bool isRigidbodyPredictionType = _predictionType.intValue == (int)NetworkObject.PredictionType.Rigidbody2D || _predictionType.intValue == (int)NetworkObject.PredictionType.Rigidbody;
+                    if (isRigidbodyPredictionType)
+                    {
+                        EditorGUI.indentLevel++;
+                        EditorGUILayout.PropertyField(_localReconcileCorrectionType);
+                        EditorGUI.indentLevel--;
+                    }
+                    
                     EditorGUILayout.PropertyField(_enableStateForwarding);
                     if (_enableStateForwarding.boolValue == false)
                     {

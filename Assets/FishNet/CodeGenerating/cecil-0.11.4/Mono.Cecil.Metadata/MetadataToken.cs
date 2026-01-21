@@ -66,7 +66,7 @@ namespace MonoFN.Cecil
         {
             if (obj is MetadataToken)
             {
-                var other = (MetadataToken)obj;
+                MetadataToken other = (MetadataToken)obj;
                 return other.token == token;
             }
 

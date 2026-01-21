@@ -12,6 +12,7 @@ using MonoFN.Collections.Generic;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text;
 
 namespace MonoFN.Cecil
@@ -70,7 +71,7 @@ namespace MonoFN.Cecil
 
         public string[] GetSearchDirectories()
         {
-            var directories = new string [this.directories.size];
+            string[] directories = new string [this.directories.size];
             Array.Copy(this.directories.items, directories, directories.Length);
             return directories;
         }
@@ -100,7 +101,7 @@ namespace MonoFN.Cecil
             Mixin.CheckName(name);
             Mixin.CheckParameters(parameters);
 
-            var assembly = SearchDirectory(name, directories, parameters);
+            AssemblyDefinition assembly = SearchDirectory(name, directories, parameters);
             if (assembly != null)
                 return assembly;
 
@@ -118,8 +119,8 @@ namespace MonoFN.Cecil
 	        if (assembly != null)
 		        return assembly;
 #else
-            var framework_dir = Path.GetDirectoryName(typeof(object).Module.FullyQualifiedName);
-            var framework_dirs = on_mono ? new[] { framework_dir, Path.Combine(framework_dir, "Facades") } : new[] { framework_dir };
+            string framework_dir = Path.GetDirectoryName(typeof(object).Module.FullyQualifiedName);
+            string[] framework_dirs = on_mono ? new[] { framework_dir, Path.Combine(framework_dir, "Facades") } : new[] { framework_dir };
 
             if (IsZero(name.Version))
             {
@@ -193,10 +194,10 @@ namespace MonoFN.Cecil
 
         protected virtual AssemblyDefinition SearchDirectory(AssemblyNameReference name, IEnumerable<string> directories, ReaderParameters parameters)
         {
-            var extensions = name.IsWindowsRuntime ? new[] { ".winmd", ".dll" } : new[] { ".exe", ".dll" };
-            foreach (var directory in directories)
+            string[] extensions = name.IsWindowsRuntime ? new[] { ".winmd", ".dll" } : new[] { ".exe", ".dll" };
+            foreach (string directory in directories)
             {
-                foreach (var extension in extensions)
+                foreach (string extension in extensions)
                 {
                     string file = Path.Combine(directory, name.Name + extension);
                     if (!File.Exists(file))
@@ -223,12 +224,12 @@ namespace MonoFN.Cecil
 #if !NET_CORE
         private AssemblyDefinition GetCorlib(AssemblyNameReference reference, ReaderParameters parameters)
         {
-            var version = reference.Version;
-            var corlib = typeof(object).Assembly.GetName();
+            Version version = reference.Version;
+            AssemblyName corlib = typeof(object).Assembly.GetName();
             if (corlib.Version == version || IsZero(version))
                 return GetAssembly(typeof(object).Module.FullyQualifiedName, parameters);
 
-            var path = Directory.GetParent(Directory.GetParent(typeof(object).Module.FullyQualifiedName).FullName).FullName;
+            string path = Directory.GetParent(Directory.GetParent(typeof(object).Module.FullyQualifiedName).FullName).FullName;
 
             if (on_mono)
             {
@@ -273,7 +274,7 @@ namespace MonoFN.Cecil
                 }
             }
 
-            var file = Path.Combine(path, "mscorlib.dll");
+            string file = Path.Combine(path, "mscorlib.dll");
             if (File.Exists(file))
                 return GetAssembly(file, parameters);
 
@@ -292,8 +293,8 @@ namespace MonoFN.Cecil
             if (on_mono)
                 return GetDefaultMonoGacPaths();
 
-            var paths = new Collection<string>(2);
-            var windir = Environment.GetEnvironmentVariable("WINDIR");
+            Collection<string> paths = new(2);
+            string windir = Environment.GetEnvironmentVariable("WINDIR");
             if (windir == null)
                 return paths;
 
@@ -304,22 +305,22 @@ namespace MonoFN.Cecil
 
         private static Collection<string> GetDefaultMonoGacPaths()
         {
-            var paths = new Collection<string>(1);
-            var gac = GetCurrentMonoGac();
+            Collection<string> paths = new(1);
+            string gac = GetCurrentMonoGac();
             if (gac != null)
                 paths.Add(gac);
 
-            var gac_paths_env = Environment.GetEnvironmentVariable("MONO_GAC_PREFIX");
+            string gac_paths_env = Environment.GetEnvironmentVariable("MONO_GAC_PREFIX");
             if (string.IsNullOrEmpty(gac_paths_env))
                 return paths;
 
-            var prefixes = gac_paths_env.Split(Path.PathSeparator);
-            foreach (var prefix in prefixes)
+            string[] prefixes = gac_paths_env.Split(Path.PathSeparator);
+            foreach (string prefix in prefixes)
             {
                 if (string.IsNullOrEmpty(prefix))
                     continue;
 
-                var gac_path = Path.Combine(Path.Combine(Path.Combine(prefix, "lib"), "mono"), "gac");
+                string gac_path = Path.Combine(Path.Combine(Path.Combine(prefix, "lib"), "mono"), "gac");
                 if (Directory.Exists(gac_path) && !paths.Contains(gac))
                     paths.Add(gac_path);
             }
@@ -350,8 +351,8 @@ namespace MonoFN.Cecil
         {
             for (int i = 0; i < gac_paths.Count; i++)
             {
-                var gac_path = gac_paths[i];
-                var file = GetAssemblyFile(reference, string.Empty, gac_path);
+                string gac_path = gac_paths[i];
+                string file = GetAssemblyFile(reference, string.Empty, gac_path);
                 if (File.Exists(file))
                     return GetAssembly(file, parameters);
             }
@@ -361,15 +362,15 @@ namespace MonoFN.Cecil
 
         private AssemblyDefinition GetAssemblyInNetGac(AssemblyNameReference reference, ReaderParameters parameters)
         {
-            var gacs = new[] { "GAC_MSIL", "GAC_32", "GAC_64", "GAC" };
-            var prefixes = new[] { string.Empty, "v4.0_" };
+            string[] gacs = new[] { "GAC_MSIL", "GAC_32", "GAC_64", "GAC" };
+            string[] prefixes = new[] { string.Empty, "v4.0_" };
 
             for (int i = 0; i < gac_paths.Count; i++)
             {
                 for (int j = 0; j < gacs.Length; j++)
                 {
-                    var gac = Path.Combine(gac_paths[i], gacs[j]);
-                    var file = GetAssemblyFile(reference, prefixes[i], gac);
+                    string gac = Path.Combine(gac_paths[i], gacs[j]);
+                    string file = GetAssemblyFile(reference, prefixes[i], gac);
                     if (Directory.Exists(gac) && File.Exists(file))
                         return GetAssembly(file, parameters);
                 }
@@ -380,7 +381,7 @@ namespace MonoFN.Cecil
 
         private static string GetAssemblyFile(AssemblyNameReference reference, string prefix, string gac)
         {
-            var gac_folder = new StringBuilder().Append(prefix).Append(reference.Version).Append("__");
+            StringBuilder gac_folder = new StringBuilder().Append(prefix).Append(reference.Version).Append("__");
 
             for (int i = 0; i < reference.PublicKeyToken.Length; i++)
                 gac_folder.Append(reference.PublicKeyToken[i].ToString("x2"));

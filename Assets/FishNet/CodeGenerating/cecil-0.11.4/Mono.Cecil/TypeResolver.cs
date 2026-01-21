@@ -38,27 +38,27 @@ namespace MonoFN.Cecil
 
         public MethodReference Resolve(MethodReference method)
         {
-            var methodReference = method;
+            MethodReference methodReference = method;
             if (IsDummy())
                 return methodReference;
 
-            var declaringType = Resolve(method.DeclaringType);
+            TypeReference declaringType = Resolve(method.DeclaringType);
 
-            var genericInstanceMethod = method as GenericInstanceMethod;
+            GenericInstanceMethod genericInstanceMethod = method as GenericInstanceMethod;
             if (genericInstanceMethod != null)
             {
                 methodReference = new(method.Name, method.ReturnType, declaringType);
 
-                foreach (var p in method.Parameters)
+                foreach (ParameterDefinition p in method.Parameters)
                     methodReference.Parameters.Add(new(p.Name, p.Attributes, p.ParameterType));
 
-                foreach (var gp in genericInstanceMethod.ElementMethod.GenericParameters)
+                foreach (GenericParameter gp in genericInstanceMethod.ElementMethod.GenericParameters)
                     methodReference.GenericParameters.Add(new(gp.Name, methodReference));
 
                 methodReference.HasThis = method.HasThis;
 
-                var m = new GenericInstanceMethod(methodReference);
-                foreach (var ga in genericInstanceMethod.GenericArguments)
+                GenericInstanceMethod m = new(methodReference);
+                foreach (TypeReference ga in genericInstanceMethod.GenericArguments)
                 {
                     m.GenericArguments.Add(Resolve(ga));
                 }
@@ -69,10 +69,10 @@ namespace MonoFN.Cecil
             {
                 methodReference = new(method.Name, method.ReturnType, declaringType);
 
-                foreach (var gp in method.GenericParameters)
+                foreach (GenericParameter gp in method.GenericParameters)
                     methodReference.GenericParameters.Add(new(gp.Name, methodReference));
 
-                foreach (var p in method.Parameters)
+                foreach (ParameterDefinition p in method.Parameters)
                     methodReference.Parameters.Add(new(p.Name, p.Attributes, p.ParameterType));
 
                 methodReference.HasThis = method.HasThis;
@@ -84,7 +84,7 @@ namespace MonoFN.Cecil
 
         public FieldReference Resolve(FieldReference field)
         {
-            var declaringType = Resolve(field.DeclaringType);
+            TypeReference declaringType = Resolve(field.DeclaringType);
 
             if (declaringType == field.DeclaringType)
                 return field;
@@ -127,7 +127,7 @@ namespace MonoFN.Cecil
             if (_methodDefinitionContext != null && _methodDefinitionContext.GenericArguments.Contains(typeReference))
                 return typeReference;
 
-            var genericParameter = typeReference as GenericParameter;
+            GenericParameter genericParameter = typeReference as GenericParameter;
             if (genericParameter != null)
             {
                 if (_typeDefinitionContext != null && _typeDefinitionContext.GenericArguments.Contains(genericParameter))
@@ -137,43 +137,43 @@ namespace MonoFN.Cecil
                 return ResolveGenericParameter(genericParameter);
             }
 
-            var arrayType = typeReference as ArrayType;
+            ArrayType arrayType = typeReference as ArrayType;
             if (arrayType != null)
                 return new ArrayType(Resolve(arrayType.ElementType), arrayType.Rank);
 
-            var pointerType = typeReference as PointerType;
+            PointerType pointerType = typeReference as PointerType;
             if (pointerType != null)
                 return new PointerType(Resolve(pointerType.ElementType));
 
-            var byReferenceType = typeReference as ByReferenceType;
+            ByReferenceType byReferenceType = typeReference as ByReferenceType;
             if (byReferenceType != null)
                 return new ByReferenceType(Resolve(byReferenceType.ElementType));
 
-            var pinnedType = typeReference as PinnedType;
+            PinnedType pinnedType = typeReference as PinnedType;
             if (pinnedType != null)
                 return new PinnedType(Resolve(pinnedType.ElementType));
 
-            var genericInstanceType = typeReference as GenericInstanceType;
+            GenericInstanceType genericInstanceType = typeReference as GenericInstanceType;
             if (genericInstanceType != null)
             {
-                var newGenericInstanceType = new GenericInstanceType(genericInstanceType.ElementType);
-                foreach (var genericArgument in genericInstanceType.GenericArguments)
+                GenericInstanceType newGenericInstanceType = new(genericInstanceType.ElementType);
+                foreach (TypeReference genericArgument in genericInstanceType.GenericArguments)
                     newGenericInstanceType.GenericArguments.Add(Resolve(genericArgument));
                 return newGenericInstanceType;
             }
 
-            var requiredModType = typeReference as RequiredModifierType;
+            RequiredModifierType requiredModType = typeReference as RequiredModifierType;
             if (requiredModType != null)
                 return Resolve(requiredModType.ElementType, includeTypeDefinitions);
 
 
             if (includeTypeDefinitions)
             {
-                var typeDefinition = typeReference as TypeDefinition;
+                TypeDefinition typeDefinition = typeReference as TypeDefinition;
                 if (typeDefinition != null && typeDefinition.HasGenericParameters)
                 {
-                    var newGenericInstanceType = new GenericInstanceType(typeDefinition);
-                    foreach (var gp in typeDefinition.GenericParameters)
+                    GenericInstanceType newGenericInstanceType = new(typeDefinition);
+                    foreach (GenericParameter gp in typeDefinition.GenericParameters)
                         newGenericInstanceType.GenericArguments.Add(Resolve(gp));
                     return newGenericInstanceType;
                 }
@@ -195,7 +195,7 @@ namespace MonoFN.Cecil
             if (genericParameter.Owner == null)
                 return HandleOwnerlessInvalidILCode(genericParameter);
 
-            var memberReference = genericParameter.Owner as MemberReference;
+            MemberReference memberReference = genericParameter.Owner as MemberReference;
             if (memberReference == null)
                 throw new NotSupportedException();
 

@@ -23,7 +23,7 @@ namespace MonoFN.Cecil.Metadata
             if (index == 0 || index - 1 + guid_size > data.Length)
                 return new();
 
-            var buffer = new byte [guid_size];
+            byte[] buffer = new byte [guid_size];
 
             Buffer.BlockCopy(data, (int)((index - 1) * guid_size), buffer, 0, guid_size);
 
