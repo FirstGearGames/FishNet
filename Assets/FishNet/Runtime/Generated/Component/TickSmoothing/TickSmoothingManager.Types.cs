@@ -15,6 +15,7 @@ using UnityEngine.Scripting;
 
 namespace FishNet.Component.Transforming.Beta
 {
+	#if THREADED_TICKSMOOTHERS
 	public partial class TickSmoothingManager
 	{
 		#region Types.
@@ -1312,4 +1313,5 @@ namespace FishNet.Component.Transforming.Beta
 			return new TransformProperties(pos, rot, scl);
 		}
 	}
+	#endif
 }

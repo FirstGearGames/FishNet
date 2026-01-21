@@ -62,7 +62,7 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public event Action OnPreTick;
         /// <summary>
-        /// Called when a tick occurs.
+        /// Called after PreTick and before OnPostTick, most similar to FixedUpdate. This is commonly where you run replicate or other network.
         /// </summary>
         public event Action OnTick;
         /// <summary>
@@ -290,6 +290,7 @@ namespace FishNet.Managing.Timing
 
         #region Private Profiler Markers
         private static readonly ProfilerMarker _pm_IncreaseTick = new("TimeManager.IncreaseTick()");
+        private static readonly ProfilerMarker _pm_TryIterateData = new("TimeManager.TryIterateData(bool)");
         private static readonly ProfilerMarker _pm_OnFixedUpdate = new("TimeManager.OnFixedUpdate()");
         private static readonly ProfilerMarker _pm_OnPostPhysicsSimulation = new("TimeManager.OnPostPhysicsSimulation(float)");
         private static readonly ProfilerMarker _pm_OnPrePhysicsSimulation = new("TimeManager.OnPrePhysicsSimulation(float)");
@@ -743,14 +744,9 @@ namespace FishNet.Managing.Timing
 
                         if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
                         {
-                            using (_pm_OnPrePhysicsSimulation.Auto())
-                                OnPrePhysicsSimulation?.Invoke(tickDelta);
-                            using (_pm_PhysicsSimulate.Auto())
-                                Physics.Simulate(tickDelta);
-                            using (_pm_Physics2DSimulate.Auto())
-                                Physics2D.Simulate(tickDelta);
-                            using (_pm_OnPostPhysicsSimulation.Auto())
-                                OnPostPhysicsSimulation?.Invoke(tickDelta);
+                            InvokeOnSimulation(preSimulation: true, tickDelta);
+                            SimulatePhysics(tickDelta);
+                            InvokeOnSimulation(preSimulation: false, tickDelta);
                         }
 
                         using (_pm_OnPostTick.Auto())
@@ -1089,33 +1085,61 @@ namespace FishNet.Managing.Timing
         #endregion
 
         /// <summary>
+        /// Invokes OnPreSimulation or OnPostSimulation.
+        /// </summary>
+        internal void InvokeOnSimulation(bool preSimulation, float delta)
+        {
+            if (preSimulation)
+            {
+                using (_pm_OnPrePhysicsSimulation.Auto())
+                    OnPrePhysicsSimulation?.Invoke(delta);
+            }
+            else
+            {
+                using (_pm_OnPostPhysicsSimulation.Auto())
+                    OnPostPhysicsSimulation?.Invoke(delta);
+            }
+        }
+
+        internal void SimulatePhysics(float delta)
+        {
+            using (_pm_PhysicsSimulate.Auto())
+                Physics.Simulate(delta);
+            using (_pm_Physics2DSimulate.Auto())
+                Physics2D.Simulate(delta);
+        }
+        
+        /// <summary>
         /// Tries to iterate incoming or outgoing data.
         /// </summary>
         /// <param name = "incoming">True to iterate incoming.</param>
         private void TryIterateData(bool incoming)
         {
-            if (incoming)
+            using (_pm_TryIterateData.Auto())
             {
-                /* It's not possible for data to come in
-                 * more than once per frame but there could
-                 * be new data going out each tick, since
-                 * movement is often based off the tick system.
-                 * Because of this don't iterate incoming if
-                 * it's the same frame, but the outgoing
-                 * may iterate multiple times per frame due to
-                 * there possibly being multiple ticks per frame. */
-                int frameCount = Time.frameCount;
-                if (frameCount == _lastIncomingIterationFrame)
-                    return;
-                _lastIncomingIterationFrame = frameCount;
+                if (incoming)
+                {
+                    /* It's not possible for data to come in
+                     * more than once per frame but there could
+                     * be new data going out each tick, since
+                     * movement is often based off the tick system.
+                     * Because of this don't iterate incoming if
+                     * it's the same frame, but the outgoing
+                     * may iterate multiple times per frame due to
+                     * there possibly being multiple ticks per frame. */
+                    int frameCount = Time.frameCount;
+                    if (frameCount == _lastIncomingIterationFrame)
+                        return;
+                    _lastIncomingIterationFrame = frameCount;
 
-                NetworkManager.TransportManager.IterateIncoming(asServer: true);
-                NetworkManager.TransportManager.IterateIncoming(asServer: false);
-            }
-            else
-            {
-                NetworkManager.TransportManager.IterateOutgoing(asServer: true);
-                NetworkManager.TransportManager.IterateOutgoing(asServer: false);
+                    NetworkManager.TransportManager.IterateIncoming(asServer: true);
+                    NetworkManager.TransportManager.IterateIncoming(asServer: false);
+                }
+                else
+                {
+                    NetworkManager.TransportManager.IterateOutgoing(asServer: true);
+                    NetworkManager.TransportManager.IterateOutgoing(asServer: false);
+                }
             }
         }
 

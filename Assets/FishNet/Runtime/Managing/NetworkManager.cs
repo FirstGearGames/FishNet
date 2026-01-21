@@ -121,10 +121,12 @@ namespace FishNet.Managing
         /// ObserverManager for this NetworkManager.
         /// </summary>
         public ObserverManager ObserverManager { get; private set; }
+        #if THREADED_TICKSMOOTHERS
         /// <summary>
         /// TickSmoothingManager for this NetworkManager.
         /// </summary>
         public TickSmoothingManager TickSmoothingManager { get; private set; }
+        #endif
         /// <summary>
         /// DebugManager for this NetworkManager.
         /// </summary>
@@ -323,7 +325,9 @@ namespace FishNet.Managing
             TimeManager = GetOrCreateComponent<TimeManager>();
             SceneManager = GetOrCreateComponent<SceneManager>();
             ObserverManager = GetOrCreateComponent<ObserverManager>();
+            #if THREADED_TICKSMOOTHERS
             TickSmoothingManager = GetOrCreateComponent<TickSmoothingManager>();
+            #endif
             RollbackManager = GetOrCreateComponent<RollbackManager>();
             PredictionManager = GetOrCreateComponent<PredictionManager>();
             StatisticsManager = GetOrCreateComponent<StatisticsManager>();
@@ -368,7 +372,9 @@ namespace FishNet.Managing
 
             SceneManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
+            #if THREADED_TICKSMOOTHERS
             TickSmoothingManager.InitializeOnce_Internal(this);
+            #endif
             RollbackManager.InitializeOnce_Internal(this);
             PredictionManager.InitializeOnce(this);
             StatisticsManager.InitializeOnce_Internal(this);

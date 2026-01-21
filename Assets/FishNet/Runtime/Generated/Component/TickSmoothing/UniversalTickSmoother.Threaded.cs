@@ -5,53 +5,20 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
-using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.Profiling;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 
 namespace FishNet.Component.Transforming.Beta
 {
-    #if !THREADED_TICKSMOOTHERS
+    #if THREADED_TICKSMOOTHERS
     /// <summary>
     /// This class is under regular development and it's API may change at any time.
     /// </summary>
     public sealed class UniversalTickSmoother : IResettable
     {
-        #region Types.
-        [Preserve]
-        private struct TickTransformProperties
-        {
-            public readonly uint Tick;
-            public readonly TransformProperties Properties;
-
-            public TickTransformProperties(uint tick, Transform t)
-            {
-                Tick = tick;
-                Properties = new(t.localPosition, t.localRotation, t.localScale);
-            }
-
-            public TickTransformProperties(uint tick, Transform t, Vector3 localScale)
-            {
-                Tick = tick;
-                Properties = new(t.localPosition, t.localRotation, localScale);
-            }
-
-            public TickTransformProperties(uint tick, TransformProperties tp)
-            {
-                Tick = tick;
-                Properties = tp;
-            }
-
-            public TickTransformProperties(uint tick, TransformProperties tp, Vector3 localScale)
-            {
-                Tick = tick;
-                tp.Scale = localScale;
-                Properties = tp;
-            }
-        }
-        #endregion
-
-        #region public.
+        #region Public.
         /// <summary>
         /// True if currently initialized.
         /// </summary>
@@ -59,6 +26,23 @@ namespace FishNet.Component.Transforming.Beta
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_UpdateRealtimeInterpolation = new ProfilerMarker("UniversalTickSmoother.UpdateRealtimeInterpolation()");
+        private static readonly ProfilerMarker _pm_OnUpdate = new ProfilerMarker("UniversalTickSmoother.OnUpdate(float)");
+        private static readonly ProfilerMarker _pm_OnPreTick = new ProfilerMarker("UniversalTickSmoother.OnPreTick()");
+        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new ProfilerMarker("UniversalTickSmoother.OnPostReplicateReplay(uint)");
+        private static readonly ProfilerMarker _pm_OnPostTick = new ProfilerMarker("UniversalTickSmoother.OnPostTick(uint)");
+        private static readonly ProfilerMarker _pm_ClearTPQ = new ProfilerMarker("UniversalTickSmoother.ClearTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_DiscardTPQ = new ProfilerMarker("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
+        private static readonly ProfilerMarker _pm_AddTP = new ProfilerMarker("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
+        private static readonly ProfilerMarker _pm_ModifyTP = new ProfilerMarker("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
+        private static readonly ProfilerMarker _pm_SetMoveRates = new ProfilerMarker("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
+        private static readonly ProfilerMarker _pm_MoveToTarget = new ProfilerMarker("UniversalTickSmoother.MoveToTarget(float)");
+        
+        #endregion
+        
         /// <summary>
         /// How quickly to move towards goal values.
         /// </summary>
@@ -140,7 +124,12 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// TransformProperties to move towards.
         /// </summary>
-        private BasicQueue<TickTransformProperties> _transformProperties;
+        private BasicQueue<TickSmoothingManager.TickTransformProperties> _transformProperties;
+        /// <summary>
+        /// True if to smooth using owner settings, false for spectator settings.
+        /// This is only used for performance gains.
+        /// </summary>
+        private bool _useOwnerSettings;
         /// <summary>
         /// Last tick this was teleported on.
         /// </summary>
@@ -165,22 +154,6 @@ namespace FishNet.Component.Transforming.Beta
         /// NetworkTransform used when prediction type is set to other.
         /// </summary>
         private NetworkTransform _predictionNetworkTransform;
-        #endregion
-
-        #region Private Profiler Markers
-        // private static readonly ProfilerMarker _pm_ConsumeFixedOffset = new("UniversalTickSmoother.ConsumeFixedOffset(uint)");
-        // private static readonly ProfilerMarker _pm_AxiswiseClamp = new("UniversalTickSmoother.AxiswiseClamp(TransformProperties, TransformProperties)");
-        private static readonly ProfilerMarker _pm_UpdateRealtimeInterpolation = new("UniversalTickSmoother.UpdateRealtimeInterpolation()");
-        private static readonly ProfilerMarker _pm_OnUpdate = new("UniversalTickSmoother.OnUpdate(float)");
-        private static readonly ProfilerMarker _pm_OnPreTick = new("UniversalTickSmoother.OnPreTick()");
-        private static readonly ProfilerMarker _pm_OnPostReplicateReplay = new("UniversalTickSmoother.OnPostReplicateReplay(uint)");
-        private static readonly ProfilerMarker _pm_OnPostTick = new("UniversalTickSmoother.OnPostTick(uint)");
-        private static readonly ProfilerMarker _pm_ClearTPQ = new("UniversalTickSmoother.ClearTransformPropertiesQueue()");
-        private static readonly ProfilerMarker _pm_DiscardTPQ = new("UniversalTickSmoother.DiscardExcessiveTransformPropertiesQueue()");
-        private static readonly ProfilerMarker _pm_AddTP = new("UniversalTickSmoother.AddTransformProperties(uint, TransformProperties, TransformProperties)");
-        private static readonly ProfilerMarker _pm_ModifyTP = new("UniversalTickSmoother.ModifyTransformProperties(uint, uint)");
-        private static readonly ProfilerMarker _pm_SetMoveRates = new("UniversalTickSmoother.SetMoveRates(in TransformProperties)");
-        private static readonly ProfilerMarker _pm_MoveToTarget = new("UniversalTickSmoother.MoveToTarget(float)");
         #endregion
 
         #region Const.
@@ -296,7 +269,7 @@ namespace FishNet.Component.Transforming.Beta
             UpdateRealtimeInterpolation();
         }
 
-        public void Initialize(InitializationSettings initializationSettings, MovementSettings controllerSettings, MovementSettings spectatorSettings)
+        public void Initialize(InitializationSettings initializationSettings, MovementSettings ownerSettings, MovementSettings spectatorSettings)
         {
             ResetState();
 
@@ -305,9 +278,9 @@ namespace FishNet.Component.Transforming.Beta
 
             if (!TransformsAreValid(graphicalTransform, targetTransform))
                 return;
-
-            _transformProperties = CollectionCaches<TickTransformProperties>.RetrieveBasicQueue();
-            _controllerMovementSettings = controllerSettings;
+            
+            _transformProperties = CollectionCaches<TickSmoothingManager.TickTransformProperties>.RetrieveBasicQueue();
+            _controllerMovementSettings = ownerSettings;
             _spectatorMovementSettings = spectatorSettings;
 
             /* Unset scale smoothing if not detaching. This is to prevent
@@ -328,7 +301,7 @@ namespace FishNet.Component.Transforming.Beta
             _detachOnStart = initializationSettings.DetachOnStart;
             _attachOnStop = initializationSettings.AttachOnStop;
             _moveImmediately = initializationSettings.MoveImmediately;
- 
+            
             if (initializationSettings.FavorPredictionNetworkTransform && _initializingNetworkBehaviour != null)
             {
                 NetworkObject networkObject = _initializingNetworkBehaviour.NetworkObject;
@@ -341,7 +314,7 @@ namespace FishNet.Component.Transforming.Beta
             {
                 _predictionNetworkTransform = null;
             }
-            
+
             SetCaches(GetUseOwnerSettings());
 
             //Use set method as it has sanity checks.
@@ -371,7 +344,7 @@ namespace FishNet.Component.Transforming.Beta
                     _trackerTransform.SetParent(trackerParent);
                 }
 
-                _trackerTransform.SetLocalPositionRotationAndScale(_graphicalTransform.localPosition, graphicalTransform.localRotation, graphicalTransform.localScale);
+                _trackerTransform.SetWorldPositionRotationAndScale(_targetTransform.position, _targetTransform.rotation, graphicalTransform.localScale);
             }
 
             IsInitialized = true;
@@ -600,14 +573,14 @@ namespace FishNet.Component.Transforming.Beta
                 //If preticked then previous transform values are known.
                 if (_preTicked)
                 {
-                    DiscardExcessiveTransformPropertiesQueue();
-
+                    var trackerProps = GetTrackerWorldProperties();
                     //Only needs to be put to pretick position if not detached.
                     if (!_detachOnStart)
                         _graphicalTransform.SetWorldProperties(_graphicsPreTickWorldValues);
 
+                    DiscardExcessiveTransformPropertiesQueue();
                     //SnapNonSmoothedProperties();
-                    AddTransformProperties(clientTick);
+                    AddTransformProperties(clientTick, trackerProps);
                 }
                 //If did not pretick then the only thing we can do is snap to instantiated values.
                 else
@@ -696,11 +669,14 @@ namespace FishNet.Component.Transforming.Beta
                 //If there are entries to dequeue.
                 if (dequeueCount > 0)
                 {
-                    TickTransformProperties tpp = default;
+                    TickSmoothingManager.TickTransformProperties ttp = default;
                     for (int i = 0; i < dequeueCount; i++)
-                        tpp = _transformProperties.Dequeue();
+                    {
+                        ttp = _transformProperties.Dequeue();
+                    }
 
-                    SetMoveRates(tpp.Properties);
+                    var nextValues = ttp.Properties;
+                    SetMoveRates(nextValues);
                 }
             }
         }
@@ -708,12 +684,12 @@ namespace FishNet.Component.Transforming.Beta
         /// <summary>
         /// Adds a new transform properties and sets move rates if needed.
         /// </summary>
-        private void AddTransformProperties(uint tick)
+        private void AddTransformProperties(uint tick, TransformProperties properties)
         {
             using (_pm_AddTP.Auto())
             {
-                TickTransformProperties tpp = new(tick, GetTrackerWorldProperties());
-                _transformProperties.Enqueue(tpp);
+                TickSmoothingManager.TickTransformProperties ttp = new(tick, properties);
+                _transformProperties.Enqueue(ttp);
 
                 //If first entry then set move rates.
                 if (_transformProperties.Count == 1)
@@ -802,7 +778,7 @@ namespace FishNet.Component.Transforming.Beta
             //No graphical object is set.
             if (_graphicalTransform == null)
                 return false;
-
+            
             /* When this is the case the prediction networkTransform exist and is
              * configured in a way to smooth the object, therefor this component should not be smoothing. */
             if (_predictionNetworkTransform != null && _predictionNetworkTransform.DoSettingsAllowSmoothing())
@@ -904,7 +880,7 @@ namespace FishNet.Component.Transforming.Beta
                     }
                 }
 
-                TickTransformProperties ttp = _transformProperties.Peek();
+                TickSmoothingManager.TickTransformProperties ttp = _transformProperties.Peek();
 
                 TransformPropertiesFlag smoothedProperties = _cachedSmoothedProperties;
 
@@ -986,7 +962,7 @@ namespace FishNet.Component.Transforming.Beta
 
             _teleportedTick = TimeManager.UNSET_TICK;
             _movementMultiplier = 1f;
-            CollectionCaches<TickTransformProperties>.StoreAndDefault(ref _transformProperties);
+            CollectionCaches<TickSmoothingManager.TickTransformProperties>.StoreAndDefault(ref _transformProperties);
             _moveRates = default;
             _preTicked = default;
             _queuedTrackerProperties = null;
@@ -994,8 +970,9 @@ namespace FishNet.Component.Transforming.Beta
             _graphicsPreTickWorldValues = default;
             _realtimeInterpolation = default;
             _isMoving = default;
-            _predictionNetworkTransform = null;
             
+            _predictionNetworkTransform = null;
+
             if (_trackerTransform != null)
                 UnityEngine.Object.Destroy(_trackerTransform.gameObject);
         }

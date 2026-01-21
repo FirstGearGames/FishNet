@@ -17,6 +17,7 @@ using UnityEngine.Jobs;
 
 namespace FishNet.Component.Transforming.Beta
 {
+    #if THREADED_TICKSMOOTHERS
     public partial class TickSmoothingManager : MonoBehaviour
     {
         #region Private.
@@ -87,6 +88,10 @@ namespace FishNet.Component.Transforming.Beta
         /// Index to TickSmootherController and NetworkBehaviours lookup. 
         /// </summary>
         private readonly List<NetworkBehaviour> _indexToNetworkBehaviour = new();
+        /// <summary>
+        /// Index to TickSmootherController and redictionNetworkTransform lookup. 
+        /// </summary>
+        private readonly List<NetworkTransform> _indexToPredictionNetworkTransform = new();
         
         /// <summary>
         /// Index to MoveRate lookup.
@@ -375,6 +380,7 @@ namespace FishNet.Component.Transforming.Beta
             if (_trackerTaa.isCreated)   _trackerTaa.Dispose();
             
             _indexToNetworkBehaviour.Clear();
+            _indexToPredictionNetworkTransform.Clear();
             _indexToSmoother.Clear();
             _lookup.Clear();
 
@@ -418,6 +424,14 @@ namespace FishNet.Component.Transforming.Beta
                 _lookup[smoother] = index;
                 _indexToSmoother.Add(smoother);
                 _indexToNetworkBehaviour.Add(initializationSettings.InitializingNetworkBehaviour);
+                _indexToPredictionNetworkTransform.Add(
+                    initializationSettings.FavorPredictionNetworkTransform &&
+                    initializationSettings.InitializingNetworkBehaviour != null &&
+                    initializationSettings.InitializingNetworkBehaviour.NetworkObject != null &&
+                    initializationSettings.InitializingNetworkBehaviour.NetworkObject.IsRigidbodyPredictionType
+                    ? initializationSettings.InitializingNetworkBehaviour.NetworkObject.PredictionNetworkTransform
+                    : null
+                    );
 
                 _moveRates.Add(new MoveRates(MoveRates.UNSET_VALUE));
                 _ownerSettings.Add(ownerSettings);
@@ -515,9 +529,12 @@ namespace FishNet.Component.Transforming.Beta
                     _lookup[movedSmoother] = index;
                     var movedNetworkBehaviour = _indexToNetworkBehaviour[last];
                     _indexToNetworkBehaviour[index] = movedNetworkBehaviour;
+                    var movedPredictionNetworkTransform = _indexToPredictionNetworkTransform[last];
+                    _indexToPredictionNetworkTransform[index] = movedPredictionNetworkTransform;
                 }
 
                 _indexToNetworkBehaviour.RemoveAt(last);
+                _indexToPredictionNetworkTransform.RemoveAt(last);
                 _indexToSmoother.RemoveAt(last);
                 _lookup.Remove(smoother);
 
@@ -877,8 +894,11 @@ namespace FishNet.Component.Transforming.Beta
                 {
                     Transform graphicalTransform = _graphicalTaa[i];
                     NetworkBehaviour networkBehaviour = _indexToNetworkBehaviour[i];
+                    NetworkTransform predictionNetworkTransform = _indexToPredictionNetworkTransform[i];
                     _canSmoothMask[i] = 
                         (byte)(graphicalTransform != null && 
+                            (predictionNetworkTransform == null ||
+                                !predictionNetworkTransform.DoSettingsAllowSmoothing()) &&
                             _networkManager.IsClientStarted ? 1 : 0);
 
                     _useOwnerSettingsMask[i] = 
@@ -1334,4 +1354,5 @@ namespace FishNet.Component.Transforming.Beta
             return Mathf.Clamp(batch, minBatch, maxBatch);
         }
     }
+    #endif
 }
