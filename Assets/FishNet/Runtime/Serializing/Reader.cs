@@ -97,10 +97,6 @@ namespace FishNet.Serializing
         /// Used to convert bytes to a string.
         /// </summary>
         private static readonly UTF8Encoding _encoding = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
-        /// <summary>
-        /// Used to convert bytes to a GUID.
-        /// </summary>
-        private static readonly byte[] _guidBuffer = new byte[16];
         #endregion
 
         public Reader() { }
@@ -899,7 +895,7 @@ namespace FishNet.Serializing
         [DefaultReader]
         public Guid ReadGuid()
         {
-            byte[] buffer = _guidBuffer;
+            byte[] buffer = Guids.Buffer;
             ReadUInt8Array(ref buffer, 16);
             return new(buffer);
         }
