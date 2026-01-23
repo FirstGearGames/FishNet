@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using GameKit.Dependencies.Utilities.Types;
+using Unity.Profiling;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
@@ -188,6 +189,14 @@ namespace FishNet.Object
         #endregion
 
         #region Private.
+        
+        #region Private Profiler Markers
+        private static readonly ProfilerMarker _pm_OnReplicateRpc =
+            new("NetworkBehaviour.OnReplicateRpc()");
+        private static readonly ProfilerMarker _pm_OnReconcileRpc =
+            new("NetworkBehaviour.OnReconcileRpc()");
+        #endregion
+        
         /// <summary>
         /// Registered Replicate methods.
         /// </summary>
@@ -283,23 +292,31 @@ namespace FishNet.Object
         /// </summary>
         internal void OnReplicateRpc(int readerPositionAfterDebug, uint? hash, PooledReader reader, NetworkConnection sendingClient, Channel channel)
         {
-            if (hash == null)
-                hash = ReadRpcHash(reader);
-
-            reader.NetworkManager = _networkObjectCache.NetworkManager;
-
-            if (_replicateRpcDelegates.TryGetValueIL2CPP(hash.Value, out ReplicateRpcDelegate del))
-                del.Invoke(reader, sendingClient, channel);
-            else
-                _networkObjectCache.NetworkManager.LogWarning($"Replicate not found for hash {hash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
-
-            #if !UNITY_SERVER
-            if (_networkTrafficStatistics != null)
+            using (_pm_OnReplicateRpc.Auto())
             {
-                bool sendingClientIsValid = sendingClient != null && sendingClient.IsValid;
-                _networkTrafficStatistics.AddInboundPacketIdData(PacketId.Replicate, GetRpcName(PacketId.Replicate, hash.Value), reader.Position - readerPositionAfterDebug + Managing.Transporting.TransportManager.PACKETID_LENGTH, gameObject, asServer: sendingClientIsValid);
+                if (hash == null)
+                    hash = ReadRpcHash(reader);
+
+                reader.NetworkManager = _networkObjectCache.NetworkManager;
+
+                if (_replicateRpcDelegates.TryGetValueIL2CPP(hash.Value, out ReplicateRpcDelegate del))
+                    del.Invoke(reader, sendingClient, channel);
+                else
+                    _networkObjectCache.NetworkManager.LogWarning(
+                        $"Replicate not found for hash {hash.Value} on {gameObject.name}, behaviour {GetType().Name}. Remainder of packet may become corrupt.");
+
+                #if !UNITY_SERVER
+                if (_networkTrafficStatistics != null)
+                {
+                    bool sendingClientIsValid = sendingClient != null && sendingClient.IsValid;
+                    _networkTrafficStatistics.AddInboundPacketIdData(PacketId.Replicate,
+                        GetRpcName(PacketId.Replicate, hash.Value),
+                        reader.Position - readerPositionAfterDebug +
+                        Managing.Transporting.TransportManager.PACKETID_LENGTH, gameObject,
+                        asServer: sendingClientIsValid);
+                }
+                #endif
             }
-            #endif
         }
 
         /// <summary>
@@ -307,20 +324,27 @@ namespace FishNet.Object
         /// </summary>
         internal void OnReconcileRpc(int readerPositionAfterDebug, uint? hash, PooledReader reader, Channel channel)
         {
-            if (hash == null)
-                hash = ReadRpcHash(reader);
+            using (_pm_OnReconcileRpc.Auto())
+            {
+                if (hash == null)
+                    hash = ReadRpcHash(reader);
 
-            reader.NetworkManager = _networkObjectCache.NetworkManager;
+                reader.NetworkManager = _networkObjectCache.NetworkManager;
 
-            if (_reconcileRpcDelegates.TryGetValueIL2CPP(hash.Value, out ReconcileRpcDelegate del))
-                del.Invoke(reader, channel);
-            else
-                _networkObjectCache.NetworkManager.LogWarning($"Reconcile not found for hash {hash.Value}. Remainder of packet may become corrupt.");
+                if (_reconcileRpcDelegates.TryGetValueIL2CPP(hash.Value, out ReconcileRpcDelegate del))
+                    del.Invoke(reader, channel);
+                else
+                    _networkObjectCache.NetworkManager.LogWarning(
+                        $"Reconcile not found for hash {hash.Value}. Remainder of packet may become corrupt.");
 
-            #if !UNITY_SERVER
-            if (_networkTrafficStatistics != null)
-                _networkTrafficStatistics.AddInboundPacketIdData(PacketId.Reconcile, GetRpcName(PacketId.Reconcile, hash.Value), reader.Position - readerPositionAfterDebug + Managing.Transporting.TransportManager.PACKETID_LENGTH, gameObject, asServer: false);
-            #endif
+                #if !UNITY_SERVER
+                if (_networkTrafficStatistics != null)
+                    _networkTrafficStatistics.AddInboundPacketIdData(PacketId.Reconcile,
+                        GetRpcName(PacketId.Reconcile, hash.Value),
+                        reader.Position - readerPositionAfterDebug +
+                        Managing.Transporting.TransportManager.PACKETID_LENGTH, gameObject, asServer: false);
+                #endif
+            }
         }
 
         /// <summary>
@@ -478,11 +502,11 @@ namespace FishNet.Object
             const float angleDistance = 0.2f;
 
             bool anyChanged = false;
-            anyChanged |= (transform.position - _lastCheckedTransformProperties.Position).sqrMagnitude > v3Distance;
+            anyChanged |= (transform.position - (Vector3)_lastCheckedTransformProperties.Position).sqrMagnitude > v3Distance;
             if (!anyChanged)
                 anyChanged |= transform.rotation.Angle(_lastCheckedTransformProperties.Rotation, precise: true) > angleDistance;
             if (!anyChanged)
-                anyChanged |= (transform.localScale - _lastCheckedTransformProperties.Scale).sqrMagnitude > v3Distance;
+                anyChanged |= (transform.localScale - (Vector3)_lastCheckedTransformProperties.Scale).sqrMagnitude > v3Distance;
 
             // If transform changed update last values.
             if (updateLastValues && anyChanged)
@@ -600,20 +624,21 @@ namespace FishNet.Object
         /// </summary>
         /// </summary>
         private void Replicate_NonAuthoritative<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
-        { PredictionManager predictionManager = PredictionManager;
+        {
+            PredictionManager predictionManager = PredictionManager;
 
             bool isServerStarted = _networkObjectCache.IsServerStarted;
             bool isServerWithoutOwner = isServerStarted && !Owner.IsValid;
-            
             /* Both owner and server when no owner should run
              * authoritative replicate. */
             if (isServerWithoutOwner)
                 return;
+
             /* If not state forwarding and not server then exit method.
              * The server still needs to run inputs even if not authoritative. */
-            if (!isServerStarted && !_networkObjectCache.EnableStateForwarding)
+            if (!_networkObjectCache.EnableStateForwarding)
                 return;
-            
+
             TimeManager tm = _networkObjectCache.TimeManager;
             uint localTick = tm.LocalTick;
 
@@ -621,7 +646,7 @@ namespace FishNet.Object
              * run default input and exit. With inserted order client only runs
              * during replays. Server never replays, so it still runs
              * as current even with inserted order. */
-            if (!isServerStarted && !predictionManager.IsAppendedStateOrder)
+            if (!predictionManager.IsAppendedStateOrder)
             {
                 ReplicateDefaultData();
                 return;
@@ -787,6 +812,16 @@ namespace FishNet.Object
         [MakePublic]
         private void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
+            //NOTESSTART
+            /* When inserting states only replay the first state after the reconcile.
+             * This prevents an inconsistency on running created states if other created states
+             * were to arrive late. Essentially the first state is considered 'current' and the rest
+             * are acting as a buffer against unsteady networking conditions. */
+
+            /* When appending states all created can be run. Appended states are only inserted after they've
+             * run at the end of the tick, which performs of it's own queue. Because of this, it's safe to assume
+             * if the state has been inserted into the past it has already passed it's buffer checks. */
+            //NOTESEND             
             ReplicateDataContainer<T> dataContainer;
             ReplicateState state;
             bool isAppendedOrder = _networkObjectCache.PredictionManager.IsAppendedStateOrder;
@@ -1284,8 +1319,6 @@ namespace FishNet.Object
                 return;
             if (!_networkObjectCache.PredictionManager.CreateLocalStates)
                 return;
-            if (!IsOwner && !_networkObjectCache.EnableStateForwarding)
-                return;
 
             /* This is called by the local client when creating
              * a local reconcile state. These states should always
@@ -1335,8 +1368,6 @@ namespace FishNet.Object
         internal void Reconcile_Client<T, T2>(ReconcileUserLogicDelegate<T> reconcileDel, RingBuffer<ReplicateDataContainer<T2>> replicatesHistory, RingBuffer<LocalReconcile<T>> reconcilesHistory, T data) where T : IReconcileData where T2 : IReplicateData, new()
         {
             bool isBehaviourReconciling = IsBehaviourReconciling;
-            if (!isBehaviourReconciling)
-                return;
 
             const long unsetHistoryIndex = -1;
             long historyIndex = unsetHistoryIndex;
@@ -1371,6 +1402,19 @@ namespace FishNet.Object
                     uint lrTick = reconcilesHistory[(int)historyIndex].Tick;
                     if (lrTick != reconcileTick)
                         historyIndex = unsetHistoryIndex;
+
+                    //If index is set and behaviour is not reconciling then apply data.
+                    if (!isBehaviourReconciling && historyIndex != unsetHistoryIndex)
+                    {
+                        LocalReconcile<T> localReconcile = reconcilesHistory[(int)historyIndex];
+                        //Before disposing get the writer and call reconcile reader so it's parsed.
+                        PooledWriter reconcileWritten = localReconcile.Writer;
+                        /* Although this is actually from the local client the datasource is being set to server since server
+                         * is what typically sends reconciles. */
+                        PooledReader reader = ReaderPool.Retrieve(reconcileWritten.GetArraySegment(), _networkObjectCache.NetworkManager, Reader.DataSource.Server);
+                        data = Reconcile_Reader_Local<T>(localReconcile.Tick, reader);
+                        ReaderPool.Store(reader);
+                    }
                 }
             }
 
