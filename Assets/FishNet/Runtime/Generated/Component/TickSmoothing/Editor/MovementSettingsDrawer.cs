@@ -6,7 +6,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Transforming.Beta.Editing
 {
-    #if !THREADED_TICKSMOOTHERS
     [CustomPropertyDrawer(typeof(MovementSettings))]
     public class MovementSettingsDrawer : PropertyDrawer
     {
@@ -27,7 +26,6 @@ namespace FishNet.Component.Transforming.Beta.Editing
             SerializedProperty adaptiveInterpolationValue = property.FindPropertyRelative("AdaptiveInterpolationValue");
             SerializedProperty interpolationValue = property.FindPropertyRelative("InterpolationValue");
             SerializedProperty smoothedProperties = property.FindPropertyRelative("SmoothedProperties");
-            SerializedProperty useLocalSpace = property.FindPropertyRelative("UseLocalSpace");
             SerializedProperty snapNonSmoothedProperties = property.FindPropertyRelative("SnapNonSmoothedProperties");
 
             _propertyDrawer.DrawProperty(enableTeleport, "Enable Teleport");
@@ -39,7 +37,6 @@ namespace FishNet.Component.Transforming.Beta.Editing
                 _propertyDrawer.DrawProperty(interpolationValue, "Interpolation Value", indent: 1);
 
             _propertyDrawer.DrawProperty(smoothedProperties, "Smoothed Properties");
-            _propertyDrawer.DrawProperty(useLocalSpace, "Use Local Space");
             if ((uint)smoothedProperties.intValue != (uint)TransformPropertiesFlag.Everything)
                 _propertyDrawer.DrawProperty(snapNonSmoothedProperties, "Snap Non-Smoothed Properties", indent: 1);
 
@@ -50,6 +47,5 @@ namespace FishNet.Component.Transforming.Beta.Editing
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => _propertyDrawer.GetPropertyHeight();
     }
-    #endif
 }
 #endif

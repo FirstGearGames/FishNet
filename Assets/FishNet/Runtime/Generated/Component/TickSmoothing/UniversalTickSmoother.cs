@@ -11,7 +11,6 @@ using UnityEngine.Scripting;
 
 namespace FishNet.Component.Transforming.Beta
 {
-    #if !THREADED_TICKSMOOTHERS
     /// <summary>
     /// This class is under regular development and it's API may change at any time.
     /// </summary>
@@ -1002,5 +1001,4 @@ namespace FishNet.Component.Transforming.Beta
 
         public void InitializeState() { }
     }
-    #endif
 }
