@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
@@ -24,31 +23,15 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "duration">How long it should take to move to goal.</param>
         /// <param name = "interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetRate(this Vector3 a, Vector3 b, float duration, out float distance, uint interval = 1)
         {
             distance = Vector3.Distance(a, b);
-            return distance / (duration * interval);
-        }
-        
-        /// <summary>
-        /// Returns how fast an object must move over duration to reach goal.
-        /// </summary>
-        /// <param name = "b">Vector3 to measure distance against.</param>
-        /// <param name = "duration">How long it should take to move to goal.</param>
-        /// <param name = "interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetRate(this float3 a, float3 b, float duration, out float distance, uint interval = 1)
-        {
-            distance = math.distance(a, b);
             return distance / (duration * interval);
         }
 
         /// <summary>
         /// Adds a Vector2 X/Y onto a Vector3.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Add(this Vector3 v3, Vector2 v2)
         {
             return v3 + new Vector3(v2.x, v2.y, 0f);
@@ -57,7 +40,6 @@ namespace GameKit.Dependencies.Utilities
         /// <summary>
         /// Subtracts a Vector2 X/Y from a Vector3.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Subtract(this Vector3 v3, Vector2 v2)
         {
             return v3 - new Vector3(v2.x, v2.y, 0f);
@@ -70,7 +52,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "b"></param>
         /// <param name = "value"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float InverseLerp(Vector3 a, Vector3 b, Vector3 value)
         {
             Vector3 ab = b - a;
@@ -85,7 +66,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "b">Target vector.</param>
         /// <param name = "tolerance">How close the target vector must be to be considered close.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Near(this Vector3 a, Vector3 b, float tolerance = 0.01f)
         {
             return Vector3.Distance(a, b) <= tolerance;
@@ -96,7 +76,6 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         /// <param name = "source"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNan(this Vector3 source)
         {
             return float.IsNaN(source.x) || float.IsNaN(source.y) || float.IsNaN(source.z);
@@ -106,7 +85,6 @@ namespace GameKit.Dependencies.Utilities
         /// Lerp between three Vector3 values.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Lerp3(Vector3 a, Vector3 b, Vector3 c, float percent)
         {
             Vector3 r0 = Vector3.Lerp(a, b, percent);
@@ -120,7 +98,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "vectors"></param>
         /// <param name = "percent"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Lerp3(Vector3[] vectors, float percent)
         {
             if (vectors.Length < 3)
@@ -138,7 +115,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "src"></param>
         /// <param name = "multiplier"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 Multiply(this Vector3 src, Vector3 multiplier)
         {
             return new(src.x * multiplier.x, src.y * multiplier.y, src.z * multiplier.z);
@@ -225,7 +201,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "duration">How long it should take to move to goal.</param>
         /// <param name = "interval">A multiplier applied towards interval. Typically this is used for ticks passed.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetRate(this Vector2 a, Vector2 goal, float duration, out float distance, uint interval = 1)
         {
             distance = Vector2.Distance(a, goal);
@@ -240,7 +215,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "c"></param>
         /// <param name = "percent"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp3(Vector2 a, Vector2 b, Vector2 c, float percent)
         {
             Vector2 r0 = Vector2.Lerp(a, b, percent);
@@ -254,7 +228,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "vectors"></param>
         /// <param name = "percent"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Lerp2(Vector2[] vectors, float percent)
         {
             if (vectors.Length < 3)
@@ -272,7 +245,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "src"></param>
         /// <param name = "multiplier"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector2 Multiply(this Vector2 src, Vector2 multiplier)
         {
             return new(src.x * multiplier.x, src.y * multiplier.y);

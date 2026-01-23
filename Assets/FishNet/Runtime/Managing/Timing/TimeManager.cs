@@ -6,9 +6,11 @@ using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing.Predicting;
 using FishNet.Managing.Statistic;
-using Unity.Mathematics;
+using FishNet.Object;
 using Unity.Profiling;
 using UnityEngine;
 using SystemStopwatch = System.Diagnostics.Stopwatch;
@@ -285,12 +287,10 @@ namespace FishNet.Managing.Timing
 
         /// <summary>
         /// </summary>
-        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
+        private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         #region Private Profiler Markers
-        private static readonly ProfilerMarker _pm_IncreaseTick = new("TimeManager.IncreaseTick()");
-        private static readonly ProfilerMarker _pm_TryIterateData = new("TimeManager.TryIterateData(bool)");
         private static readonly ProfilerMarker _pm_OnFixedUpdate = new("TimeManager.OnFixedUpdate()");
         private static readonly ProfilerMarker _pm_OnPostPhysicsSimulation = new("TimeManager.OnPostPhysicsSimulation(float)");
         private static readonly ProfilerMarker _pm_OnPrePhysicsSimulation = new("TimeManager.OnPrePhysicsSimulation(float)");
@@ -686,95 +686,92 @@ namespace FishNet.Managing.Timing
         /// </summary>
         private void IncreaseTick()
         {
-            using (_pm_IncreaseTick.Auto())
+            bool isClient = NetworkManager.IsClientStarted;
+            bool isServer = NetworkManager.IsServerStarted;
+
+            double timePerSimulation = isServer ? TickDelta : _adjustedTickDelta;
+            if (timePerSimulation == 0d)
             {
-                bool isClient = NetworkManager.IsClientStarted;
-                bool isServer = NetworkManager.IsServerStarted;
-
-                double timePerSimulation = isServer ? TickDelta : _adjustedTickDelta;
-                if (timePerSimulation == 0d)
-                {
-                    NetworkManager.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
-                    return;
-                }
-
-                double time = Time.unscaledDeltaTime;
-
-                _elapsedTickTime += time;
-                FrameTicked = _elapsedTickTime >= timePerSimulation;
-
-                // Number of ticks to occur this frame.
-                int ticksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
-                if (ticksCount > 1)
-                    _lastMultipleTicksTime = Time.unscaledTime;
-
-                if (_allowTickDropping)
-                {
-                    // If ticks require dropping. Set exactly to maximum ticks.
-                    if (ticksCount > _maximumFrameTicks)
-                        _elapsedTickTime = timePerSimulation * (double)_maximumFrameTicks;
-                }
-
-                bool variableTiming = _timingType == TimingType.Variable;
-                bool frameTicked = FrameTicked;
-                float tickDelta = (float)TickDelta * GetPhysicsTimeScale();
-
-                do
-                {
-                    if (frameTicked)
-                    {
-                        using (_pm_OnPreTick.Auto())
-                            OnPreTick?.Invoke();
-                    }
-
-                    /* This has to be called inside the loop because
-                     * OnPreTick promises data hasn't been read yet.
-                     * Therefor iterate must occur after OnPreTick.
-                     * Iteration will only run once per frame. */
-                    if (frameTicked || variableTiming)
-                        TryIterateData(true);
-
-                    if (frameTicked)
-                    {
-                        // Tell predicted objecs to reconcile before OnTick.
-                        NetworkManager.PredictionManager.ReconcileToStates();
-
-                        using (_pm_OnTick.Auto())
-                            OnTick?.Invoke();
-
-                        if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
-                        {
-                            InvokeOnSimulation(preSimulation: true, tickDelta);
-                            SimulatePhysics(tickDelta);
-                            InvokeOnSimulation(preSimulation: false, tickDelta);
-                        }
-
-                        using (_pm_OnPostTick.Auto())
-                            OnPostTick?.Invoke();
-                        // After post tick send states.
-                        NetworkManager.PredictionManager.SendStateUpdate();
-
-                        /* If isClient this is the
-                         * last tick during this loop. */
-                        bool lastTick = _elapsedTickTime < timePerSimulation * 2d;
-                        if (isClient && lastTick)
-                            TrySendPing(LocalTick + 1);
-                        if (NetworkManager.IsServerStarted)
-                            SendTimingAdjustment();
-                    }
-
-                    // Send out data.
-                    if (frameTicked || variableTiming)
-                        TryIterateData(false);
-
-                    if (frameTicked)
-                    {
-                        _elapsedTickTime -= timePerSimulation;
-                        Tick++;
-                        LocalTick++;
-                    }
-                } while (_elapsedTickTime >= timePerSimulation);
+                NetworkManager.LogWarning($"Simulation delta cannot be 0. Network timing will not continue.");
+                return;
             }
+
+            double time = Time.unscaledDeltaTime;
+
+            _elapsedTickTime += time;
+            FrameTicked = _elapsedTickTime >= timePerSimulation;
+
+            // Number of ticks to occur this frame.
+            int ticksCount = Mathf.FloorToInt((float)(_elapsedTickTime / timePerSimulation));
+            if (ticksCount > 1)
+                _lastMultipleTicksTime = Time.unscaledTime;
+
+            if (_allowTickDropping)
+            {
+                // If ticks require dropping. Set exactly to maximum ticks.
+                if (ticksCount > _maximumFrameTicks)
+                    _elapsedTickTime = timePerSimulation * (double)_maximumFrameTicks;
+            }
+
+            bool variableTiming = _timingType == TimingType.Variable;
+            bool frameTicked = FrameTicked;
+            float tickDelta = (float)TickDelta * GetPhysicsTimeScale();
+
+            do
+            {
+                if (frameTicked)
+                {
+                    using (_pm_OnPreTick.Auto())
+                        OnPreTick?.Invoke();
+                }
+
+                /* This has to be called inside the loop because
+                 * OnPreTick promises data hasn't been read yet.
+                 * Therefor iterate must occur after OnPreTick.
+                 * Iteration will only run once per frame. */
+                if (frameTicked || variableTiming)
+                    TryIterateData(true);
+
+                if (frameTicked)
+                {
+                    // Tell predicted objecs to reconcile before OnTick.
+                    NetworkManager.PredictionManager.ReconcileToStates();
+
+                    using (_pm_OnTick.Auto())
+                        OnTick?.Invoke();
+
+                    if (PhysicsMode == PhysicsMode.TimeManager && tickDelta > 0f)
+                    {
+                        InvokeOnSimulation(preSimulation: true, tickDelta);
+                        SimulatePhysics(tickDelta);
+                        InvokeOnSimulation(preSimulation: false, tickDelta);
+                    }
+
+                    using (_pm_OnPostTick.Auto())
+                        OnPostTick?.Invoke();
+                    // After post tick send states.
+                    NetworkManager.PredictionManager.SendStateUpdate();
+
+                    /* If isClient this is the
+                     * last tick during this loop. */
+                    bool lastTick = _elapsedTickTime < timePerSimulation * 2d;
+                    if (isClient && lastTick)
+                        TrySendPing(LocalTick + 1);
+                    if (NetworkManager.IsServerStarted)
+                        SendTimingAdjustment();
+                }
+
+                // Send out data.
+                if (frameTicked || variableTiming)
+                    TryIterateData(false);
+
+                if (frameTicked)
+                {
+                    _elapsedTickTime -= timePerSimulation;
+                    Tick++;
+                    LocalTick++;
+                }
+            } while (_elapsedTickTime >= timePerSimulation);
         }
 
         #region Tick conversions.
@@ -796,14 +793,12 @@ namespace FishNet.Managing.Timing
         /// Returns the current elapsed amount for the next tick.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double GetTickElapsedAsDouble() => _elapsedTickTime;
 
         /// <summary>
         /// Returns the percentage of how far the TimeManager is into the next tick.
         /// Value will return between 0 and 100.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public byte GetTickPercentAsByte()
         {
             double result = GetTickPercentAsDouble();
@@ -814,7 +809,6 @@ namespace FishNet.Managing.Timing
         /// Converts a 0 to 100 byte value to a 0d to 1d percent value.
         /// This does not check for excessive byte values, such as anything over 100.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetTickPercentAsDouble(byte value)
         {
             return value / 100d;
@@ -896,7 +890,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name = "pt">PreciseTick to convert.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double TicksToTime(PreciseTick pt)
         {
             double tickTime = TicksToTime(pt.Tick);
@@ -909,7 +902,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name = "ticks">Ticks to convert.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double TicksToTime(uint ticks)
         {
             return TickDelta * (double)ticks;
@@ -999,28 +991,16 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name = "time">Time to convert as decimal.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint TimeToTicks(double time, double tickDelta, TickRounding rounding = TickRounding.RoundNearest)
-        {
-            double result = time / tickDelta;
-
-            if (rounding == TickRounding.RoundNearest)
-                return (uint)math.round(result);
-            else if (rounding == TickRounding.RoundDown)
-                return (uint)math.floor(result);
-            else
-                return (uint)math.ceil(result);
-        }
-        
-        /// <summary>
-        /// Converts time to ticks.
-        /// </summary>
-        /// <param name = "time">Time to convert as decimal.</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint TimeToTicks(double time, TickRounding rounding = TickRounding.RoundNearest)
         {
-            return TimeToTicks(time, TickDelta, rounding);
+            double result = time / TickDelta;
+
+            if (rounding == TickRounding.RoundNearest)
+                return (uint)Math.Round(result);
+            else if (rounding == TickRounding.RoundDown)
+                return (uint)Math.Floor(result);
+            else
+                return (uint)Math.Ceiling(result);
         }
 
         /// <summary>
@@ -1028,7 +1008,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name = "time">Time to convert as whole (milliseconds)</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public uint TimeToTicks(long time, TickRounding rounding = TickRounding.RoundNearest)
         {
             double dTime = (double)time / 1000d;
@@ -1040,7 +1019,6 @@ namespace FishNet.Managing.Timing
         /// </summary>
         /// <param name = "time">Time to convert.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public PreciseTick TimeToPreciseTick(double time) => time.AsPreciseTick(TickDelta);
 
         /// <summary>
@@ -1108,38 +1086,35 @@ namespace FishNet.Managing.Timing
             using (_pm_Physics2DSimulate.Auto())
                 Physics2D.Simulate(delta);
         }
-        
+
         /// <summary>
         /// Tries to iterate incoming or outgoing data.
         /// </summary>
         /// <param name = "incoming">True to iterate incoming.</param>
         private void TryIterateData(bool incoming)
         {
-            using (_pm_TryIterateData.Auto())
+            if (incoming)
             {
-                if (incoming)
-                {
-                    /* It's not possible for data to come in
-                     * more than once per frame but there could
-                     * be new data going out each tick, since
-                     * movement is often based off the tick system.
-                     * Because of this don't iterate incoming if
-                     * it's the same frame, but the outgoing
-                     * may iterate multiple times per frame due to
-                     * there possibly being multiple ticks per frame. */
-                    int frameCount = Time.frameCount;
-                    if (frameCount == _lastIncomingIterationFrame)
-                        return;
-                    _lastIncomingIterationFrame = frameCount;
+                /* It's not possible for data to come in
+                 * more than once per frame but there could
+                 * be new data going out each tick, since
+                 * movement is often based off the tick system.
+                 * Because of this don't iterate incoming if
+                 * it's the same frame, but the outgoing
+                 * may iterate multiple times per frame due to
+                 * there possibly being multiple ticks per frame. */
+                int frameCount = Time.frameCount;
+                if (frameCount == _lastIncomingIterationFrame)
+                    return;
+                _lastIncomingIterationFrame = frameCount;
 
-                    NetworkManager.TransportManager.IterateIncoming(asServer: true);
-                    NetworkManager.TransportManager.IterateIncoming(asServer: false);
-                }
-                else
-                {
-                    NetworkManager.TransportManager.IterateOutgoing(asServer: true);
-                    NetworkManager.TransportManager.IterateOutgoing(asServer: false);
-                }
+                NetworkManager.TransportManager.IterateIncoming(asServer: true);
+                NetworkManager.TransportManager.IterateIncoming(asServer: false);
+            }
+            else
+            {
+                NetworkManager.TransportManager.IterateOutgoing(asServer: true);
+                NetworkManager.TransportManager.IterateOutgoing(asServer: false);
             }
         }
 

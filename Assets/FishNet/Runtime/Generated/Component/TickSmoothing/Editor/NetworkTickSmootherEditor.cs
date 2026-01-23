@@ -31,7 +31,7 @@ namespace FishNet.Component.Transforming.Beta
             EditorGUILayout.ObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTickSmoother)target), typeof(NetworkTickSmoother), false);
             GUI.enabled = true;
 
-            EditorGUILayout.LabelField("Initialization Settings", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_favorPredictionNetworkTransform);
 
             EditorGUILayout.PropertyField(_initializationSettings);
 
@@ -44,6 +44,7 @@ namespace FishNet.Component.Transforming.Beta
             {
                 EditorGUILayout.PropertyField(_spectatorMovementSettings);
             }
+
 
             // EditorGUI.indentLevel--;
 

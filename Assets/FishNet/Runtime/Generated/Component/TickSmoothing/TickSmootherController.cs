@@ -7,7 +7,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Transforming.Beta
 {
-    #if !THREADED_TICKSMOOTHERS
     /// <summary>
     /// Smoothes this object between ticks.
     /// </summary>
@@ -305,5 +304,4 @@ namespace FishNet.Component.Transforming.Beta
 
         public void InitializeState() { }
     }
-    #endif
 }
