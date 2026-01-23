@@ -1,6 +1,10 @@
-﻿using GameKit.Dependencies.Utilities;
-using Unity.Profiling;
+﻿using System.Runtime.CompilerServices;
+using FishNet.Utility.Extension;
+using GameKit.Dependencies.Utilities;
+using Unity.Mathematics;
 using UnityEngine;
+using Unity.Profiling;
+using UnityEngine.Jobs;
 using UnityEngine.Scripting;
 
 namespace FishNet.Object.Prediction
@@ -11,6 +15,14 @@ namespace FishNet.Object.Prediction
     [Preserve]
     public struct MoveRates
     {
+        #region Private Profiler Markers
+        
+        private static readonly ProfilerMarker _pm_GetMoveRatesFull = new ProfilerMarker("MoveRates.GetMoveRates(float3, float3, quaternion, quaternion, float3, float3, float, float)");
+        private static readonly ProfilerMarker _pm_GetMoveRatesVec = new ProfilerMarker("MoveRates.GetMoveRates(float3, float3, float, float)");
+        private static readonly ProfilerMarker _pm_Move = new ProfilerMarker("MoveRates.Move(TransformAccess, TransformPropertiesFlag, float3, float, quaternion, float, float3, float, float, bool)");
+        
+        #endregion
+        
         /// <summary>
         /// Rate at which to move Position.
         /// </summary>
@@ -102,25 +114,22 @@ namespace FishNet.Object.Prediction
         /// </summary>
         public bool IsScaleInstantValue => Scale == INSTANT_VALUE;
 
-        #region Private Profiler Markers
-        private static readonly ProfilerMarker _pm_GetMoveRatesFull = new("MoveRates.GetMoveRates(Vector3, Vector3, Quaternion, Quaternion, Vector3, Vector3, float, float)");
-        private static readonly ProfilerMarker _pm_GetMoveRatesVec = new("MoveRates.GetMoveRates(Vector3, Vector3, float, float)");
-        private static readonly ProfilerMarker _pm_Move = new("MoveRates.Move(Transform, TransformPropertiesFlag, Vector3, float, Quaternion, float, Vector3, float, float, bool)");
-        #endregion
-
         /// <summary>
         /// Sets all rates to instant.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetInstantRates() => Update(INSTANT_VALUE);
 
         /// <summary>
         /// Sets all rates to the same value.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float value) => Update(value, value, value);
 
         /// <summary>
         /// Sets rates for each property.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float position, float rotation, float scale)
         {
             Position = position;
@@ -133,6 +142,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets rates for each property.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float position, float rotation, float scale, float timeRemaining)
         {
             Position = position;
@@ -146,11 +156,13 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Updates to new values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(MoveRates moveRates) => Update(moveRates.Position, moveRates.Rotation, moveRates.Scale, moveRates.TimeRemaining);
 
         /// <summary>
         /// Updates to new values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(MoveRatesCls moveRates) => Update(moveRates.Position, moveRates.Rotation, moveRates.Scale, moveRates.TimeRemaining);
 
         /// <summary>
@@ -166,38 +178,91 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MoveRates GetWorldMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
         {
-            return GetMoveRates(from.position, to.position, from.rotation, to.rotation, from.localScale, to.localScale, duration, teleportThreshold);
+            from.GetPositionAndRotation(out var fromPos, out var fromRot);
+            to.GetPositionAndRotation(out var toPos, out var toRot);
+            return GetMoveRates(fromPos, toPos, fromRot, toRot, from.localScale, to.localScale, duration, teleportThreshold);
+        }
+        
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MoveRates GetWorldMoveRates(TransformAccess from, TransformAccess to, float duration, float teleportThreshold)
+        {
+            from.GetPositionAndRotation(out var fromPos, out var fromRot);
+            to.GetPositionAndRotation(out var toPos, out var toRot);
+            return GetMoveRates(fromPos, toPos, fromRot, toRot, from.localScale, to.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MoveRates GetLocalMoveRates(Transform from, Transform to, float duration, float teleportThreshold)
         {
-            return GetMoveRates(from.localPosition, to.localPosition, from.localRotation, to.localRotation, from.localScale, to.localScale, duration, teleportThreshold);
+            from.GetPositionAndRotation(out var fromPos, out var fromRot);
+            to.GetPositionAndRotation(out var toPos, out var toRot);
+            return GetMoveRates(fromPos, toPos, fromRot, toRot, from.localScale, to.localScale, duration, teleportThreshold);
         }
-
+        
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MoveRates GetLocalMoveRates(TransformAccess from, TransformAccess to, float duration, float teleportThreshold)
+        {
+            from.GetPositionAndRotation(out var fromPos, out var fromRot);
+            to.GetPositionAndRotation(out var toPos, out var toRot);
+            return GetMoveRates(fromPos, toPos, fromRot, toRot, from.localScale, to.localScale, duration, teleportThreshold);
+        }
+        
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MoveRates GetWorldMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, t.position, prevValues.Rotation, t.rotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
+            t.GetPositionAndRotation(out var pos, out var rot);
+            return GetMoveRates(prevValues.Position, pos, prevValues.Rotation, rot, prevValues.Scale, t.localScale, duration, teleportThreshold);
+        }
+        
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MoveRates GetWorldMoveRates(TransformProperties prevValues, TransformAccess t, float duration, float teleportThreshold)
+        {
+            t.GetPositionAndRotation(out var pos, out var rot);
+            return GetMoveRates(prevValues.Position, pos, prevValues.Rotation, rot, prevValues.Scale, t.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MoveRates GetLocalMoveRates(TransformProperties prevValues, Transform t, float duration, float teleportThreshold)
         {
-            return GetMoveRates(prevValues.Position, t.localPosition, prevValues.Rotation, t.localRotation, prevValues.Scale, t.localScale, duration, teleportThreshold);
+            t.GetLocalPositionAndRotation(out var pos, out var rot);
+            return GetMoveRates(prevValues.Position, pos, prevValues.Rotation, rot, prevValues.Scale, t.localScale, duration, teleportThreshold);
+        }
+        
+        /// <summary>
+        /// Returns a new MoveRates based on previous values, and a transforms current position.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MoveRates GetLocalMoveRates(TransformProperties prevValues, TransformAccess t, float duration, float teleportThreshold)
+        {
+            t.GetCorrectLocalPositionAndRotation(out var pos, out var rot);
+            return GetMoveRates(prevValues.Position, pos, prevValues.Rotation, rot, prevValues.Scale, t.localScale, duration, teleportThreshold);
         }
 
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static MoveRates GetMoveRates(TransformProperties prevValues, TransformProperties nextValues, float duration, float teleportThreshold)
         {
             return GetMoveRates(prevValues.Position, nextValues.Position, prevValues.Rotation, nextValues.Rotation, prevValues.Scale, nextValues.Scale, duration, teleportThreshold);
@@ -206,7 +271,8 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Returns a new MoveRates based on previous values, and a transforms current position.
         /// </summary>
-        public static MoveRates GetMoveRates(Vector3 fromPosition, Vector3 toPosition, Quaternion fromRotation, Quaternion toRotation, Vector3 fromScale, Vector3 toScale, float duration, float teleportThreshold)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static MoveRates GetMoveRates(float3 fromPosition, float3 toPosition, quaternion fromRotation, quaternion toRotation, float3 fromScale, float3 toScale, float duration, float teleportThreshold)
         {
             using (_pm_GetMoveRatesFull.Auto())
             {
@@ -232,7 +298,8 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Gets a move rate for two Vector3s.
         /// </summary>
-        public static float GetMoveRate(Vector3 fromPosition, Vector3 toPosition, float duration, float teleportThreshold)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetMoveRate(float3 fromPosition, float3 toPosition, float duration, float teleportThreshold)
         {
             using (_pm_GetMoveRatesVec.Auto())
             {
@@ -258,7 +325,8 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Gets a move rate for two Quaternions.
         /// </summary>
-        public static float GetMoveRate(Quaternion fromRotation, Quaternion toRotation, float duration)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetMoveRate(quaternion fromRotation, quaternion toRotation, float duration)
         {
             float rate = toRotation.GetRate(fromRotation, duration, out _);
             float rotationRate = rate.SetIfUnderTolerance(0.2f, INSTANT_VALUE);
@@ -268,7 +336,21 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(Transform movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace)
+        {
+            if (!IsValid)
+                return;
+
+            Move(movingTransform, TransformPropertiesFlag.Everything, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta, useWorldSpace);
+            TimeRemaining -= delta;
+        }
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Move(TransformAccess movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace)
         {
             if (!IsValid)
                 return;
@@ -280,7 +362,21 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace)
+        {
+            if (!IsValid)
+                return;
+
+            Move(movingTransform, movedProperties, goalProperties.Position, Position, goalProperties.Rotation, Rotation, goalProperties.Scale, Scale, delta, useWorldSpace);
+            TimeRemaining -= delta;
+        }
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Move(TransformAccess movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace)
         {
             if (!IsValid)
                 return;
@@ -292,7 +388,7 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        public static void Move(Transform movingTransform, TransformPropertiesFlag movedProperties, Vector3 posGoal, float posRate, Quaternion rotGoal, float rotRate, Vector3 scaleGoal, float scaleRate, float delta, bool useWorldSpace)
+        public static void Move(Transform movingTransform, TransformPropertiesFlag movedProperties, float3 posGoal, float posRate, quaternion rotGoal, float rotRate, float3 scaleGoal, float scaleRate, float delta, bool useWorldSpace)
         {
             using (_pm_Move.Auto())
             {
@@ -302,79 +398,116 @@ namespace FishNet.Object.Prediction
                 bool containsRotation = movedProperties.FastContains(TransformPropertiesFlag.Rotation);
                 bool containsScale = movedProperties.FastContains(TransformPropertiesFlag.Scale);
 
-                //World space.
+                Vector3 pos;
+                Quaternion rot;
                 if (useWorldSpace)
-                {
-                    if (containsPosition)
-                    {
-                        if (posRate == INSTANT_VALUE)
-                        {
-                            t.position = posGoal;
-                        }
-                        else if (posRate == UNSET_VALUE) { }
-                        else
-                        {
-                            t.position = Vector3.MoveTowards(t.position, posGoal, posRate * delta);
-                        }
-                    }
+                    t.GetPositionAndRotation(out pos, out rot);
+                else t.GetLocalPositionAndRotation(out pos, out rot);
+                
+                if (containsPosition)
+                    pos = MoveTowardsFast(pos, posGoal, posRate, delta);
 
-                    if (containsRotation)
-                    {
-                        if (rotRate == INSTANT_VALUE)
-                        {
-                            t.rotation = rotGoal;
-                        }
-                        else if (rotRate == UNSET_VALUE) { }
-                        else
-                        {
-                            t.rotation = Quaternion.RotateTowards(t.rotation, rotGoal, rotRate * delta);
-                        }
-                    }
-                }
-                //Local space.
-                else
-                {
-                    if (containsPosition)
-                    {
-                        if (posRate == INSTANT_VALUE)
-                        {
-                            t.localPosition = posGoal;
-                        }
-                        else if (posRate == UNSET_VALUE) { }
-                        else
-                        {
-                            t.localPosition = Vector3.MoveTowards(t.localPosition, posGoal, posRate * delta);
-                        }
-                    }
-
-                    if (containsRotation)
-                    {
-                        if (rotRate == INSTANT_VALUE)
-                        {
-                            t.localRotation = rotGoal;
-                        }
-                        else if (rotRate == UNSET_VALUE) { }
-                        else
-                        {
-                            t.localRotation = Quaternion.RotateTowards(t.localRotation, rotGoal, rotRate * delta);
-                        }
-                    }
-                }
-
-                //Scale always uses local.
+                if (containsRotation)
+                    rot = RotateTowardsFast(rot, rotGoal, rotRate, delta);
+                
+                if (containsPosition || containsRotation)
+                    ApplyPosRot(t, useWorldSpace, pos, rot);
+                
                 if (containsScale)
                 {
-                    if (scaleRate == INSTANT_VALUE)
-                    {
-                        t.localScale = scaleGoal;
-                    }
-                    else if (scaleRate == UNSET_VALUE) { }
-                    else
-                    {
-                        t.localScale = Vector3.MoveTowards(t.localScale, scaleGoal, scaleRate * delta);
-                    }
+                    var scale = t.localScale;
+                    t.localScale = MoveTowardsFast(scale, scaleGoal, scaleRate, delta);
                 }
             }
+        }
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        public static void Move(TransformAccess movingTransform, TransformPropertiesFlag movedProperties, float3 posGoal, float posRate, quaternion rotGoal, float rotRate, float3 scaleGoal, float scaleRate, float delta, bool useWorldSpace)
+        {
+            using (_pm_Move.Auto())
+            {
+                TransformAccess t = movingTransform;
+
+                bool containsPosition = movedProperties.FastContains(TransformPropertiesFlag.Position);
+                bool containsRotation = movedProperties.FastContains(TransformPropertiesFlag.Rotation);
+                bool containsScale = movedProperties.FastContains(TransformPropertiesFlag.Scale);
+
+                Vector3 pos;
+                Quaternion rot;
+                if (useWorldSpace)
+                    t.GetPositionAndRotation(out pos, out rot);
+                else t.GetCorrectLocalPositionAndRotation(out pos, out rot);
+                
+                if (containsPosition)
+                    pos = MoveTowardsFast(pos, posGoal, posRate, delta);
+
+                if (containsRotation)
+                    rot = RotateTowardsFast(rot, rotGoal, rotRate, delta);
+                
+                if (containsPosition || containsRotation)
+                    ApplyPosRot(t, useWorldSpace, pos, rot);
+                
+                if (containsScale)
+                {
+                    var scale = t.localScale;
+                    t.localScale = MoveTowardsFast(scale, scaleGoal, scaleRate, delta);
+                }
+            }
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static float3 MoveTowardsFast(float3 current, float3 goal, float rate, float delta)
+        {
+            if (rate == INSTANT_VALUE) return goal;
+            if (rate == UNSET_VALUE) return current;
+            
+            float3 diff = goal - current;
+            float  maxDelta = math.max(0f, rate * delta);
+
+            float lenSq = math.lengthsq(diff);
+            if (lenSq <= maxDelta * maxDelta) return goal;
+
+            float invLen = math.rsqrt(lenSq); // 1 / sqrt(lenSq)
+            float t = math.min(maxDelta * invLen, 1f);
+            return current + diff * t;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static quaternion RotateTowardsFast(quaternion current, quaternion goal, float rate, float delta)
+        {
+            if (rate == INSTANT_VALUE) return goal;
+            if (rate == UNSET_VALUE) return current;
+            
+            float maxDelta = math.max(0f, rate * delta);
+
+            float dot = math.dot(current.value, goal.value);
+            float c = math.saturate(math.abs(dot)); // min(|dot|, 1)
+            
+            float angle = math.degrees(2f * math.acos(c));
+            if (angle <= maxDelta) return goal;
+            
+            float t = math.min(1f, maxDelta / angle);
+            return math.slerp(current, goal, t);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void ApplyPosRot(Transform t, bool worldSpace, float3 pos, quaternion rot)
+        {
+            if (worldSpace)
+                t.SetPositionAndRotation(pos, rot);
+            else
+                t.SetLocalPositionAndRotation(pos, rot);
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void ApplyPosRot(TransformAccess t, bool worldSpace, float3 pos, quaternion rot)
+        {
+            if (worldSpace)
+                t.SetPositionAndRotation(pos, rot);
+            else
+                t.SetCorrectLocalPositionAndRotation(pos, rot);
         }
     }
 
@@ -429,39 +562,60 @@ namespace FishNet.Object.Prediction
         /// <summary>
         /// Sets all rates to instant.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetInstantRates() => _moveRates.SetInstantRates();
 
         /// <summary>
         /// Sets all rates to the same value.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float value) => _moveRates.Update(value);
 
         /// <summary>
         /// Updates values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float position, float rotation, float scale) => _moveRates.Update(position, rotation, scale);
 
         /// <summary>
         /// Updates values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float position, float rotation, float scale, float timeRemaining) => _moveRates.Update(position, rotation, scale, timeRemaining);
 
         /// <summary>
         /// Updaes values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(MoveRatesCls mr) => _moveRates.Update(mr.Position, mr.Rotation, mr.Scale);
-
+        
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(Transform movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, delta, useWorldSpace);
 
         /// <summary>
         /// Moves transform to target values.
         /// </summary>
-        public void Move(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, movedProperties, delta, useWorldSpace);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Move(TransformAccess movingTransform, TransformProperties goalProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, delta, useWorldSpace);
 
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Move(Transform movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, movedProperties, delta, useWorldSpace);
+        
+        /// <summary>
+        /// Moves transform to target values.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Move(TransformAccess movingTransform, TransformProperties goalProperties, TransformPropertiesFlag movedProperties, float delta, bool useWorldSpace) => _moveRates.Move(movingTransform, goalProperties, movedProperties, delta, useWorldSpace);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ResetState() => _moveRates.ResetState();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void InitializeState() { }
     }
 }
