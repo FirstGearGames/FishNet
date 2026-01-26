@@ -643,7 +643,8 @@ namespace FishNet.Object
                 PredictionManager = networkManager.PredictionManager;
                 RollbackManager = networkManager.RollbackManager;
 
-                SetOwner(owner);
+                SetOwner(owner, true);
+                SetOwner(owner, false);
 
                 if (ObjectId != UNSET_OBJECTID_VALUE)
                     NetworkManager.LogError($"Object was initialized twice without being reset. Object {ToString()}");
@@ -1145,7 +1146,7 @@ namespace FishNet.Object
             // if (IsNested)
             //     gameObject.SetActive(WasActiveDuringEdit);
             //
-            SetOwner(NetworkManager.EmptyConnection);
+            SetOwner(NetworkManager.EmptyConnection, asServer);
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(false);
 
@@ -1200,7 +1201,7 @@ namespace FishNet.Object
                 }
 
                 // If the same owner don't bother sending a message, just ignore request.
-                if (newOwner == Owner)
+                if (newOwner == GetOwner(asServer))
                     return;
 
                 if (newOwner != null && newOwner.IsActive && !newOwner.LoadedStartScenes(true))
@@ -1212,11 +1213,11 @@ namespace FishNet.Object
             bool activeNewOwner = newOwner != null && newOwner.IsActive;
 
             // Set prevOwner, disallowing null.
-            NetworkConnection prevOwner = Owner;
+            NetworkConnection prevOwner = GetOwner(asServer);
             if (prevOwner == null)
                 prevOwner = NetworkManager.EmptyConnection;
 
-            SetOwner(newOwner);
+            SetOwner(newOwner, asServer);
             /* Only modify objects if asServer or not
              * host. When host, server would
              * have already modified objects
@@ -1296,9 +1297,23 @@ namespace FishNet.Object
         /// </summary>
         /// <param name = "owner"></param>
         /// <param name = "allowNull"></param>
-        private void SetOwner(NetworkConnection owner)
+        private void SetOwner(NetworkConnection owner, bool asServer)
         {
-            Owner = owner;
+            if (!asServer && IsServerStarted)
+                HostCachedOwner = owner;
+            else Owner = owner;
+        }
+        
+        /// <summary>
+        /// Gets the owner of this object.
+        /// </summary>
+        /// <param name = "owner"></param>
+        /// <param name = "allowNull"></param>
+        private NetworkConnection GetOwner(bool asServer)
+        {
+            if (!asServer && IsServerStarted)
+                return HostCachedOwner;
+            return Owner;
         }
 
         /// <summary>
