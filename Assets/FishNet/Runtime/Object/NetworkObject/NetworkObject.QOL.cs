@@ -227,6 +227,9 @@ namespace FishNet.Object
         /// </summary>
         private NetworkConnection _owner;
         /// <summary>
+        /// </summary>
+        private NetworkConnection _hostCachedOwner;
+        /// <summary>
         /// Owner of this object.
         /// </summary>
         public NetworkConnection Owner
@@ -240,6 +243,22 @@ namespace FishNet.Object
                 return _owner;
             }
             private set { _owner = value; }
+        }
+        
+        /// <summary>
+        /// Host value of Owner of this object.
+        /// </summary>
+        private NetworkConnection HostCachedOwner
+        {
+            get
+            {
+                // Ensures a null Owner is never returned.
+                if (_hostCachedOwner == null)
+                    return NetworkManager.EmptyConnection;
+
+                return _hostCachedOwner;
+            }
+            set { _hostCachedOwner = value; }
         }
         /// <summary>
         /// ClientId for this NetworkObject owner.
@@ -372,7 +391,7 @@ namespace FishNet.Object
         public void SetLocalOwnership(NetworkConnection caller, bool recursive)
         {
             NetworkConnection prevOwner = Owner;
-            SetOwner(caller);
+            SetOwner(caller, false);
 
             int count;
             count = NetworkBehaviours.Count;
