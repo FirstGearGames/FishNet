@@ -10,7 +10,12 @@ using UnityEngine;
 
 namespace FishNet.Connection
 {
-    public partial class NetworkConnection
+    public interface INetworkConnectionBroadcaster
+    {
+        void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast;
+    }
+
+    public partial class NetworkConnection : INetworkConnectionBroadcaster
     {
         #region Private.
         /// <summary>
