@@ -10,6 +10,9 @@ using UnityEngine;
 
 namespace FishNet.Connection
 {
+    /// <summary>
+    /// Abstraction of a NetworkConnection's broadcasting duties
+    /// </summary>
     public interface INetworkConnectionBroadcaster
     {
         /// <summary>
