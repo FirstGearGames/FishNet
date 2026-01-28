@@ -484,11 +484,12 @@ namespace FishNet.Object.Prediction
             if (_pendingForces.Count > 0)
             {
                 ForceApplicationType velocityApplicationTypes = ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce | ForceApplicationType.AddExplosiveForce;
+                ForceApplicationType nonVelocityTypes = ForceApplicationType.MovePosition | ForceApplicationType.MoveRotation;
 
                 List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
                 foreach (EntryData item in _pendingForces)
                 {
-                    if (VelocityApplicationTypesContains(item.Type) == !nonAngular)
+                    if (TypesContain(velocityApplicationTypes, item.Type) == !nonAngular || TypesContain(nonVelocityTypes, item.Type))
                         newDatas.Add(item);
                 }
                 // Add back to _pendingForces if changed.
@@ -500,9 +501,9 @@ namespace FishNet.Object.Prediction
                 }
                 CollectionCaches<EntryData>.Store(newDatas);
 
-                bool VelocityApplicationTypesContains(ForceApplicationType apt)
+                static bool TypesContain(ForceApplicationType types, ForceApplicationType apt)
                 {
-                    return (velocityApplicationTypes & apt) == apt;
+                    return (types & apt) == apt;
                 }
             }
         }
