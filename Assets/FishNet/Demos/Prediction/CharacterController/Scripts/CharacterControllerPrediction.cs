@@ -446,8 +446,6 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// </summary>
         private void CharacterTrigger_OnExit(Collider c)
         {
-            if (c == null)
-                return;
             if (!c.TryGetComponent(out MovingPlatform mp))
                 return;
 
