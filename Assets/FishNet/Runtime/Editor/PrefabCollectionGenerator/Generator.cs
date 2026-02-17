@@ -97,12 +97,6 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
         internal static string[] GetProjectFiles(string startingPath, string fileExtension, List<string> excludedPaths, bool recursive)
         {
-            // Opportunity to exit early if there are no excluded paths.
-            if (excludedPaths.Count == 0)
-            {
-                string[] strResults = Directory.GetFiles(startingPath, $"*{fileExtension}", SearchOption.AllDirectories);
-                return strResults;
-            }
             // starting path is excluded.
             if (excludedPaths.Contains(startingPath))
                 return new string[0];
