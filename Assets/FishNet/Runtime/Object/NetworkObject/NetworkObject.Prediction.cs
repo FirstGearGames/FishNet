@@ -46,7 +46,6 @@ namespace FishNet.Object
             /// Only reset the transform.
             /// </summary>
             TransformOnly = 1,
-            
             /* Velocities support will be available next release.
              * To support velocities as well PreReconcilingTransformProperties must
              * also store each rigidbody associated with the transform. This should not
@@ -56,12 +55,11 @@ namespace FishNet.Object
              * When adding velocities support only add velocity data if feature
              * it set to reset velocities; same applies when comparing and resetting.
              * */
-            
-             /// <summary>
-             /// Reset the transform and rigidbody velocities.
-             /// </summary>
-             /// <remarks>This setting is included even though it is not yet functional so that it becomes effective immediately on availability should it be the selected option.</remarks>
-             TransformAndVelocities = 2
+            /// <summary>
+            /// Reset the transform and rigidbody velocities.
+            /// </summary>
+            /// <remarks>This setting is included even though it is not yet functional so that it becomes effective immediately on availability should it be the selected option.</remarks>
+            TransformAndVelocities = 2
         }
 
         /// <summary>
@@ -81,6 +79,7 @@ namespace FishNet.Object
             /// Properties of the transform during PreReconcile.
             /// </summary>
             public TransformProperties Properties;
+
             // ReSharper disable once EmptyConstructor
             public PreReconcilingTransformProperties() { }
 
@@ -190,6 +189,7 @@ namespace FishNet.Object
         [Tooltip("NetworkTransform to configure for prediction. Specifying this is optional.")]
         [SerializeField]
         private NetworkTransform _networkTransform;
+        internal NetworkTransform PredictionNetworkTransform => _networkTransform;
         /// <summary>
         /// How many ticks to interpolate graphics on objects owned by the client. Typically low as 1 can be used to smooth over the frames between ticks.
         /// </summary>
@@ -402,12 +402,12 @@ namespace FishNet.Object
         private void InvokeStartCallbacks_Prediction(bool asServer)
         {
             if (!asServer)
-                return;
+            {
+                TimeManager.OnUpdate += TimeManager_Update;
 
-            TimeManager.OnUpdate += TimeManager_Update;
-
-            if (PredictionSmoother != null)
-                PredictionSmoother.OnStartClient();
+                if (PredictionSmoother != null)
+                    PredictionSmoother.OnStartClient();
+            }
         }
 
         private void InvokeStopCallbacks_Prediction(bool asServer)
