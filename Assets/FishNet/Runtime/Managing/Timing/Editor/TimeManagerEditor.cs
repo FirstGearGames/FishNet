@@ -59,7 +59,7 @@ namespace FishNet.Managing.Timing.Editing
             EditorGUILayout.LabelField("Physics", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
             if (_physicsMode.intValue == (int)PhysicsMode.TimeManager)
-                EditorGUILayout.HelpBox($"Time.fixedDeltaTime will be overriden with TimeManager.TickDelta ({(1f / (float)_tickRate.intValue).ToString("0.###")})", MessageType.Info);
+                EditorGUILayout.HelpBox($"Time.fixedDeltaTime will be overridden with TimeManager.TickDelta ({(1f / (float)_tickRate.intValue).ToString("0.###")})", MessageType.Info);
             else
                 EditorGUILayout.HelpBox("If you are using physics interactions be sure to change the PhysicsMode to TimeManager and implement physics within the TimeManager tick events. NetworkTransform may also jitter when not using PhysicsMode.TimeManager.", MessageType.Warning);
             EditorGUILayout.PropertyField(_physicsMode);
@@ -75,4 +75,5 @@ namespace FishNet.Managing.Timing.Editing
         }
     }
 }
+
 #endif
