@@ -75,7 +75,7 @@
 //        // public static void WriteRay(this Writer writer, Ray value) => writer.WriteRay(value);
 //        // public static void WriteRay2D(this Writer writer, Ray2D value) => writer.WriteRay2D(value);
 //        // public static void WriteMatrix4x4(this Writer writer, Matrix4x4 value) => writer.WriteMatrix4x4(value);
-//        // public static void WriteGuidAllocated(this Writer writer, System.Guid value) => writer.WriteGuidAllocated(value);
+//        // public static void WriteGuid(this Writer writer, System.Guid value) => writer.WriteGuid(value);
 //        // public static void WriteGameObject(this Writer writer, GameObject value) => writer.WriteGameObject(value);
 //        // public static void WriteTransform(this Writer writer, Transform value) => writer.WriteTransform(value);
 //        // public static void WriteNetworkObject(this Writer writer, NetworkObject value) => writer.WriteNetworkObject(value);

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace GameKit.Dependencies.Utilities
@@ -17,7 +16,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "source">Float to check against tolerance.</param>
         /// <param name = "tolerance">Tolerance float must be equal to or greater than to change to value.</param>
         /// <param name = "value">Value source is set to when breaking tolerance.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float SetIfOverTolerance(this float source, float tolerance, float value)
         {
             if (source >= tolerance)
@@ -32,7 +30,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "source">Float to check against tolerance.</param>
         /// <param name = "tolerance">Tolerance float must be equal to or less than to change to value.</param>
         /// <param name = "value">Value source is set to when breaking tolerance.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float SetIfUnderTolerance(this float source, float tolerance, float value)
         {
             if (source <= tolerance)
@@ -45,7 +42,6 @@ namespace GameKit.Dependencies.Utilities
         /// Returns how much time is left on an endTime. Returns -1 if no time is left.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float TimeRemainingValue(this float endTime)
         {
             float remaining = endTime - Time.time;
@@ -60,7 +56,6 @@ namespace GameKit.Dependencies.Utilities
         /// Returns how much time is left on an endTime. Returns -1 if no time is left.
         /// </summary>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int TimeRemainingValue(this float endTime, bool useFloor = true)
         {
             float remaining = endTime - Time.time;
@@ -141,7 +136,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "a"></param>
         /// <param name = "b"></param>
         /// <param name = "tolerance"></param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool Near(this float a, float b, float tolerance = 0.01f)
         {
             return Mathf.Abs(a - b) <= tolerance;
@@ -155,7 +149,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "max"></param>
         /// <param name = "clamped"></param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Clamp(float value, float min, float max, ref bool clamped)
         {
             clamped = value < min;
@@ -199,7 +192,6 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         /// <param name = "value">Value to sign.</param>
         /// <returns>Precise sign.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float PreciseSign(float value)
         {
             if (value == 0f)
@@ -215,7 +207,6 @@ namespace GameKit.Dependencies.Utilities
         /// <param name = "rangeMin">Minimum of range.</param>
         /// <param name = "rangeMax">Maximum of range.</param>
         /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool InRange(this float source, float rangeMin, float rangeMax)
         {
             return source >= rangeMin && source <= rangeMax;

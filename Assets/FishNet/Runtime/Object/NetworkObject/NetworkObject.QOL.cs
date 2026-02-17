@@ -68,7 +68,32 @@ namespace FishNet.Object
         /// True if this object has been initialized on the client side.
         /// This is set true right before client start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsClientInitialized { get; private set; }
+        private bool _isClientInitialized;
+        /// <summary>
+        /// True if this object has been initialized on the client side.
+        /// This is set true right before client start callbacks and after stop callbacks.
+        /// </summary>
+        public bool IsClientInitialized
+        {
+            get => _isClientInitialized;
+            private set
+            {
+                if (_isClientInitialized == value)
+                    return;
+
+                _isClientInitialized = value;
+                if (value)
+                {
+                    using (_pm_OnClientInitializedEvent.Auto())
+                        OnClientInitializedEvent?.Invoke(this);
+                }
+                else
+                {
+                    using (_pm_OnClientDeinitializedEvent.Auto())
+                        OnClientDeinitializedEvent?.Invoke(this);
+                }
+            }
+        }
         /// <summary>
         /// True if the client is started and authenticated. This will return true on clientHost even if the object has not initialized yet for the client.
         /// To check if this object has been initialized for the client use IsClientInitialized.
@@ -87,7 +112,32 @@ namespace FishNet.Object
         /// True if this object has been initialized on the server side.
         /// This is set true right before server start callbacks and after stop callbacks.
         /// </summary>
-        public bool IsServerInitialized { get; private set; }
+        private bool _isServerInitialized;
+        /// <summary>
+        /// True if this object has been initialized on the server side.
+        /// This is set true right before server start callbacks and after stop callbacks.
+        /// </summary>
+        public bool IsServerInitialized
+        {
+            get => _isServerInitialized;
+            private set
+            {
+                if (_isServerInitialized == value)
+                    return;
+
+                _isServerInitialized = value;
+                if (value)
+                {
+                    using (_pm_OnServerInitializedEvent.Auto())
+                        OnServerInitializedEvent?.Invoke(this);
+                }
+                else
+                {
+                    using (_pm_OnServerDeinitializedEvent.Auto())
+                        OnServerDeinitializedEvent?.Invoke(this);
+                }
+            }
+        }
         /// <summary>
         /// True if the server is active. This will return true on clientHost even if the object is being deinitialized on the server.
         /// To check if this object has been initialized for the server use IsServerInitialized.
@@ -177,6 +227,9 @@ namespace FishNet.Object
         /// </summary>
         private NetworkConnection _owner;
         /// <summary>
+        /// </summary>
+        private NetworkConnection _hostCachedOwner;
+        /// <summary>
         /// Owner of this object.
         /// </summary>
         public NetworkConnection Owner
@@ -190,6 +243,22 @@ namespace FishNet.Object
                 return _owner;
             }
             private set { _owner = value; }
+        }
+        
+        /// <summary>
+        /// Host value of Owner of this object.
+        /// </summary>
+        private NetworkConnection HostCachedOwner
+        {
+            get
+            {
+                // Ensures a null Owner is never returned.
+                if (_hostCachedOwner == null)
+                    return NetworkManager.EmptyConnection;
+
+                return _hostCachedOwner;
+            }
+            set { _hostCachedOwner = value; }
         }
         /// <summary>
         /// ClientId for this NetworkObject owner.
@@ -322,7 +391,7 @@ namespace FishNet.Object
         public void SetLocalOwnership(NetworkConnection caller, bool recursive)
         {
             NetworkConnection prevOwner = Owner;
-            SetOwner(caller);
+            SetOwner(caller, false);
 
             int count;
             count = NetworkBehaviours.Count;

@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace FishNet.Component.Transforming.Beta
 {
-    #if !THREADED_TICKSMOOTHERS
     [System.Serializable]
     public struct MovementSettings
     {
@@ -50,5 +49,4 @@ namespace FishNet.Component.Transforming.Beta
             SnapNonSmoothedProperties = false;
         }
     }
-    #endif
 }

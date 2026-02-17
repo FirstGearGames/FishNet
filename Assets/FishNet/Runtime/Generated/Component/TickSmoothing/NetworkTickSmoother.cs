@@ -1,6 +1,7 @@
 ﻿using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace FishNet.Component.Transforming.Beta
 {
@@ -52,7 +53,7 @@ namespace FishNet.Component.Transforming.Beta
         public override void OnStartClient()
         {
             RetrieveControllers();
-
+            
             _initializationSettings.SetNetworkedRuntimeValues(initializingNetworkBehaviour: this, graphicalTransform: transform, _favorPredictionNetworkTransform);
             SmootherController.Initialize(_initializationSettings, _controllerMovementSettings, _spectatorMovementSettings);
 
