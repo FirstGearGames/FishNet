@@ -403,20 +403,21 @@ namespace FishNet.Object.Prediction
             {
                 ForceApplicationType velocityApplicationTypes = ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce;
 
-                List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
+                List<EntryData> datasToKeep = CollectionCaches<EntryData>.RetrieveList();
                 foreach (EntryData item in _pendingForces)
-                {
-                    if (VelocityApplicationTypesContains(item.Type) == !nonAngular)
-                        newDatas.Add(item);
+                { 
+                    if (VelocityApplicationTypesContains(item.Type) == !nonAngular || item.Type == ForceApplicationType.MovePosition || item.Type == ForceApplicationType.MoveRotation)
+                        datasToKeep.Add(item);
                 }
                 // Add back to _pendingForces if changed.
-                if (newDatas.Count != _pendingForces.Count)
+                if (datasToKeep.Count != _pendingForces.Count)
                 {
                     _pendingForces.Clear();
-                    foreach (EntryData item in newDatas)
+                    
+                    foreach (EntryData item in datasToKeep)
                         _pendingForces.Add(item);
                 }
-                CollectionCaches<EntryData>.Store(newDatas);
+                CollectionCaches<EntryData>.Store(datasToKeep);
 
                 bool VelocityApplicationTypesContains(ForceApplicationType apt)
                 {

@@ -47,16 +47,6 @@ namespace FishNet.Demo.Prediction.Rigidbodies
 
         public struct ReconcileData : IReconcileData
         {
-            public ReconcileData(PredictionRigidbody root, PredictionRigidbody frontWheel, PredictionRigidbody rearWheel, uint boostStartTick)
-            {
-                Root = root;
-                FrontWheel = frontWheel;
-                RearWheel = rearWheel;
-                BoostStartTick = boostStartTick;
-
-                _tick = 0;
-            }
-
             /// <summary>
             /// PredictionRigidbody on the root.
             /// </summary>
@@ -74,9 +64,24 @@ namespace FishNet.Demo.Prediction.Rigidbodies
             /// </summary>
             public uint BoostStartTick;
             /// <summary>
+            /// True if to add spring forces next replicate.
+            /// </summary>
+            public bool SpringNextReplicate;
+            /// <summary>
             /// Tick is set at runtime. There is no need to manually assign this value.
             /// </summary>
             private uint _tick;
+
+            public ReconcileData(PredictionRigidbody root, PredictionRigidbody frontWheel, PredictionRigidbody rearWheel, uint boostStartTick, bool springNextReplicate)
+            {
+                Root = root;
+                FrontWheel = frontWheel;
+                RearWheel = rearWheel;
+                BoostStartTick = boostStartTick;
+                SpringNextReplicate = springNextReplicate;
+
+                _tick = 0;
+            }
 
             /* You do not need to dispose PredictionRigidbody when used with prediction.
              * These references will automatically use pooling to prevent garbage allocations! */
@@ -114,6 +119,10 @@ namespace FishNet.Demo.Prediction.Rigidbodies
         /// Tick which the boost started.
         /// </summary>
         private uint _boostStartTick = TimeManager.UNSET_TICK;
+        /// <summary>
+        /// Tick which the spring started.
+        /// </summary>
+        private bool _springNextReplicate;
         /// <summary>
         /// Tick on the last replicate.
         /// </summary>
@@ -196,7 +205,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
             // }
 
             // Build the data using current information and call the reconcile method.
-            ReconcileData rd = new(_root, _frontWheel, _rearWheel, _boostStartTick);
+            ReconcileData rd = new(_root, _frontWheel, _rearWheel, _boostStartTick, _springNextReplicate);
             PerformReconcile(rd);
         }
 
@@ -235,6 +244,14 @@ namespace FishNet.Demo.Prediction.Rigidbodies
                     _boostStartTick = TimeManager.UNSET_TICK;
             }
 
+            if (_springNextReplicate)
+            {
+                Vector3 springForce = Vector3.up * 10f;
+                _root.AddForce(springForce, ForceMode.Impulse);
+
+                _springNextReplicate = false;
+            }
+
             //Convert forwards based on root forward.
             Transform rootTransform = _root.Rigidbody.transform;
             turningForce = rootTransform.TransformDirection(turningForce);
@@ -265,6 +282,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
              * the trigger, it will not if the vehicle is in the trigger before the reconcile,
              * as well after; since they never left, enter will not be called.*/
             _boostStartTick = rd.BoostStartTick;
+            _springNextReplicate = rd.SpringNextReplicate;
             //Reconcile all the rigidbodies.
             _root.Reconcile(rd.Root);
             _frontWheel.Reconcile(rd.FrontWheel);
@@ -274,7 +292,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
         /// <summary>
         /// Sets boosted state for a number of ticks.
         /// </summary>
-        public void SetBoosted()
+        public void BoostHit()
         {
             /* Boost start is set to whatever tick was last replicated.
              * Replicate is called every tick, so if the controller hits
@@ -285,6 +303,15 @@ namespace FishNet.Demo.Prediction.Rigidbodies
              * If owner or server the current tick would be localTick, otherwise
              * it will be server tick. */
             _boostStartTick = _lastReplicateTick;
+        }
+
+        /// <summary>
+        /// Add vertical force to the rigidbody next replicate.
+        /// </summary>
+        public void SpringHit()
+        {
+            //_springNextReplicate = true;
+            _root.AddForce(Vector3.up * 10f, ForceMode.Impulse);
         }
     }
 }

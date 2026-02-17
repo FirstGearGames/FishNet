@@ -37,24 +37,15 @@ namespace FishNet.Managing.Client
         #endregion
 
         #region Private Profiler Markers
-        private static readonly ProfilerMarker _pm_ParseOwnershipChange =
-            new("ClientObjects.ParseOwnershipChange(PooledReader)");
-        private static readonly ProfilerMarker _pm_ParseSyncType =
-            new("ClientObjects.ParseSyncType(PooledReader, Channel)");
-        private static readonly ProfilerMarker _pm_ParsePredictedSpawnResult =
-            new("ClientObjects.ParsePredictedSpawnResult(PooledReader)");
-        private static readonly ProfilerMarker _pm_ParseReconcileRpc =
-            new("ClientObjects.ParseReconcileRpc(PooledReader, Channel)");
-        private static readonly ProfilerMarker _pm_ParseObserversRpc =
-            new("ClientObjects.ParseObserversRpc(PooledReader, Channel)");
-        private static readonly ProfilerMarker _pm_ParseTargetRpc =
-            new("ClientObjects.ParseTargetRpc(PooledReader, Channel)");
-        private static readonly ProfilerMarker _pm_ReadSpawn =
-            new("ClientObjects.ReadSpawn(PooledReader)");
-        private static readonly ProfilerMarker _pm_CacheDespawn =
-            new("ClientObjects.CacheDespawn(PooledReader)");
-        private static readonly ProfilerMarker _pm_IterateObjectCache =
-            new("ClientObjects.IterateObjectCache()");
+        private static readonly ProfilerMarker _pm_ParseOwnershipChange = new("ClientObjects.ParseOwnershipChange(PooledReader)");
+        private static readonly ProfilerMarker _pm_ParseSyncType = new("ClientObjects.ParseSyncType(PooledReader, Channel)");
+        private static readonly ProfilerMarker _pm_ParsePredictedSpawnResult = new("ClientObjects.ParsePredictedSpawnResult(PooledReader)");
+        private static readonly ProfilerMarker _pm_ParseReconcileRpc = new("ClientObjects.ParseReconcileRpc(PooledReader, Channel)");
+        private static readonly ProfilerMarker _pm_ParseObserversRpc = new("ClientObjects.ParseObserversRpc(PooledReader, Channel)");
+        private static readonly ProfilerMarker _pm_ParseTargetRpc = new("ClientObjects.ParseTargetRpc(PooledReader, Channel)");
+        private static readonly ProfilerMarker _pm_ReadSpawn = new("ClientObjects.ReadSpawn(PooledReader)");
+        private static readonly ProfilerMarker _pm_CacheDespawn = new("ClientObjects.CacheDespawn(PooledReader)");
+        private static readonly ProfilerMarker _pm_IterateObjectCache = new("ClientObjects.IterateObjectCache()");
         #endregion
 
         internal ClientObjects(NetworkManager networkManager)
@@ -121,7 +112,7 @@ namespace FishNet.Managing.Client
                 /* Clear spawned and scene objects as they will be rebuilt.
                  * Spawned would have already be cleared if DespawnSpawned
                  * was called but it won't hurt anything clearing an empty collection. */
-                HandleClear();
+                base.ClearSpawnedCollectionAndInvoke();
                 SceneObjects_Internal.Clear();
             }
         }
@@ -455,8 +446,7 @@ namespace FishNet.Managing.Client
 
                 bool sceneObject = st.FastContains(SpawnType.Scene);
 
-                ReadNestedSpawnIds(reader, st, out byte? nobComponentId, out int? parentObjectId,
-                    out byte? parentComponentId, _objectCache.ReadSpawningObjects);
+                ReadNestedSpawnIds(reader, st, out byte? nobComponentId, out int? parentObjectId, out byte? parentComponentId, _objectCache.ReadSpawningObjects);
 
                 //NeworkObject and owner information.
                 int objectId = reader.ReadNetworkObjectForSpawn(out int initializeOrder, out ushort collectionId);
@@ -491,9 +481,7 @@ namespace FishNet.Managing.Client
 
                 #if DEVELOPMENT && !UNITY_SERVER
                 if (NetworkTrafficStatistics != null)
-                    NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.ObjectSpawn, string.Empty,
-                        reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH,
-                        gameObject: null, asServer: false);
+                    NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.ObjectSpawn, string.Empty, reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
                 #endif
 
                 bool isPredictedSpawner = st.FastContains(SpawnType.IsPredictedSpawner);
@@ -542,9 +530,7 @@ namespace FishNet.Managing.Client
                         return;
                 }
 
-                _objectCache.AddSpawn(NetworkManager, collectionId, objectId, initializeOrder, ownerId, st,
-                    nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation,
-                    localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncTypes);
+                _objectCache.AddSpawn(NetworkManager, collectionId, objectId, initializeOrder, ownerId, st, nobComponentId, parentObjectId, parentComponentId, prefabId, localPosition, localRotation, localScale, sceneId, sceneName, objectName, payload, rpcLinks, syncTypes);
             }
         }
 
@@ -566,9 +552,7 @@ namespace FishNet.Managing.Client
 
                 #if DEVELOPMENT && !UNITY_SERVER
                 if (NetworkTrafficStatistics != null)
-                    NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.ObjectDespawn, string.Empty,
-                        reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH,
-                        gameObject: null, asServer: false);
+                    NetworkTrafficStatistics.AddInboundPacketIdData(PacketId.ObjectDespawn, string.Empty, reader.Position - readerPositionAfterDebug + Transporting.TransportManager.PACKETID_LENGTH, gameObject: null, asServer: false);
                 #endif
             }
         }
@@ -789,20 +773,16 @@ namespace FishNet.Managing.Client
             NetworkObject nob;
             //Try checking already spawned objects first.
             if (Spawned.TryGetValueIL2CPP(cnob.ObjectId, out nob))
-            {
                 return nob;
-            }
+
             /* If not found in already spawned objects see if
              * the networkObject is in the objectCache. It's possible the despawn
              * came immediately or shortly after the spawn message, before
              * the object has been initialized. */
-            else
-            {
-                nob = _objectCache.GetInCached(cnob.ObjectId, ClientObjectCache.CacheSearchType.Any);
-                /* Nob may be null if it's a child object being despawned, and the
-                 * parent despawn already occurred. */
-                return nob;
-            }
+            nob = _objectCache.GetInCached(cnob.ObjectId, ClientObjectCache.CacheSearchType.Any);
+            /* Nob may be null if it's a child object being despawned, and the
+             * parent despawn already occurred. */
+            return nob;
         }
     }
 }

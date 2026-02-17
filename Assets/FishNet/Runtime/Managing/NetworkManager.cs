@@ -25,6 +25,7 @@ using FishNet.Transporting;
 using FishNet.Managing.Statistic;
 using FishNet.Utility.Performance;
 using FishNet.Component.ColliderRollback;
+using FishNet.Component.Transforming.Beta;
 using FishNet.Configuring;
 using FishNet.Configuring.EditorCloning;
 using FishNet.Managing.Predicting;
@@ -120,6 +121,12 @@ namespace FishNet.Managing
         /// ObserverManager for this NetworkManager.
         /// </summary>
         public ObserverManager ObserverManager { get; private set; }
+        #if FISHNET_THREADED_TICKSMOOTHERS
+        /// <summary>
+        /// TickSmoothingManager for this NetworkManager.
+        /// </summary>
+        public TickSmoothingManager TickSmoothingManager { get; private set; }
+        #endif
         /// <summary>
         /// DebugManager for this NetworkManager.
         /// </summary>
@@ -232,7 +239,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.6.20";
+        public const string FISHNET_VERSION = "4.6.21";
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -318,6 +325,9 @@ namespace FishNet.Managing
             TimeManager = GetOrCreateComponent<TimeManager>();
             SceneManager = GetOrCreateComponent<SceneManager>();
             ObserverManager = GetOrCreateComponent<ObserverManager>();
+            #if THREADED_TICKSMOOTHERS
+            TickSmoothingManager = GetOrCreateComponent<TickSmoothingManager>();
+            #endif
             RollbackManager = GetOrCreateComponent<RollbackManager>();
             PredictionManager = GetOrCreateComponent<PredictionManager>();
             StatisticsManager = GetOrCreateComponent<StatisticsManager>();
@@ -353,15 +363,18 @@ namespace FishNet.Managing
             /* There is no need to unsubscribe to either of the connection
              * state events below since components
              * will be destroyed with the NetworkManager. */
-            
+
             ClientManager.InitializeOnce_Internal(this);
-            ClientManager.OnClientConnectionState+= ClientManager_OnClientConnectionState;
-            
+            ClientManager.OnClientConnectionState += ClientManager_OnClientConnectionState;
+
             ServerManager.InitializeOnce_Internal(this);
             ServerManager.OnServerConnectionState += ServerManager_OnServerConnectionState;
 
             SceneManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
+            #if THREADED_TICKSMOOTHERS
+            TickSmoothingManager.InitializeOnce_Internal(this);
+            #endif
             RollbackManager.InitializeOnce_Internal(this);
             PredictionManager.InitializeOnce(this);
             StatisticsManager.InitializeOnce_Internal(this);
@@ -601,7 +614,7 @@ namespace FishNet.Managing
                 // Already set.
                 if (_offlineApplicationRunInBackground != null)
                     return;
-                
+
                 //Update run in background after caching current value.
                 _offlineApplicationRunInBackground = Application.runInBackground;
                 Application.runInBackground = true;
@@ -611,7 +624,7 @@ namespace FishNet.Managing
                 // Already unset.
                 if (_offlineApplicationRunInBackground == null)
                     return;
-                
+
                 //Update run in background then unset cached value.
                 Application.runInBackground = _offlineApplicationRunInBackground.Value;
                 _offlineApplicationRunInBackground = null;

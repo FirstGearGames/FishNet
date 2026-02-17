@@ -92,14 +92,12 @@ namespace FishNet.Component.Prediction
         public override void OnStartClient()
         {
             // Events only needed by the client.
-            PredictionManager.OnPostReplicateReplay += PredictionManager_OnPostReplicateReplay;
             PredictionManager.OnPostReconcileSyncTransforms += PredictionManager_OnPreReconcile;
         }
 
         public override void OnStopClient()
         {
             // Events only needed by the client.
-            PredictionManager.OnPostReplicateReplay -= PredictionManager_OnPostReplicateReplay;
             PredictionManager.OnPostReconcileSyncTransforms -= PredictionManager_OnPreReconcile;
         }
 
@@ -122,17 +120,10 @@ namespace FishNet.Component.Prediction
         /// This may be useful if you wish to run physics differently for stacked scenes.
         private void TimeManager_OnPostPhysicsSimulation(float delta)
         {
-            CheckColliders(TimeManager.LocalTick);
+            uint tick = PredictionManager.IsReconciling && !IsServerStarted ? PredictionManager.ClientReplayTick : TimeManager.LocalTick;
+            CheckColliders(tick);
         }
-
-        /// <summary>
-        /// Called after physics is simulated when replaying a replicate method.
-        /// </summary>
-        private void PredictionManager_OnPostReplicateReplay(uint clientTick, uint serverTick)
-        {
-            CheckColliders(clientTick);
-        }
-
+        
         /// <summary>
         /// Returns if colliders should be checked. If colliders can be checked data needed by all collider checks (2D and 3D) is set.
         /// </summary>

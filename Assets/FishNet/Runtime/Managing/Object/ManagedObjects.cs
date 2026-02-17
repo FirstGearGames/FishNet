@@ -24,20 +24,27 @@ namespace FishNet.Managing.Object
     public abstract partial class ManagedObjects
     {
         #region Public.
-
         /// <summary>
         /// NetworkObjects which are currently active.
         /// </summary>
-        
-        private readonly Dictionary<int, NetworkObject> _spawned = new();
         public IReadOnlyDictionary<int, NetworkObject> Spawned => _spawned;
-        
-        public delegate void OnSpawnedChanged(int objectId, NetworkObject networkObject);
-
+        private Dictionary<int, NetworkObject> _spawned = new();
+        /// <summary>
+        /// Invoked when an object is added to Spawned.
+        /// </summary>
         public event OnSpawnedChanged OnSpawnedAdd;
+        /// <summary>
+        /// Invoked when an object is removed from Spawned.
+        /// </summary>
         public event OnSpawnedChanged OnSpawnedRemove;
+        /// <summary>
+        /// Invoked when Spawned is cleared.
+        /// </summary>
         public event Action OnSpawnedClear;
-        
+        /// <summary>
+        /// Delegate for when there is change to Spawned.
+        /// </summary>
+        public delegate void OnSpawnedChanged(int objectId, NetworkObject networkObject);
         #endregion
 
         #region Private Profiler Markers
@@ -45,7 +52,7 @@ namespace FishNet.Managing.Object
             new("ManagedObjects.ParseReplicateRpc(PooledReader, NetworkConnection, Channel)");
         #endregion
 
-        #region Protected.
+        #region Protected. 
         /// <summary>
         /// Returns the next ObjectId to use.
         /// </summary>
@@ -73,24 +80,34 @@ namespace FishNet.Managing.Object
         /// </summary>
         [NonSerialized] protected NetworkTrafficStatistics NetworkTrafficStatistics;
 
-        protected void HandleAdd(NetworkObject nob)
+
+        /// <summary>
+        /// Called to add an object to Spawned.
+        /// </summary>
+        protected void AddtoSpawnedCollectionAndInvoke(NetworkObject nob)
         {
             _spawned[nob.ObjectId] = nob;
             OnSpawnedAdd?.Invoke(nob.ObjectId, nob);
         }
-        
-        protected void HandleRemove(NetworkObject nob)
+
+        /// <summary>
+        /// Called to remove an object from Spawned.
+        /// </summary>
+        protected void RemoveFromSpawnedCollectionAndInvoke(NetworkObject nob)
         {
             if (_spawned.Remove(nob.ObjectId))
                 OnSpawnedRemove?.Invoke(nob.ObjectId, nob);
         }
-        
-        protected void HandleClear()
+
+        /// <summary>
+        /// Called to clear Spawned.
+        /// </summary>
+        protected void ClearSpawnedCollectionAndInvoke()
         {
             _spawned.Clear();
             OnSpawnedClear?.Invoke();
         }
-        
+
         #endregion
 
         #region Private.
@@ -144,7 +161,8 @@ namespace FishNet.Managing.Object
         /// </summary>
         protected virtual void RemoveFromSpawned(NetworkObject nob, bool fromOnDestroy, bool asServer)
         {
-            HandleRemove(nob);
+            RemoveFromSpawnedCollectionAndInvoke(nob);
+            
             // Do the same with SceneObjects.
             if (fromOnDestroy && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
@@ -351,7 +369,7 @@ namespace FishNet.Managing.Object
                 DespawnWithoutSynchronization(nob, recursive, asServer, nob.GetDefaultDespawnType(), removeFromSpawned: false);
             }
 
-            HandleClear();
+            ClearSpawnedCollectionAndInvoke();
         }
 
         /// <summary>
@@ -406,7 +424,7 @@ namespace FishNet.Managing.Object
         /// </summary>
         internal virtual void AddToSpawned(NetworkObject nob, bool asServer)
         {
-            HandleAdd(nob);
+            AddtoSpawnedCollectionAndInvoke(nob);
         }
 
         /// <summary>

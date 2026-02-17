@@ -15,7 +15,7 @@ namespace FishNet.Managing.Statistic
     public partial class NetworkTrafficStatistics
     {
         #region Types.
-        public enum EnabledMode
+        public enum EnabledMode : byte
         {
             /// <summary>
             /// Not enabled.
@@ -29,6 +29,10 @@ namespace FishNet.Managing.Statistic
             /// Enabled for release and development.
             /// </summary>
             Release = 2,
+            /// <summary>
+            /// Enable for release, development, and headless.
+            /// </summary>
+            Headless = 3,
         }
         #endregion
 
@@ -126,6 +130,12 @@ namespace FishNet.Managing.Statistic
             if (_initializedOnce)
                 return;
 
+            /* Only subscribe if enabled. Always unsubscribe even if not enabled -- doing so is safe. */
+            if (!IsEnabled())
+                return;
+
+            manager.TimeManager.OnPreTick += TimeManager_OnPreTick;
+
             _networkManager = manager;
 
             /* Do not bother caching once destroyed. Losing a single instance of each
@@ -133,8 +143,6 @@ namespace FishNet.Managing.Statistic
              * shutting down anyway. */
             _serverTraffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
             _clientTraffic = ResettableObjectCaches<BidirectionalNetworkTraffic>.Retrieve();
-
-            manager.TimeManager.OnPreTick += TimeManager_OnPreTick;
 
             _initializedOnce = true;
         }
@@ -181,7 +189,8 @@ namespace FishNet.Managing.Statistic
             if (bytes <= 0)
                 return;
 
-            GetBidirectionalNetworkTraffic(asServer).OutboundTraffic.AddPacketIdData(typeSource, details, (ulong)bytes, gameObject);
+            if (TryGetBidirectionalNetworkTraffic(asServer, out BidirectionalNetworkTraffic networkTraffic))
+                networkTraffic.OutboundTraffic.AddPacketIdData(typeSource, details, (ulong)bytes, gameObject);
         }
 
         /// <summary>
@@ -194,7 +203,8 @@ namespace FishNet.Managing.Statistic
             else if (bytes <= 0)
                 return;
 
-            GetBidirectionalNetworkTraffic(asServer).OutboundTraffic.AddSocketData(bytes);
+            if (TryGetBidirectionalNetworkTraffic(asServer, out BidirectionalNetworkTraffic networkTraffic))
+                networkTraffic.OutboundTraffic.AddSocketData(bytes);
         }
 
         /// <summary>
@@ -205,7 +215,8 @@ namespace FishNet.Managing.Statistic
             if (bytes <= 0)
                 return;
 
-            GetBidirectionalNetworkTraffic(asServer).InboundTraffic.AddPacketIdData(typeSource, details, (ulong)bytes, gameObject);
+            if (TryGetBidirectionalNetworkTraffic(asServer, out BidirectionalNetworkTraffic networkTraffic))
+                networkTraffic.InboundTraffic.AddPacketIdData(typeSource, details, (ulong)bytes, gameObject);
         }
 
         /// <summary>
@@ -218,13 +229,19 @@ namespace FishNet.Managing.Statistic
             else if (bytes <= 0)
                 return;
 
-            GetBidirectionalNetworkTraffic(asServer).InboundTraffic.AddSocketData(bytes);
+            if (TryGetBidirectionalNetworkTraffic(asServer, out BidirectionalNetworkTraffic networkTraffic))
+                networkTraffic.InboundTraffic.AddSocketData(bytes);
         }
 
         /// <summary>
         /// Gets current statistics for server or client.
         /// </summary>
-        private BidirectionalNetworkTraffic GetBidirectionalNetworkTraffic(bool asServer) => asServer ? _serverTraffic : _clientTraffic;
+        private bool TryGetBidirectionalNetworkTraffic(bool asServer, out BidirectionalNetworkTraffic networkTraffic)
+        {
+            networkTraffic = asServer ? _serverTraffic : _clientTraffic;
+
+            return networkTraffic != null;
+        }
 
         /// <summary>
         /// Formats passed in bytes value to the largest possible data type with 2 decimals.
@@ -248,9 +265,14 @@ namespace FishNet.Managing.Statistic
         /// </summary>
         public bool IsEnabled()
         {
+            if (_enableMode == EnabledMode.Disabled)
+                return false;
+
+            int modeValue = (int)_enableMode;
+
             //Never enabled for server builds.
             #if UNITY_SERVER
-            return false;
+            return modeValue >= (int)EnabledMode.Headless;
             #endif
 
             if (_enableMode == EnabledMode.Disabled)
@@ -258,7 +280,7 @@ namespace FishNet.Managing.Statistic
 
             // If not in dev mode then return true if to run in release.
             #if !DEVELOPMENT
-            return _enableMode == EnabledMode.Release;
+            return modeValue >= (int)EnabledMode.Release;
             // Always run in dev mode if not disabled.
             #else
             return true;

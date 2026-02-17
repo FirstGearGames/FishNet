@@ -120,6 +120,7 @@ namespace FishNet.Managing.Client
         [SerializeField]
         private ushort _frameRate = NetworkManager.MAXIMUM_FRAMERATE;
 
+        /// <summary>
         /// Sets the maximum frame rate the client may run at. Calling this method will enable ChangeFrameRate.
         /// </summary>
         /// <param name = "value">New value.</param>
@@ -143,39 +144,26 @@ namespace FishNet.Managing.Client
         private SplitReader _splitReader = new();
         /// <summary>
         /// </summary>
-        [NonSerialized] private NetworkTrafficStatistics _networkTrafficStatistics;
+        [NonSerialized]
+        private NetworkTrafficStatistics _networkTrafficStatistics;
         #endregion
 
         #region Private Profiler Markers
         private static readonly ProfilerMarker _pm_OnPostTick = new("ClientManager.TimeManager_OnPostTick()");
-        private static readonly ProfilerMarker _pm_Transport_OnClientConnectionState =
-            new("ClientManager.Transport_OnClientConnectionState(ClientConnectionStateArgs)");
-        private static readonly ProfilerMarker _pm_Transport_OnClientReceivedData =
-            new("ClientManager.Transport_OnClientReceivedData(ClientReceivedDataArgs)");
-        private static readonly ProfilerMarker _pm_TransportManager_OnIterateIncomingEnd =
-            new("ClientManager.TransportManager_OnIterateIncomingEnd(bool)");
-        private static readonly ProfilerMarker _pm_ParseReceived =
-            new("ClientManager.ParseReceived(ClientReceivedDataArgs)");
-        private static readonly ProfilerMarker _pm_ParseReader =
-            new("ClientManager.ParseReader(PooledReader, Channel, bool)");
-        private static readonly ProfilerMarker _pm_ParseReader_ReadPacketId =
-            new("ClientManager.ParseReader.ReadPacketId()");
-        private static readonly ProfilerMarker _pm_ParseReader_HandlePacket =
-            new("ClientManager.ParseReader.HandlePacket()");
-        private static readonly ProfilerMarker _pm_ParseReader_StateUpdate =
-            new("ClientManager.ParseReader.StateUpdate()");
-        private static readonly ProfilerMarker _pm_ParseReader_Broadcast =
-            new("ClientManager.ParseReader.Broadcast()");
-        private static readonly ProfilerMarker _pm_ParseReader_PingPong =
-            new("ClientManager.ParseReader.PingPong()");
-        private static readonly ProfilerMarker _pm_ParseReader_TimingUpdate =
-            new("ClientManager.ParseReader.TimingUpdate()");
-        private static readonly ProfilerMarker _pm_ParseReader_Authenticated =
-            new("ClientManager.ParseReader.Authenticated()");
-        private static readonly ProfilerMarker _pm_ParseReader_Disconnect =
-            new("ClientManager.ParseReader.Disconnect()");
-        private static readonly ProfilerMarker _pm_ParseReader_Version =
-            new("ClientManager.ParseReader.Version()");
+        private static readonly ProfilerMarker _pm_Transport_OnClientConnectionState = new("ClientManager.Transport_OnClientConnectionState(ClientConnectionStateArgs)");
+        private static readonly ProfilerMarker _pm_Transport_OnClientReceivedData = new("ClientManager.Transport_OnClientReceivedData(ClientReceivedDataArgs)");
+        private static readonly ProfilerMarker _pm_TransportManager_OnIterateIncomingEnd = new("ClientManager.TransportManager_OnIterateIncomingEnd(bool)");
+        private static readonly ProfilerMarker _pm_ParseReceived = new("ClientManager.ParseReceived(ClientReceivedDataArgs)");
+        private static readonly ProfilerMarker _pm_ParseReader = new("ClientManager.ParseReader(PooledReader, Channel, bool)");
+        private static readonly ProfilerMarker _pm_ParseReader_ReadPacketId = new("ClientManager.ParseReader.ReadPacketId()");
+        private static readonly ProfilerMarker _pm_ParseReader_HandlePacket = new("ClientManager.ParseReader.HandlePacket()");
+        private static readonly ProfilerMarker _pm_ParseReader_StateUpdate = new("ClientManager.ParseReader.StateUpdate()");
+        private static readonly ProfilerMarker _pm_ParseReader_Broadcast = new("ClientManager.ParseReader.Broadcast()");
+        private static readonly ProfilerMarker _pm_ParseReader_PingPong = new("ClientManager.ParseReader.PingPong()");
+        private static readonly ProfilerMarker _pm_ParseReader_TimingUpdate = new("ClientManager.ParseReader.TimingUpdate()");
+        private static readonly ProfilerMarker _pm_ParseReader_Authenticated = new("ClientManager.ParseReader.Authenticated()");
+        private static readonly ProfilerMarker _pm_ParseReader_Disconnect = new("ClientManager.ParseReader.Disconnect()");
+        private static readonly ProfilerMarker _pm_ParseReader_Version = new("ClientManager.ParseReader.Version()");
         #endregion
 
         private void OnDestroy()
@@ -767,7 +755,7 @@ namespace FishNet.Managing.Client
                 return;
             #if DEVELOPMENT
             // If development but not set to development return.
-            else if (_remoteServerTimeout != RemoteTimeoutType.Development)
+            if (_remoteServerTimeout != RemoteTimeoutType.Development)
                 return;
             #endif
             // Wait two timing intervals to give packets a chance to come through.

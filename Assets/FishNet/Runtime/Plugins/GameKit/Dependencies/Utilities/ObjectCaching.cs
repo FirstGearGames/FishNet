@@ -509,32 +509,32 @@ namespace GameKit.Dependencies.Utilities
     /// <summary>
     /// Caches collections of a single generic.
     /// </summary>
-    public static class CollectionCaches<T>
+    public static partial class CollectionCaches<T>
     {
         /// <summary>
         /// Cache for arrays.
         /// </summary>
-        private static readonly ConcurrentStack<T[]> _arrayCache = new();
+        private static readonly ConcurrentStack<T[]> _arrayCache;
         /// <summary>
         /// Cache for lists.
         /// </summary>
-        private static readonly ConcurrentStack<List<T>> _listCache = new();
+        private static readonly ConcurrentStack<List<T>> _listCache;
         /// <summary>
         /// Cache for sortedset.
         /// </summary>
-        private static readonly ConcurrentStack<SortedSet<T>> _sortedSetCache = new();
+        private static readonly ConcurrentStack<SortedSet<T>> _sortedSetCache;
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private static readonly ConcurrentStack<Queue<T>> _queueCache = new();
+        private static readonly ConcurrentStack<Queue<T>> _queueCache;
         /// <summary>
         /// Cache for queues.
         /// </summary>
-        private static readonly ConcurrentStack<BasicQueue<T>> _basicQueueCache = new();
+        private static readonly ConcurrentStack<BasicQueue<T>> _basicQueueCache;
         /// <summary>
         /// Cache for hashset.
         /// </summary>
-        private static readonly ConcurrentStack<HashSet<T>> _hashSetCache = new();
+        private static readonly ConcurrentStack<HashSet<T>> _hashSetCache;
         /// <summary>
         /// Maximum number of entries allowed for the cache.
         /// </summary>

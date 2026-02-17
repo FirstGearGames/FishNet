@@ -178,15 +178,14 @@ namespace FishNet.Managing.Server
         /// <param name = "kickReason">Reason client is being kicked.</param>
         /// <param name = "loggingType">How to print logging as.</param>
         /// <param name = "log">Optional message to be debug logged.</param>
-        /// <param name = "immediately"></param>
-        public void Kick(NetworkConnection conn, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "", bool immediately = true)
+        public void Kick(NetworkConnection conn, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             if (!conn.IsValid)
                 return;
 
             OnClientKick?.Invoke(conn, conn.ClientId, kickReason);
             if (conn.IsActive)
-                conn.Disconnect(immediately);
+                conn.Disconnect(true);
 
             if (!string.IsNullOrEmpty(log))
                 NetworkManager.Log(loggingType, log);
@@ -199,11 +198,10 @@ namespace FishNet.Managing.Server
         /// <param name = "kickReason">Reason client is being kicked.</param>
         /// <param name = "loggingType">How to print logging as.</param>
         /// <param name = "log">Optional message to be debug logged.</param>
-        /// <param name = "immediately"></param>
-        public void Kick(int clientId, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "", bool immediately = true)
+        public void Kick(int clientId, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             OnClientKick?.Invoke(null, clientId, kickReason);
-            NetworkManager.TransportManager.Transport.StopConnection(clientId, immediately);
+            NetworkManager.TransportManager.Transport.StopConnection(clientId, true);
             if (!string.IsNullOrEmpty(log))
                 NetworkManager.Log(loggingType, log);
         }
@@ -216,11 +214,10 @@ namespace FishNet.Managing.Server
         /// <param name = "kickReason">Reason client is being kicked.</param>
         /// <param name = "loggingType">How to print logging as.</param>
         /// <param name = "log">Optional message to be debug logged.</param>
-        /// <param name = "immediately"></param>
-        public void Kick(NetworkConnection conn, Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "", bool immediately = true)
+        public void Kick(NetworkConnection conn, Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             reader.Clear();
-            Kick(conn, kickReason, loggingType, log, immediately);
+            Kick(conn, kickReason, loggingType, log);
         }
     }
 }

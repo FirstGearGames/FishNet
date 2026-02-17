@@ -1,4 +1,5 @@
-﻿using FishNet.Managing.Predicting;
+﻿#if !FISHNET_THREADED_TICKSMOOTHERS
+using FishNet.Managing.Predicting;
 using FishNet.Managing.Timing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
@@ -305,3 +306,4 @@ namespace FishNet.Component.Transforming.Beta
         public void InitializeState() { }
     }
 }
+#endif

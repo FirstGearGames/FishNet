@@ -1,22 +1,12 @@
 ﻿using FishNet.Connection;
 using System.Runtime.CompilerServices;
-using System;
 using FishNet.Serializing;
 using UnityEngine;
-using Unity.Profiling;
 
 namespace FishNet.Object
 {
     public partial class NetworkObject : MonoBehaviour
     {
-        #region Types
-
-        public delegate void NetworkObjectCallback(NetworkObject nb);
-        
-        public delegate void NetworkObjectInvokeCallback(NetworkObject nb, bool asServer, bool invokeSyncTypeCallbacks);
-
-        #endregion
-        
         #region Private.
         /// <summary>
         /// True if OnStartServer was called.
@@ -26,133 +16,6 @@ namespace FishNet.Object
         /// True if OnStartClient was called.
         /// </summary>
         private bool _onStartClientCalled;
-        /// <summary>
-        /// True if OnStartSyncTypeCallbacks was called.
-        /// </summary>
-        private bool _onStartSyncTypeCallbacksCalled;
-
-        /// <summary>
-        /// True if OnStartServer was called.
-        /// </summary>
-        public bool OnStartServerCalled
-        {
-            get => _onStartServerCalled;
-            private set
-            {
-                if (_onStartServerCalled != value)
-                {
-                    _onStartServerCalled = value;
-                    if (value)
-                    {
-                        using (_pm_OnStartServerEvent.Auto())
-                            OnStartServerEvent?.Invoke(this);
-                    }
-                    else
-                    {
-                        using (_pm_OnStopServerEvent.Auto())
-                            OnStopServerEvent?.Invoke(this);
-                    }
-                }
-            }
-        }
-        
-        /// <summary>
-        /// True if OnStartClient was called.
-        /// </summary>
-        public bool OnStartClientCalled
-        {
-            get => _onStartClientCalled;
-            private set
-            {
-                if (_onStartClientCalled != value)
-                {
-                    _onStartClientCalled = value;
-                    if (value)
-                    {
-                        using (_pm_OnStartClientEvent.Auto())
-                            OnStartClientEvent?.Invoke(this);
-                    }
-                    else
-                    {
-                        using (_pm_OnStopClientEvent.Auto())
-                            OnStopClientEvent?.Invoke(this);
-                    }
-                }
-            }
-        }
-        
-        /// <summary>
-        /// True if OnStartSyncTypeCallbacks was called.
-        /// </summary>
-        public bool OnStartSyncTypeCallbacksCalled
-        {
-            get => _onStartSyncTypeCallbacksCalled;
-            private set
-            {
-                if (_onStartSyncTypeCallbacksCalled != value)
-                {
-                    _onStartSyncTypeCallbacksCalled = value;
-                    if (value)
-                    {
-                        using (_pm_OnStartSyncTypeCallbacksEvent.Auto())
-                            OnStartSyncTypeCallbacks?.Invoke(this);
-                    }
-                    else
-                    {
-                        using (_pm_OnStopSyncTypeCallbacksEvent.Auto())
-                            OnStopSyncTypeCallbacks?.Invoke(this);
-                    }
-                }
-            }
-        }
-
-        public event NetworkObjectCallback OnStartServerEvent;
-        public event NetworkObjectCallback OnStopServerEvent;
-        public event NetworkObjectCallback OnStartClientEvent;
-        public event NetworkObjectCallback OnStopClientEvent;
-        public event NetworkObjectCallback OnStartSyncTypeCallbacks;
-        public event NetworkObjectCallback OnStopSyncTypeCallbacks;
-        public event NetworkObjectCallback OnServerInitializedEvent;
-        public event NetworkObjectCallback OnClientInitializedEvent;
-        public event NetworkObjectCallback OnServerDeinitializedEvent;
-        public event NetworkObjectCallback OnClientDeinitializedEvent;
-        public event NetworkObjectInvokeCallback PreInvokeStartCallbacks;
-        public event NetworkObjectInvokeCallback PostInvokeStartCallbacks;
-        public event NetworkObjectInvokeCallback PreInvokeStopCallbacks;
-        public event NetworkObjectInvokeCallback PostInvokeStopCallbacks;
-
-        #region Profiling.
-        private static readonly ProfilerMarker _pm_OnStartServerEvent =
-            new("NetworkObject.OnStartServerEvent");
-        private static readonly ProfilerMarker _pm_OnStopServerEvent =
-            new("NetworkObject.OnStopServerEvent");
-        private static readonly ProfilerMarker _pm_OnStartClientEvent =
-            new("NetworkObject.OnStartClientEvent");
-        private static readonly ProfilerMarker _pm_OnStopClientEvent =
-            new("NetworkObject.OnStopClientEvent");
-        private static readonly ProfilerMarker _pm_OnStartSyncTypeCallbacksEvent =
-            new("NetworkObject.OnStartSyncTypeCallbacks");
-        private static readonly ProfilerMarker _pm_OnStopSyncTypeCallbacksEvent =
-            new("NetworkObject.OnStopSyncTypeCallbacks");
-        private static readonly ProfilerMarker _pm_OnServerInitializedEvent =
-            new("NetworkObject.OnServerInitializedEvent");
-        private static readonly ProfilerMarker _pm_OnClientInitializedEvent =
-            new("NetworkObject.OnClientInitializedEvent");
-        private static readonly ProfilerMarker _pm_OnServerDeinitializedEvent =
-            new("NetworkObject.OnServerDeinitializedEvent");
-        private static readonly ProfilerMarker _pm_OnClientDeinitializedEvent =
-            new("NetworkObject.OnClientDeinitializedEvent");
-        private static readonly ProfilerMarker _pm_PreInvokeStartCallbacksEvent =
-            new("NetworkObject.PreInvokeStartCallbacks");
-        private static readonly ProfilerMarker _pm_PostInvokeStartCallbacksEvent =
-            new("NetworkObject.PostInvokeStartCallbacks");
-        private static readonly ProfilerMarker _pm_PreInvokeStopCallbacksEvent =
-            new("NetworkObject.PreInvokeStopCallbacks");
-        private static readonly ProfilerMarker _pm_PostInvokeStopCallbacksEvent =
-            new("NetworkObject.PostInvokeStopCallbacks");
-
-        #endregion
-        
         #endregion
 
         // ReSharper disable Unity.PerformanceAnalysis
@@ -161,9 +24,6 @@ namespace FishNet.Object
         /// </summary>
         private void InvokeStartCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
-            using (_pm_PreInvokeStartCallbacksEvent.Auto())
-                PreInvokeStartCallbacks?.Invoke(this, asServer, invokeSyncTypeCallbacks);
-            
             /* Note: When invoking OnOwnership here previous owner will
              * always be an empty connection, since the object is just
              * now initializing. */
@@ -181,7 +41,7 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStartServer_Internal();
-                OnStartServerCalled = true;
+                _onStartServerCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipServer_Internal(Managing.NetworkManager.EmptyConnection);
             }
@@ -190,21 +50,15 @@ namespace FishNet.Object
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStartClient_Internal();
-                OnStartClientCalled = true;
+                _onStartClientCalled = true;
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnOwnershipClient_Internal(Managing.NetworkManager.EmptyConnection);
             }
 
             if (invokeSyncTypeCallbacks)
-            {
                 InvokeOnStartSyncTypeCallbacks(true);
-                OnStartSyncTypeCallbacksCalled = true;
-            }
 
             InvokeStartCallbacks_Prediction(asServer);
-            
-            using (_pm_PostInvokeStartCallbacksEvent.Auto())
-                PostInvokeStartCallbacks?.Invoke(this, asServer, invokeSyncTypeCallbacks);
         }
 
         /// <summary>
@@ -255,28 +109,22 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeStopCallbacks(bool asServer, bool invokeSyncTypeCallbacks)
         {
-            using (_pm_PreInvokeStopCallbacksEvent.Auto())
-                PreInvokeStopCallbacks?.Invoke(this, asServer, invokeSyncTypeCallbacks);
-            
             InvokeStopCallbacks_Prediction(asServer);
 
             if (invokeSyncTypeCallbacks)
-            {
                 InvokeOnStopSyncTypeCallbacks(asServer);
-                OnStartSyncTypeCallbacksCalled = false;
-            }
 
-            if (asServer && OnStartServerCalled)
+            if (asServer && _onStartServerCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopServer_Internal();
 
-                if (!OnStartClientCalled)
+                if (!_onStartClientCalled)
                     InvokeOnNetwork();
 
-                OnStartServerCalled = false;
+                _onStartServerCalled = false;
             }
-            else if (!asServer && OnStartClientCalled)
+            else if (!asServer && _onStartClientCalled)
             {
                 for (int i = 0; i < NetworkBehaviours.Count; i++)
                     NetworkBehaviours[i].OnStopClient_Internal();
@@ -285,14 +133,11 @@ namespace FishNet.Object
                  * that means this is still intialized on the server. This would
                  * happen if the object despawned for the clientHost but not on the
                  * server. */
-                if (!OnStartServerCalled)
+                if (!_onStartServerCalled)
                     InvokeOnNetwork();
 
-                OnStartClientCalled = false;
+                _onStartClientCalled = false;
             }
-            
-            using (_pm_PostInvokeStopCallbacksEvent.Auto())
-                PostInvokeStopCallbacks?.Invoke(this, asServer, invokeSyncTypeCallbacks);
 
             void InvokeOnNetwork()
             {

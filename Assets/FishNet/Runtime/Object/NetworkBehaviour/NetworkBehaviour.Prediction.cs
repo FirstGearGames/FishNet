@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using GameKit.Dependencies.Utilities.Types;
+using Unity.Profiling;
 using UnityEngine;
 
 [assembly: InternalsVisibleTo(UtilityConstants.CODEGEN_ASSEMBLY_NAME)]
@@ -84,31 +85,28 @@ namespace FishNet.Object
                 int index = FindIndexBruteForce(out findResult);
                 return index;
             }
-            else if (diff < 0)
+
+            if (diff < 0)
             {
                 findResult = DataPlacementResult.InsertBeginning;
                 return 0;
             }
-            else
+
+            /* If replicatesHistory contained the ticks
+             * of 1 2 3 4 5, and the tick is 3, then the difference
+             * would be 2 (because 3 - 1 = 2). As we can see index
+             * 2 of replicatesHistory does indeed return the proper tick. */
+            // Expected diff to be result but was not.
+            if (replicatesHistory[diff].Data.GetTick() != tick)
             {
-                /* If replicatesHistory contained the ticks
-                 * of 1 2 3 4 5, and the tick is 3, then the difference
-                 * would be 2 (because 3 - 1 = 2). As we can see index
-                 * 2 of replicatesHistory does indeed return the proper tick. */
-                // Expected diff to be result but was not.
-                if (replicatesHistory[diff].Data.GetTick() != tick)
-                {
-                    // Try to return value using brute force.
-                    int index = FindIndexBruteForce(out findResult);
-                    return index;
-                }
-                // Exact was found, this is the most ideal situation.
-                else
-                {
-                    findResult = DataPlacementResult.Exact;
-                    return diff;
-                }
+                // Try to return value using brute force.
+                int index = FindIndexBruteForce(out findResult);
+                return index;
             }
+
+            // Exact was found, this is the most ideal situation.
+            findResult = DataPlacementResult.Exact;
+            return diff;
 
             // Tries to find the index by brute forcing the collection.
             int FindIndexBruteForce(out DataPlacementResult result)
@@ -120,47 +118,41 @@ namespace FishNet.Object
                     result = DataPlacementResult.InsertBeginning;
                     return 0;
                 }
+
                 // If tick is larger the last then it must be inserted at the end.
-                else if (tick > replicatesHistory[replicatesCount - 1].Data.GetTick())
+                if (tick > replicatesHistory[replicatesCount - 1].Data.GetTick())
                 {
                     result = DataPlacementResult.InsertEnd;
                     return replicatesCount;
                 }
-                else
-                {
-                    // Brute check.
-                    for (int i = 0; i < replicatesCount; i++)
-                    {
-                        uint lTick = replicatesHistory[i].Data.GetTick();
-                        // Exact match found.
-                        if (lTick == tick)
-                        {
-                            result = DataPlacementResult.Exact;
-                            return i;
-                        }
-                        /* The checked data is greater than
-                         * what was being searched. This means
-                         * to insert right before it. */
-                        else if (lTick > tick)
-                        {
-                            result = DataPlacementResult.InsertMiddle;
-                            return i;
-                        }
-                    }
 
-                    // Should be impossible to get here.
-                    result = DataPlacementResult.Error;
-                    return -1;
+                // Brute check.
+                for (int i = 0; i < replicatesCount; i++)
+                {
+                    uint lTick = replicatesHistory[i].Data.GetTick();
+                    // Exact match found.
+                    if (lTick == tick)
+                    {
+                        result = DataPlacementResult.Exact;
+                        return i;
+                    }
+                    /* The checked data is greater than
+                     * what was being searched. This means
+                     * to insert right before it. */
+                    
+                    if (lTick > tick)
+                    {
+                        result = DataPlacementResult.InsertMiddle;
+                        return i;
+                    }
                 }
+
+                // Should be impossible to get here.
+                result = DataPlacementResult.Error;
+                return -1;
             }
         }
     }
-
-    // See todo below.
-    /* Update codegen to remove arrBuffer from replicate method calls.
-     * Update codegen to remove channel from replicate method calls where applicable.
-     * Convert BasicQueue<T>/RingBuffer<T> to BasicQueue/RingBuffer<ReplicateData<T>>.
-     * */
     #endregion
 
     public abstract partial class NetworkBehaviour : MonoBehaviour
@@ -233,12 +225,8 @@ namespace FishNet.Object
         /// </summary>
         /// <remarks>This is only used by prediction.</remarks>
         private TransformProperties _lastCheckedTransformProperties;
-        /// <summary>
-        /// 5 seconds worth of ticks.
-        /// </summary>
-        private uint _fiveSecondsToTicks;
         #endregion
-
+        
         /// <summary>
         /// Called when the object is destroyed.
         /// </summary>
@@ -478,11 +466,11 @@ namespace FishNet.Object
             const float angleDistance = 0.2f;
 
             bool anyChanged = false;
-            anyChanged |= (transform.position - (Vector3)_lastCheckedTransformProperties.Position).sqrMagnitude > v3Distance;
+            anyChanged |= (transform.position - _lastCheckedTransformProperties.Position).sqrMagnitude > v3Distance;
             if (!anyChanged)
                 anyChanged |= transform.rotation.Angle(_lastCheckedTransformProperties.Rotation, precise: true) > angleDistance;
             if (!anyChanged)
-                anyChanged |= (transform.localScale - (Vector3)_lastCheckedTransformProperties.Scale).sqrMagnitude > v3Distance;
+                anyChanged |= (transform.localScale - _lastCheckedTransformProperties.Scale).sqrMagnitude > v3Distance;
 
             // If transform changed update last values.
             if (updateLastValues && anyChanged)
@@ -600,11 +588,12 @@ namespace FishNet.Object
         /// </summary>
         /// </summary>
         private void Replicate_NonAuthoritative<T>(ReplicateUserLogicDelegate<T> del, BasicQueue<ReplicateDataContainer<T>> replicatesQueue, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
-        { PredictionManager predictionManager = PredictionManager;
+        {
+            PredictionManager predictionManager = PredictionManager;
 
             bool isServerStarted = _networkObjectCache.IsServerStarted;
             bool isServerWithoutOwner = isServerStarted && !Owner.IsValid;
-            
+
             /* Both owner and server when no owner should run
              * authoritative replicate. */
             if (isServerWithoutOwner)
@@ -613,7 +602,7 @@ namespace FishNet.Object
              * The server still needs to run inputs even if not authoritative. */
             if (!isServerStarted && !_networkObjectCache.EnableStateForwarding)
                 return;
-            
+
             TimeManager tm = _networkObjectCache.TimeManager;
             uint localTick = tm.LocalTick;
 
@@ -1280,9 +1269,7 @@ namespace FishNet.Object
         internal void Reconcile_Client_AddToLocalHistory<T>(RingBuffer<LocalReconcile<T>> reconcilesHistory, T data) where T : IReconcileData
         {
             //Server does not need to store these locally.
-            if (_networkObjectCache.IsServerStarted)
-                return;
-            if (!_networkObjectCache.PredictionManager.CreateLocalStates)
+            if (_networkObjectCache.IsServerStarted || !_networkObjectCache.PredictionManager.CreateLocalStates)
                 return;
             if (!IsOwner && !_networkObjectCache.EnableStateForwarding)
                 return;

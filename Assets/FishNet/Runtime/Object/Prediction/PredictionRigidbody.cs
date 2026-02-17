@@ -464,11 +464,13 @@ namespace FishNet.Object.Prediction
         public void Reconcile(PredictionRigidbody pr)
         {
             _pendingForces.Clear();
+            
             if (pr._pendingForces != null)
             {
                 foreach (EntryData item in pr._pendingForces)
                     _pendingForces.Add(new(item));
             }
+            
             // Set state.
             Rigidbody.SetState(pr.RigidbodyState);
 
@@ -484,26 +486,27 @@ namespace FishNet.Object.Prediction
             if (_pendingForces.Count > 0)
             {
                 ForceApplicationType velocityApplicationTypes = ForceApplicationType.AddRelativeForce | ForceApplicationType.AddForce | ForceApplicationType.AddExplosiveForce;
-                ForceApplicationType nonVelocityTypes = ForceApplicationType.MovePosition | ForceApplicationType.MoveRotation;
 
-                List<EntryData> newDatas = CollectionCaches<EntryData>.RetrieveList();
+                List<EntryData> datasToKeep = CollectionCaches<EntryData>.RetrieveList();
                 foreach (EntryData item in _pendingForces)
                 {
-                    if (TypesContain(velocityApplicationTypes, item.Type) == !nonAngular || TypesContain(nonVelocityTypes, item.Type))
-                        newDatas.Add(item);
+                    if (VelocityApplicationTypesContains(item.Type) == !nonAngular || item.Type == ForceApplicationType.MovePosition || item.Type == ForceApplicationType.MoveRotation)
+                        datasToKeep.Add(item);
                 }
                 // Add back to _pendingForces if changed.
-                if (newDatas.Count != _pendingForces.Count)
+                if (datasToKeep.Count != _pendingForces.Count)
                 {
                     _pendingForces.Clear();
-                    foreach (EntryData item in newDatas)
+                    
+                    foreach (EntryData item in datasToKeep)
                         _pendingForces.Add(item);
                 }
-                CollectionCaches<EntryData>.Store(newDatas);
+                
+                CollectionCaches<EntryData>.Store(datasToKeep);
 
-                static bool TypesContain(ForceApplicationType types, ForceApplicationType apt)
+                bool VelocityApplicationTypesContains(ForceApplicationType apt)
                 {
-                    return (types & apt) == apt;
+                    return (velocityApplicationTypes & apt) == apt;
                 }
             }
         }

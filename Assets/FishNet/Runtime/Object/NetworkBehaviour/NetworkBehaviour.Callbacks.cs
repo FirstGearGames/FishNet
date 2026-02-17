@@ -1,11 +1,8 @@
-﻿using System;
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Object.Synchronizing.Internal;
 using FishNet.Serializing;
 using System.Runtime.CompilerServices;
-using FishNet.Managing;
-using Unity.Profiling;
 using UnityEngine;
 
 namespace FishNet.Object
@@ -26,24 +23,6 @@ namespace FishNet.Object
         #endregion
 
         #region Private.
-        
-        #region Private Profiler Markers
-        private static readonly ProfilerMarker _pm_InvokeSyncTypeOnStartCallbacks = new("NetworkBehaviour.InvokeSyncTypeOnStartCallbacks(bool)");
-        private static readonly ProfilerMarker _pm_InvokeSyncTypeOnStopCallbacks = new("NetworkBehaviour.InvokeSyncTypeOnStopCallbacks(bool)");
-        
-        private static readonly ProfilerMarker _pm_InvokeOnNetwork_Internal = new("NetworkBehaviour.InvokeOnNetwork_Internal(bool)");
-        private static readonly ProfilerMarker _pm_OnStartNetwork_Internal = new("NetworkBehaviour.OnStartNetwork_Internal(bool)");
-        private static readonly ProfilerMarker _pm_OnStopNetwork_Internal = new("NetworkBehaviour.OnStopNetwork_Internal(bool)");
-        
-        private static readonly ProfilerMarker _pm_OnStartServer_Internal = new("NetworkBehaviour.OnStartServer_Internal(bool)");
-        private static readonly ProfilerMarker _pm_OnStopServer_Internal = new("NetworkBehaviour.OnStopServer_Internal(bool)");
-        private static readonly ProfilerMarker _pm_OnOwnershipServer_Internal = new("NetworkBehaviour.OnOwnershipServer_Internal(NetworkConnection)");
-        
-        private static readonly ProfilerMarker _pm_OnStartClient_Internal = new("NetworkBehaviour.OnStartClient_Internal(bool)");
-        private static readonly ProfilerMarker _pm_OnStopClient_Internal = new("NetworkBehaviour.OnStopClient_Internal(bool)");
-        private static readonly ProfilerMarker _pm_OnOwnershipClient_Internal = new("NetworkBehaviour.OnOwnershipClient_Internal(NetworkConnection)");
-        #endregion
-        
         /// <summary>
         /// True if OnStartNetwork has been called.
         /// </summary>
@@ -72,20 +51,8 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeSyncTypeOnStartCallbacks(bool asServer)
         {
-            using (_pm_InvokeSyncTypeOnStartCallbacks.Auto())
-            {
-                foreach (SyncBase item in _syncTypes.Values)
-                {
-                    try
-                    {
-                        item.OnStartCallback(asServer);
-                    }
-                    catch (Exception e)
-                    {
-                        NetworkManager.LogError(e.ToString());
-                    }
-                }
-            }
+            foreach (SyncBase item in _syncTypes.Values)
+                item.OnStartCallback(asServer);
         }
 
         /// <summary>
@@ -93,22 +60,10 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeSyncTypeOnStopCallbacks(bool asServer)
         {
-            using (_pm_InvokeSyncTypeOnStopCallbacks.Auto())
-            {
-                // if (_syncTypes == null)
-                //     return;
-                foreach (SyncBase item in _syncTypes.Values)
-                {
-                    try
-                    {
-                        item.OnStopCallback(asServer);
-                    }
-                    catch (Exception e)
-                    {
-                        NetworkManager.LogError(e.ToString());
-                    }
-                }
-            }
+            // if (_syncTypes == null)
+            //     return;
+            foreach (SyncBase item in _syncTypes.Values)
+                item.OnStopCallback(asServer);
         }
 
         /// <summary>
@@ -116,45 +71,31 @@ namespace FishNet.Object
         /// </summary>
         internal void InvokeOnNetwork_Internal(bool start)
         {
-            using (_pm_InvokeOnNetwork_Internal.Auto())
+            if (start)
             {
-                if (start)
-                {
-                    if (_onStartNetworkCalled)
-                        return;
+                if (_onStartNetworkCalled)
+                    return;
 
-                    if (!gameObject.activeInHierarchy)
-                    {
-                        NetworkInitialize___Early();
-                        NetworkInitialize___Late();
-                    }
-
-                    OnStartNetwork_Internal();
-                }
-                else
+                if (!gameObject.activeInHierarchy)
                 {
-                    if (_onStopNetworkCalled)
-                        return;
-                    OnStopNetwork_Internal();
+                    NetworkInitialize___Early();
+                    NetworkInitialize___Late();
                 }
+                OnStartNetwork_Internal();
+            }
+            else
+            {
+                if (_onStopNetworkCalled)
+                    return;
+                OnStopNetwork_Internal();
             }
         }
 
         internal virtual void OnStartNetwork_Internal()
         {
-            using (_pm_OnStartNetwork_Internal.Auto())
-            {
-                _onStartNetworkCalled = true;
-                _onStopNetworkCalled = false;
-                try
-                {
-                    OnStartNetwork();
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            _onStartNetworkCalled = true;
+            _onStopNetworkCalled = false;
+            OnStartNetwork();
         }
 
         /// <summary>
@@ -166,20 +107,10 @@ namespace FishNet.Object
 
         internal virtual void OnStopNetwork_Internal()
         {
-            using (_pm_OnStopNetwork_Internal.Auto())
-            {
-                _onStopNetworkCalled = true;
-                _onStartNetworkCalled = false;
+            _onStopNetworkCalled = true;
+            _onStartNetworkCalled = false;
 
-                try
-                {
-                    OnStopNetwork();
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            OnStopNetwork();
         }
 
         /// <summary>
@@ -191,18 +122,8 @@ namespace FishNet.Object
 
         internal void OnStartServer_Internal()
         {
-            using (_pm_OnStartServer_Internal.Auto())
-            {
-                OnStartServerCalled = true;
-                try
-                {
-                    OnStartServer();
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            OnStartServerCalled = true;
+            OnStartServer();
         }
 
         /// <summary>
@@ -213,19 +134,9 @@ namespace FishNet.Object
 
         internal void OnStopServer_Internal()
         {
-            using (_pm_OnStopServer_Internal.Auto())
-            {
-                OnStartServerCalled = false;
-                ReturnRpcLinks();
-                try
-                {
-                    OnStopServer();
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            OnStartServerCalled = false;
+            ReturnRpcLinks();
+            OnStopServer();
         }
 
         /// <summary>
@@ -235,18 +146,8 @@ namespace FishNet.Object
 
         internal void OnOwnershipServer_Internal(NetworkConnection prevOwner)
         {
-            using (_pm_OnOwnershipServer_Internal.Auto())
-            {
-                ResetState_Prediction(true);
-                try
-                {
-                    OnOwnershipServer(prevOwner);
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            ResetState_Prediction(true);
+            OnOwnershipServer(prevOwner);
         }
 
         /// <summary>
@@ -270,18 +171,8 @@ namespace FishNet.Object
 
         internal void OnStartClient_Internal()
         {
-            using (_pm_OnStartClient_Internal.Auto())
-            {
-                OnStartClientCalled = true;
-                try
-                {
-                    OnStartClient();
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            OnStartClientCalled = true;
+            OnStartClient();
         }
 
         /// <summary>
@@ -291,18 +182,8 @@ namespace FishNet.Object
 
         internal void OnStopClient_Internal()
         {
-            using (_pm_OnStopClient_Internal.Auto())
-            {
-                OnStartClientCalled = false;
-                try
-                {
-                    OnStopClient();
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
-            }
+            OnStartClientCalled = false;
+            OnStopClient();
         }
 
         /// <summary>
@@ -312,23 +193,13 @@ namespace FishNet.Object
 
         internal void OnOwnershipClient_Internal(NetworkConnection prevOwner)
         {
-            using (_pm_OnOwnershipClient_Internal.Auto())
+            // If losing or gaining ownership then clear replicate cache.
+            if (IsOwner || prevOwner == LocalConnection)
             {
-                // If losing or gaining ownership then clear replicate cache.
-                if (IsOwner || prevOwner == LocalConnection)
-                {
-                    ResetState_Prediction(false);
-                }
-
-                try
-                {
-                    OnOwnershipClient(prevOwner);
-                }
-                catch (Exception e)
-                {
-                    NetworkManager.LogError(e.ToString());
-                }
+                ResetState_Prediction(false);
             }
+
+            OnOwnershipClient(prevOwner);
         }
 
         /// <summary>

@@ -6,6 +6,8 @@ using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
+using FishNet.Broadcast;
+using FishNet.Transporting;
 using UnityEngine.SceneManagement;
 using static FishNet.Managing.Timing.EstimatedTick;
 
@@ -27,9 +29,24 @@ namespace FishNet.Connection
     }
 
     /// <summary>
+    /// Abstraction of a NetworkConnection's broadcasting duties
+    /// </summary>
+    public interface INetworkConnectionBroadcaster
+    {
+        /// <summary>
+        /// Sends a broadcast to this connection.
+        /// </summary>
+        /// <typeparam name = "T">Type of broadcast to send.</typeparam>
+        /// <param name = "message">Broadcast data being sent; for example: an instance of your broadcast type.</param>
+        /// <param name = "requireAuthenticated">True if the client must be authenticated for this broadcast to send.</param>
+        /// <param name = "channel">Channel to send on.</param>
+        void Broadcast<T>(T message, bool requireAuthenticated = true, Channel channel = Channel.Reliable) where T : struct, IBroadcast;
+    }
+    
+    /// <summary>
     /// A container for a connected client used to perform actions on and gather information for the declared client.
     /// </summary>
-    public partial class NetworkConnection : IResettable, IEquatable<NetworkConnection>
+    public partial class NetworkConnection : IResettable, IEquatable<NetworkConnection>, INetworkConnectionBroadcaster
     {
         #region Internal.
         /// <summary>

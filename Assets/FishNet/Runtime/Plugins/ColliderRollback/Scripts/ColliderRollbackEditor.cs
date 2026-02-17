@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+﻿#if UNITY_EDITOR && !FISHNET_THREADED_COLLIDER_ROLLBACK
 using UnityEditor;
 using UnityEngine;
 using static FishNet.Component.ColliderRollback.ColliderRollback;

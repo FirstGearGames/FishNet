@@ -41,12 +41,16 @@ namespace FishNet.Serializing
         /// </summary>
         public NetworkManager NetworkManager;
         #endregion
-
+        
         #region Private.
         /// <summary>
         /// Buffer to prevent new allocations. This will grow as needed.
         /// </summary>
         private byte[] _buffer = new byte[64];
+        /// <summary>
+        /// A buffer convert Guid data.
+        /// </summary>
+        private static readonly byte[] _guidBuffer = new byte[16];
         #endregion
 
         #region Const.
@@ -557,7 +561,7 @@ namespace FishNet.Serializing
         /// </summary>
         [DefaultWriter]
         public void WriteAutoPackType(AutoPackType apt) => WriteUInt8Unpacked((byte)apt);
-        
+
         /// <summary>
         /// Writes a Vector2.
         /// </summary>
@@ -859,20 +863,13 @@ namespace FishNet.Serializing
         [DefaultWriter]
         public void WriteGuid(Guid value)
         {
-            byte[] data = Guids.Buffer;
+            byte[] data = _guidBuffer;
             value.TryWriteBytes(data);
             WriteUInt8Array(data, 0, data.Length);
         }
-        
-        /// <summary>
-        /// Writes a Guid.
-        /// </summary>
-        /// <param name = "value"></param>
-        public void WriteGuidAllocated(Guid value)
-        {
-            byte[] data = value.ToByteArray();
-            WriteUInt8Array(data, 0, data.Length);
-        }
+
+        [Obsolete("Use WriteGuid instead.")]
+        public void WriteGuidAllocated(Guid value) => WriteGuid(value);
 
         /// <summary>
         /// Writes a tick without packing.

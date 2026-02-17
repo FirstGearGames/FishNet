@@ -140,7 +140,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &33715565
 Transform:
   m_ObjectHideFlags: 0
@@ -171,7 +171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   <IsNested>k__BackingField: 0
-  WasActiveDuringEdit: 1
+  WasActiveDuringEdit: 0
   WasActiveDuringEdit_Set1: 1
   <ComponentIndex>k__BackingField: 0
   <PredictedSpawn>k__BackingField: {fileID: 0}
@@ -258,7 +258,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &128315957
 Transform:
   m_ObjectHideFlags: 0
@@ -342,24 +342,9 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 30
+  _tickRate: 60
   _pingInterval: 1
   _physicsMode: 1
---- !u!114 &192429406
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886491487334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9b6b565cd9533c4ebc18003f0fc18a2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _color: {r: 1, g: 1, b: 1, a: 1}
-  _placement: 1
-  _hideTickRate: 1
 --- !u!114 &192429409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -489,6 +474,7 @@ MonoBehaviour:
     InterpolationValue: 2
     SmoothedProperties: 4294967295
     SnapNonSmoothedProperties: 0
+  _favorPredictionNetworkTransform: 1
   _spectatorMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
@@ -1013,6 +999,7 @@ MonoBehaviour:
     InterpolationValue: 2
     SmoothedProperties: 4294967295
     SnapNonSmoothedProperties: 0
+  _favorPredictionNetworkTransform: 1
   _spectatorMovementSettings:
     EnableTeleport: 0
     TeleportThreshold: 0
@@ -1718,10 +1705,7 @@ GameObject:
   - component: {fileID: 7443408886491487335}
   - component: {fileID: 192429409}
   - component: {fileID: 192429404}
-  - component: {fileID: 192429406}
   - component: {fileID: 7443408886491487336}
-  - component: {fileID: 7443408886491487337}
-  - component: {fileID: 7443408886491487338}
   - component: {fileID: 7443408886491487339}
   m_Layer: 0
   m_Name: NetworkManager
@@ -1764,42 +1748,6 @@ MonoBehaviour:
   _playerPrefab: {fileID: 201277550, guid: 5b712878ecece354ba4ffb026c0a221c, type: 3}
   _addToDefaultScene: 1
   Spawns: []
---- !u!114 &7443408886491487337
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886491487334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bc8f0363ddc75946a958043c5e49a83, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _runInRelease: 0
-  _secondsAveraged: 1
-  _updateInterval: 1
-  _color: {r: 0, g: 0, b: 0, a: 1}
-  _placement: 2
-  _showOutgoing: 1
-  _showIncoming: 1
---- !u!114 &7443408886491487338
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886491487334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 756c28cd3141c4140ae776188ee26729, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _runInRelease: 0
-  _networkTraffic:
-    _enableMode: 0
-    _updateClient: 0
-    _updateServer: 0
 --- !u!114 &7443408886491487339
 MonoBehaviour:
   m_ObjectHideFlags: 0

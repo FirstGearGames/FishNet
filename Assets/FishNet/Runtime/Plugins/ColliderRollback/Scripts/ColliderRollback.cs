@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿#if !FISHNET_THREADED_COLLIDER_ROLLBACK
+using System.Collections.Generic;
 using FishNet.Managing;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
@@ -36,5 +37,7 @@ namespace FishNet.Component.ColliderRollback
         private GameObject[] _colliderParents = new GameObject[0];
 #pragma warning restore CS0414
         #endregion
+
         }
 }
+#endif

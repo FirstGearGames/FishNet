@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !FISHNET_THREADED_TICKSMOOTHERS
+using System;
 using FishNet.Managing;
 using FishNet.Managing.Timing;
 using FishNet.Object;
@@ -944,7 +945,7 @@ namespace FishNet.Component.Transforming.Beta
         }
 
         /// <summary>
-        /// Attachs to Target transform is possible.
+        /// Attaches to Target transform if possible.
         /// </summary>
         private void AttachOnStop()
         {
@@ -956,7 +957,7 @@ namespace FishNet.Component.Transforming.Beta
                 return;
             if (ApplicationState.IsQuitting())
                 return;
-
+            
             /* If not to re-attach or if there's no target to reference
              * then the graphical must be destroyed. */
             bool destroy = !_attachOnStop || _targetTransform == null;
@@ -967,7 +968,14 @@ namespace FishNet.Component.Transforming.Beta
                 return;
             }
 
-            _graphicalTransform.SetParent(_targetTransform.parent);
+            /* This can occasionally cause an error:
+             * Cannot set the parent of the GameObject 'XYZ' while its new parent 'ABC' is being destroyed
+             *
+             * There is nothing which can be done about this error because Unity does not report
+             * the object as being null, as it's still being deconstructed, and there is no way to check
+             * if an object is being destroyed.
+             * */
+            _graphicalTransform.SetParent(_targetTransform);
             _graphicalTransform.SetLocalProperties(_trackerTransform.GetLocalProperties());
         }
 
@@ -1002,3 +1010,4 @@ namespace FishNet.Component.Transforming.Beta
         public void InitializeState() { }
     }
 }
+#endif

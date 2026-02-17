@@ -43,10 +43,10 @@ namespace FishNet.Connection
         /// <param name = "kickReason">Reason client is being kicked.</param>
         /// <param name = "loggingType">How to print logging as.</param>
         /// <param name = "log">Optional message to be debug logged.</param>
-        public void Kick(KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "", bool immediately = true)
+        public void Kick(KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             if (CanKick())
-                NetworkManager.ServerManager.Kick(this, kickReason, loggingType, log, immediately);
+                NetworkManager.ServerManager.Kick(this, kickReason, loggingType, log);
         }
 
         /// <summary>
@@ -56,10 +56,10 @@ namespace FishNet.Connection
         /// <param name = "kickReason">Reason client is being kicked.</param>
         /// <param name = "loggingType">How to print logging as.</param>
         /// <param name = "log">Optional message to be debug logged.</param>
-        public void Kick(Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "", bool immediately = true)
+        public void Kick(Reader reader, KickReason kickReason, LoggingType loggingType = LoggingType.Common, string log = "")
         {
             if (CanKick())
-                NetworkManager.ServerManager.Kick(this, reader, kickReason, loggingType, log, immediately);
+                NetworkManager.ServerManager.Kick(this, reader, kickReason, loggingType, log);
         }
 
         private bool CanKick()

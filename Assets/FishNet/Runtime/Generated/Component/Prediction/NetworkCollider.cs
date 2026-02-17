@@ -193,8 +193,10 @@ namespace FishNet.Component.Prediction
                         else
                             entered.Remove(c);
                     }
-                    // entered.Remove(c);
+                    
                 }
+                
+                CollectionCaches<Collider>.Store(collidersExited);
             }
 
             CollectionCaches<Collider>.Store(current);

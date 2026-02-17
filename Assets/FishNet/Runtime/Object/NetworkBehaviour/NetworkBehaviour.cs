@@ -101,7 +101,7 @@ namespace FishNet.Object
         /// <returns></returns>
         public override string ToString()
         {
-            return $"Name [{gameObject.name}] ComponentId [{ComponentIndex}] NetworkObject Name [{_networkObjectCache?.name ?? string.Empty}] NetworkObject Id [{_networkObjectCache?.ObjectId ?? -1}]";
+            return $"Name [{gameObject.name}] ComponentId [{ComponentIndex}] NetworkObject Name [{_networkObjectCache.name}] NetworkObject Id [{_networkObjectCache.ObjectId}]";
         }
 
         [MakePublic]
@@ -120,7 +120,6 @@ namespace FishNet.Object
                 _typeName = GetType().Name;
             #endif
 
-            _fiveSecondsToTicks = nob.TimeManager.TimeToTicks(5d);
             _transportManagerCache = nob.TransportManager;
             SyncTypes_Preinitialize(asServer);
 

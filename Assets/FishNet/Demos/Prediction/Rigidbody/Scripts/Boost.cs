@@ -31,7 +31,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
              * This trigger will invoke if the client enters it after a reconcile as well.
              * Because of this, it's not unusual to see enter/exit called many times over a second
              * due to the vehicle reconciling and running through the trigger again. */
-            rbp.SetBoosted();
+            rbp.BoostHit();
         }
     }
 }
