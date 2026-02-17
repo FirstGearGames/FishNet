@@ -544,7 +544,7 @@ namespace FishNet.Object
                             const float v3Distance = 0.000025f;
                             const float angleDistance = 0.2f;
 
-                            bool hasChanged = (transform.position - prtp.Properties.Position).sqrMagnitude >= v3Distance;
+                            bool hasChanged = (transform.position - (Vector3)prtp.Properties.Position).sqrMagnitude >= v3Distance;
                             if (!hasChanged)
                                 hasChanged = transform.rotation.Angle(prtp.Properties.Rotation, precise: true) >= angleDistance;
 

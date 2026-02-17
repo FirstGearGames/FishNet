@@ -478,11 +478,11 @@ namespace FishNet.Object
             const float angleDistance = 0.2f;
 
             bool anyChanged = false;
-            anyChanged |= (transform.position - _lastCheckedTransformProperties.Position).sqrMagnitude > v3Distance;
+            anyChanged |= (transform.position - (Vector3)_lastCheckedTransformProperties.Position).sqrMagnitude > v3Distance;
             if (!anyChanged)
                 anyChanged |= transform.rotation.Angle(_lastCheckedTransformProperties.Rotation, precise: true) > angleDistance;
             if (!anyChanged)
-                anyChanged |= (transform.localScale - _lastCheckedTransformProperties.Scale).sqrMagnitude > v3Distance;
+                anyChanged |= (transform.localScale - (Vector3)_lastCheckedTransformProperties.Scale).sqrMagnitude > v3Distance;
 
             // If transform changed update last values.
             if (updateLastValues && anyChanged)
