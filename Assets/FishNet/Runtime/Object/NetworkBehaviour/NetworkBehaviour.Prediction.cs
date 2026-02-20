@@ -575,12 +575,8 @@ namespace FishNet.Object
 
             SetReplicateTick(dataTick, createdReplicate: true);
 
-            #if !FISHNET_STABLE_REPLICATESTATES
             // Owner always replicates with new data.
             del.Invoke(dataContainer.Data, ReplicateState.Ticked | ReplicateState.Created, dataContainer.Channel);
-            #else
-            del.Invoke(dataContainer.Data, ReplicateState.CurrentCreated, dataContainer.Channel);
-            #endif
         }
 
         /// <summary>
@@ -759,11 +755,7 @@ namespace FishNet.Object
             if (findResult == ReplicateTickFinder.DataPlacementResult.Exact)
             {
                 dataContainer = replicatesHistory[replicateIndex];
-                #if !FISHNET_STABLE_REPLICATESTATES
                 state = ReplicateState.Replayed | ReplicateState.Ticked | ReplicateState.Created;
-                #else
-                state = ReplicateState.ReplayedCreated;
-                #endif
 
                 //SetReplicateTick(data.GetTick(), true);
                 del.Invoke(dataContainer.Data, state, dataContainer.Channel);
@@ -789,7 +781,6 @@ namespace FishNet.Object
                 {
                     dataContainer = replicatesHistory[replicateIndex];
 
-                    #if !FISHNET_STABLE_REPLICATESTATES
                     state = ReplicateState.Replayed;
 
                     bool isCreated = dataContainer.IsCreated;
@@ -801,10 +792,6 @@ namespace FishNet.Object
                      * and not yet ticked if state order is inserted rather than append. */
                     if (replayTick <= _lastOrderedReplicatedTick || isCreated)
                         state |= ReplicateState.Ticked;
-                    #else
-                    //state = ReplicateState.ReplayedCreated;
-                    state = (dataContainer.IsCreated) ? ReplicateState.ReplayedCreated : ReplicateState.ReplayedFuture;
-                    #endif
                 }
                 else
                 {
@@ -820,11 +807,7 @@ namespace FishNet.Object
             void SetDataToDefault()
             {
                 dataContainer = ReplicateDataContainer<T>.GetDefault(replayTick);
-                #if !FISHNET_STABLE_REPLICATESTATES
                 state = ReplicateState.Replayed;
-                #else
-                state = ReplicateState.ReplayedFuture;
-                #endif
             }
 
             del.Invoke(dataContainer.Data, state, dataContainer.Channel);

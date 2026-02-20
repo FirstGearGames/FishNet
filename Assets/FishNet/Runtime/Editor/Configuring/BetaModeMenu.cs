@@ -7,7 +7,6 @@ namespace FishNet.Editing.Beta
     public class BetaModeMenu : MonoBehaviour
     {
         #region const.
-        private const string STABLE_REPLICATESTATES_DEFINE = "FISHNET_STABLE_REPLICATESTATES";
         private const string STABLE_RECURSIVE_DESPAWNS_DEFINE = "FISHNET_STABLE_RECURSIVE_DESPAWNS";
         private const string THREADED_TICKSMOOTHERS_DEFINE = "FISHNET_THREADED_TICKSMOOTHERS";
         private const string THREADED_COLLIDER_ROLLBACK_DEFINE = "FISHNET_THREADED_COLLIDER_ROLLBACK";
@@ -26,22 +25,6 @@ namespace FishNet.Editing.Beta
             bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_RECURSIVE_DESPAWNS_DEFINE, removeDefine: !useStable);
             if (result)
                 Debug.LogWarning($"Beta Recursive Despawns are now {GetBetaEnabledText(useStable)}.");
-        }
-        #endregion
-
-        #region Beta ReplicateStates
-        #if FISHNET_STABLE_REPLICATESTATES
-        [MenuItem("Tools/Fish-Networking/Beta/Enable ReplicateStates", false, -1101)]
-        private static void EnableBetaReplicateStates() => SetBetaReplicateStates(useStable: false);
-        #else
-        [MenuItem("Tools/Fish-Networking/Beta/Disable ReplicateStates", false, -1101)]
-        private static void DisableBetaReplicateStates() => SetBetaReplicateStates(useStable: true);
-        #endif
-        private static void SetBetaReplicateStates(bool useStable)
-        {
-            bool result = DeveloperMenu.RemoveOrAddDefine(STABLE_REPLICATESTATES_DEFINE, removeDefine: !useStable);
-            if (result)
-                Debug.LogWarning($"Beta ReplicateStates are now {GetBetaEnabledText(useStable)}.");
         }
         #endregion
 
