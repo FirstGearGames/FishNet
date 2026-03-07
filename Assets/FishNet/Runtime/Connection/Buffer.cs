@@ -53,6 +53,7 @@ namespace FishNet.Connection
             if (Data != null)
                 ByteArrayPool.Store(Data);
             Data = null;
+            Reset();
         }
 
         /// <summary>
