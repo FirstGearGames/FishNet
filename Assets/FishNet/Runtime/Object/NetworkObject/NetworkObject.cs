@@ -44,6 +44,7 @@ namespace FishNet.Object
 
     [DefaultExecutionOrder(short.MinValue + 1)]
     [DisallowMultipleComponent]
+    [AddComponentMenu("FishNet/Component/NetworkObject")]
     public partial class NetworkObject : MonoBehaviour, IOrderable
     {
         #region Public.
