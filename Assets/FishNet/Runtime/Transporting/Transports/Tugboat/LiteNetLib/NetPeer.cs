@@ -1008,6 +1008,10 @@ namespace LiteNetLib
                     while (pos < packet.Size)
                     {
                         ushort size = BitConverter.ToUInt16(packet.RawData, pos);
+                        if (size == 0)
+                        {
+                            break;
+                        }
                         pos += 2;
                         if (packet.RawData.Length - pos < size)
                             break;
