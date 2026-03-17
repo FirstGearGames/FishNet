@@ -90,19 +90,6 @@ namespace LiteNetLib
         private const int MaxMtuCheckAttempts = 4;
         private readonly object _mtuMutex = new();
 
-        // Fragment
-        private class IncomingFragments
-        {
-            public NetPacket[] Fragments;
-            public int ReceivedCount;
-            public int TotalSize;
-            public byte ChannelId;
-        }
-
-        private int _fragmentId;
-        private readonly Dictionary<ushort, IncomingFragments> _holdedFragments;
-        private readonly Dictionary<ushort, ushort> _deliveredFragments;
-
         // Merging
         private readonly NetPacket _mergeData;
         private int _mergePos;
@@ -220,8 +207,6 @@ namespace LiteNetLib
             _pingPacket = new(PacketProperty.Ping, 0) { Sequence = 1 };
 
             _unreliableChannel = new();
-            _holdedFragments = new();
-            _deliveredFragments = new();
 
             _channels = new BaseChannel[netManager.ChannelsCount * NetConstants.ChannelTypeCount];
             _channelSendQueue = new();
@@ -639,44 +624,8 @@ namespace LiteNetLib
             int mtu = Mtu;
             if (length + headerSize > mtu)
             {
-                // if cannot be fragmented
-                if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered)
-                    throw new TooBigPacketException("Unreliable or ReliableSequenced packet size exceeded maximum of " + (mtu - headerSize) + " bytes, Check allowed size by GetMaxSinglePacketSize()");
-
-                int packetFullSize = mtu - headerSize;
-                int packetDataSize = packetFullSize - NetConstants.FragmentHeaderSize;
-                int totalPackets = length / packetDataSize + (length % packetDataSize == 0 ? 0 : 1);
-
-                NetDebug.Write($@"FragmentSend:
- MTU: {mtu}
- headerSize: {headerSize}
- packetFullSize: {packetFullSize}
- packetDataSize: {packetDataSize}
- totalPackets: {totalPackets}");
-
-                if (totalPackets > ushort.MaxValue)
-                    throw new TooBigPacketException("Data was split in " + totalPackets + " fragments, which exceeds " + ushort.MaxValue);
-
-                ushort currentFragmentId = (ushort)Interlocked.Increment(ref _fragmentId);
-
-                for (ushort partIdx = 0; partIdx < totalPackets; partIdx++)
-                {
-                    int sendLength = length > packetDataSize ? packetDataSize : length;
-
-                    NetPacket p = NetManager.PoolGetPacket(headerSize + sendLength + NetConstants.FragmentHeaderSize);
-                    p.Property = property;
-                    p.UserData = userData;
-                    p.FragmentId = currentFragmentId;
-                    p.FragmentPart = partIdx;
-                    p.FragmentsTotal = (ushort)totalPackets;
-                    p.MarkFragmented();
-
-                    Buffer.BlockCopy(data, start + partIdx * packetDataSize, p.RawData, NetConstants.FragmentedHeaderTotalSize, sendLength);
-                    channel.AddToQueue(p);
-
-                    length -= sendLength;
-                }
-                return;
+                NetDebug.WriteError($"Packet size {length + headerSize} exceeds MTU {mtu}. Fragmentation is disabled.");
+                throw new TooBigPacketException($"Packet size {length + headerSize} exceeded MTU {mtu}. LNL Fragmentation was removed.");
             }
 
             // Else just send
@@ -783,37 +732,8 @@ namespace LiteNetLib
             int length = data.Length;
             if (length + headerSize > mtu)
             {
-                // if cannot be fragmented
-                if (deliveryMethod != DeliveryMethod.ReliableOrdered && deliveryMethod != DeliveryMethod.ReliableUnordered)
-                    throw new TooBigPacketException("Unreliable or ReliableSequenced packet size exceeded maximum of " + (mtu - headerSize) + " bytes, Check allowed size by GetMaxSinglePacketSize()");
-
-                int packetFullSize = mtu - headerSize;
-                int packetDataSize = packetFullSize - NetConstants.FragmentHeaderSize;
-                int totalPackets = length / packetDataSize + (length % packetDataSize == 0 ? 0 : 1);
-
-                if (totalPackets > ushort.MaxValue)
-                    throw new TooBigPacketException("Data was split in " + totalPackets + " fragments, which exceeds " + ushort.MaxValue);
-
-                ushort currentFragmentId = (ushort)Interlocked.Increment(ref _fragmentId);
-
-                for (ushort partIdx = 0; partIdx < totalPackets; partIdx++)
-                {
-                    int sendLength = length > packetDataSize ? packetDataSize : length;
-
-                    NetPacket p = NetManager.PoolGetPacket(headerSize + sendLength + NetConstants.FragmentHeaderSize);
-                    p.Property = property;
-                    p.UserData = userData;
-                    p.FragmentId = currentFragmentId;
-                    p.FragmentPart = partIdx;
-                    p.FragmentsTotal = (ushort)totalPackets;
-                    p.MarkFragmented();
-
-                    data.Slice(partIdx * packetDataSize, sendLength).CopyTo(new(p.RawData, NetConstants.FragmentedHeaderTotalSize, sendLength));
-                    channel.AddToQueue(p);
-
-                    length -= sendLength;
-                }
-                return;
+                NetDebug.WriteError($"Packet size {length + headerSize} exceeds MTU {mtu}. Fragmentation is disabled.");
+                throw new TooBigPacketException($"Packet size {length + headerSize} exceeded MTU {mtu}. LNL Fragmentation was removed.");
             }
 
             // Else just send
@@ -923,84 +843,12 @@ namespace LiteNetLib
         {
             if (p.IsFragmented)
             {
-                NetDebug.Write($"Fragment. Id: {p.FragmentId}, Part: {p.FragmentPart}, Total: {p.FragmentsTotal}");
-                //Get needed array from dictionary
-                ushort packetFragId = p.FragmentId;
-                byte packetChannelId = p.ChannelId;
-                if (!_holdedFragments.TryGetValue(packetFragId, out IncomingFragments incomingFragments))
-                {
-                    incomingFragments = new()
-                    {
-                        Fragments = new NetPacket[p.FragmentsTotal],
-                        ChannelId = p.ChannelId
-                    };
-                    _holdedFragments.Add(packetFragId, incomingFragments);
-                }
-
-                //Cache
-                NetPacket[] fragments = incomingFragments.Fragments;
-
-                //Error check
-                if (p.FragmentPart >= fragments.Length || fragments[p.FragmentPart] != null || p.ChannelId != incomingFragments.ChannelId)
-                {
-                    NetManager.PoolRecycle(p);
-                    NetDebug.WriteError("Invalid fragment packet");
-                    return;
-                }
-                //Fill array
-                fragments[p.FragmentPart] = p;
-
-                //Increase received fragments count
-                incomingFragments.ReceivedCount++;
-
-                //Increase total size
-                incomingFragments.TotalSize += p.Size - NetConstants.FragmentedHeaderTotalSize;
-
-                //Check for finish
-                if (incomingFragments.ReceivedCount != fragments.Length)
-                    return;
-
-                //just simple packet
-                NetPacket resultingPacket = NetManager.PoolGetPacket(incomingFragments.TotalSize);
-
-                int pos = 0;
-                for (int i = 0; i < incomingFragments.ReceivedCount; i++)
-                {
-                    NetPacket fragment = fragments[i];
-                    int writtenSize = fragment.Size - NetConstants.FragmentedHeaderTotalSize;
-
-                    if (pos + writtenSize > resultingPacket.RawData.Length)
-                    {
-                        _holdedFragments.Remove(packetFragId);
-                        NetDebug.WriteError($"Fragment error pos: {pos + writtenSize} >= resultPacketSize: {resultingPacket.RawData.Length} , totalSize: {incomingFragments.TotalSize}");
-                        return;
-                    }
-                    if (fragment.Size > fragment.RawData.Length)
-                    {
-                        _holdedFragments.Remove(packetFragId);
-                        NetDebug.WriteError($"Fragment error size: {fragment.Size} > fragment.RawData.Length: {fragment.RawData.Length}");
-                        return;
-                    }
-
-                    //Create resulting big packet
-                    Buffer.BlockCopy(fragment.RawData, NetConstants.FragmentedHeaderTotalSize, resultingPacket.RawData, pos, writtenSize);
-                    pos += writtenSize;
-
-                    //Free memory
-                    NetManager.PoolRecycle(fragment);
-                    fragments[i] = null;
-                }
-
-                //Clear memory
-                _holdedFragments.Remove(packetFragId);
-
-                //Send to process
-                NetManager.CreateReceiveEvent(resultingPacket, method, (byte)(packetChannelId / NetConstants.ChannelTypeCount), 0, this);
+                NetDebug.WriteError("Fragmented packets are disabled. Dropping packet.");
+                NetManager.PoolRecycle(p);
+                return;
             }
-            else //Just simple packet
-            {
-                NetManager.CreateReceiveEvent(p, method, (byte)(p.ChannelId / NetConstants.ChannelTypeCount), NetConstants.ChanneledHeaderSize, this);
-            }
+
+            NetManager.CreateReceiveEvent(p, method, (byte)(p.ChannelId / NetConstants.ChannelTypeCount), NetConstants.ChanneledHeaderSize, this);
         }
 
         private void ProcessMtuPacket(NetPacket packet)
@@ -1160,6 +1008,10 @@ namespace LiteNetLib
                     while (pos < packet.Size)
                     {
                         ushort size = BitConverter.ToUInt16(packet.RawData, pos);
+                        if (size == 0)
+                        {
+                            break;
+                        }
                         pos += 2;
                         if (packet.RawData.Length - pos < size)
                             break;
@@ -1397,24 +1249,7 @@ namespace LiteNetLib
         {
             if (packet.UserData != null)
             {
-                if (packet.IsFragmented)
-                {
-                    _deliveredFragments.TryGetValue(packet.FragmentId, out ushort fragCount);
-                    fragCount++;
-                    if (fragCount == packet.FragmentsTotal)
-                    {
-                        NetManager.MessageDelivered(this, packet.UserData);
-                        _deliveredFragments.Remove(packet.FragmentId);
-                    }
-                    else
-                    {
-                        _deliveredFragments[packet.FragmentId] = fragCount;
-                    }
-                }
-                else
-                {
-                    NetManager.MessageDelivered(this, packet.UserData);
-                }
+                NetManager.MessageDelivered(this, packet.UserData);
                 packet.UserData = null;
             }
             NetManager.PoolRecycle(packet);
