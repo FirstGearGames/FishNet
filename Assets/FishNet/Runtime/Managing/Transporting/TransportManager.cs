@@ -151,6 +151,7 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         public const byte UNPACKED_SIZE_LENGTH = 4;
         /// <summary>
+        /// Number of bytes sent to indicate split ID.
         /// </summary>
         private const byte SPLIT_ID_LENGTH = 4;
         /// <summary>
