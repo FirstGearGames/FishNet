@@ -447,14 +447,16 @@ namespace FishNet.Managing.Client
                     #endif
                     // Skip packetId.
                     reader.ReadPacketId();
+                    int splitId;
                     int expectedMessages;
-                    _splitReader.GetHeader(reader, out expectedMessages);
-                    _splitReader.Write(NetworkManager.TimeManager.LastPacketTick.LastRemoteTick, reader, expectedMessages);
+                    int partIndex;
+                    _splitReader.GetHeader(reader, out splitId, out expectedMessages, out partIndex);
+                    _splitReader.Write(splitId, reader, expectedMessages, partIndex);
                     /* If fullMessage returns 0 count then the split
                      * has not written fully yet. Otherwise, if there is
                      * data within then reinitialize reader with the
                      * full message. */
-                    ArraySegment<byte> fullMessage = _splitReader.GetFullMessage();
+                    ArraySegment<byte> fullMessage = _splitReader.GetFullMessage(splitId);
                     if (fullMessage.Count == 0)
                         return;
 
@@ -736,6 +738,7 @@ namespace FishNet.Managing.Client
         {
             using (_pm_OnPostTick.Auto())
             {
+                _splitReader.CheckSplitTimeout();
                 CheckServerTimeout();
             }
         }

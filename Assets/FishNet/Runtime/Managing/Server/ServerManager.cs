@@ -218,10 +218,6 @@ namespace FishNet.Managing.Server
         /// </summary>
         private float _nextTimeoutCheckTime;
         /// <summary>
-        /// Used to read splits.
-        /// </summary>
-        private SplitReader _splitReader = new();
-        /// <summary>
         /// </summary>
         private NetworkTrafficStatistics _networkTrafficStatistics;
         #if DEVELOPMENT
@@ -424,6 +420,7 @@ namespace FishNet.Managing.Server
                     _nextClientTimeoutCheckIndex = 0;
 
                 NetworkConnection item = _clientsList[_nextClientTimeoutCheckIndex];
+                item.SplitReader.CheckSplitTimeout();
                 uint clientLocalTick = item.PacketTick.LocalTick;
                 /* If client tick has not been set yet then use the tick
                  * when they connected to the server. */
@@ -751,6 +748,17 @@ namespace FishNet.Managing.Server
             reader = ReaderPool.Retrieve(segment, NetworkManager, dataSource);
             uint tick = reader.ReadTickUnpacked();
             timeManager.LastPacketTick.Update(tick);
+
+            NetworkConnection conn;
+
+            /* Connection isn't available. This should never happen.
+             * Force an immediate disconnect. */
+            if (!Clients.TryGetValueIL2CPP(args.ConnectionId, out conn))
+            {
+                Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"ConnectionId {args.ConnectionId} not found within Clients.");
+                return;
+            }
+
             /* This is a special condition where a message may arrive split.
              * When this occurs buffer each packet until all packets are
              * received. */
@@ -762,28 +770,23 @@ namespace FishNet.Managing.Server
                 //Skip packetId.
                 reader.ReadPacketId();
 
+                int splitId;
                 int expectedMessages;
-                _splitReader.GetHeader(reader, out expectedMessages);
+                int partIndex;
+                conn.SplitReader.GetHeader(reader, out splitId, out expectedMessages, out partIndex);
                 //If here split message is to be read into splitReader.
-                _splitReader.Write(tick, reader, expectedMessages);
+                conn.SplitReader.Write(splitId, reader, expectedMessages, partIndex);
 
                 /* If fullMessage returns 0 count then the split
                  * has not written fully yet. Otherwise, if there is
                  * data within then reinitialize reader with the
                  * full message. */
-                ArraySegment<byte> fullMessage = _splitReader.GetFullMessage();
+                ArraySegment<byte> fullMessage = conn.SplitReader.GetFullMessage(splitId);
                 if (fullMessage.Count == 0)
                     return;
 
-                /* If here then all data has been received.
-                 * It's possible the client could have exceeded
-                 * maximum MTU but not the maximum number of splits.
-                 * This is because the length of each split
-                 * is not written, so we don't know how much data of the
-                 * final message actually belonged to the split vs
-                 * unrelated data added afterwards. We're going to cut
-                 * the client some slack in this situation for the sake
-                 * of keeping things simple. */
+                /* Full split payload has been reassembled and will now be parsed
+                 * as a normal incoming message. */
                 reader.Initialize(fullMessage, NetworkManager, dataSource);
             }
 
@@ -794,15 +797,7 @@ namespace FishNet.Managing.Server
                 #if DEVELOPMENT
                 NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: false);
                 #endif
-                NetworkConnection conn;
 
-                /* Connection isn't available. This should never happen.
-                 * Force an immediate disconnect. */
-                if (!Clients.TryGetValueIL2CPP(args.ConnectionId, out conn))
-                {
-                    Kick(args.ConnectionId, KickReason.UnexpectedProblem, LoggingType.Error, $"ConnectionId {args.ConnectionId} not found within Clients. Connection will be kicked immediately.");
-                    return;
-                }
                 conn.LocalTick.Update(timeManager, tick, EstimatedTick.OldTickOption.Discard);
                 conn.PacketTick.Update(timeManager, tick, EstimatedTick.OldTickOption.SetLastRemoteTick);
                 /* If connection isn't authenticated and isn't a broadcast

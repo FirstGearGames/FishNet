@@ -2,6 +2,7 @@
 using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Managing.Timing;
+using FishNet.Managing.Transporting;
 using FishNet.Object;
 using GameKit.Dependencies.Utilities;
 using System;
@@ -65,6 +66,15 @@ namespace FishNet.Connection
         /// LocalTick of the server when this connection was established. This value is not set for clients.
         /// </summary>
         internal uint ServerConnectionTick;
+        /// <summary>
+        /// Handles split packet reassembly for this connection.
+        /// </summary>
+        internal readonly SplitReader SplitReader = new();
+        /// <summary>
+        /// Next split identifier for outgoing split messages on this connection.
+        /// This value is only used on the server.
+        /// </summary>
+        internal int NextSplitId;
         #endregion
 
         #region Public.
@@ -477,6 +487,8 @@ namespace FishNet.Connection
             SetDisconnecting(false);
             Scenes.Clear();
             PredictedObjectIds.Clear();
+            SplitReader.Reset();
+            NextSplitId = 0;
             ResetPingPong();
             Observers_Reset();
             Prediction_Reset();

@@ -109,6 +109,10 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private List<DisconnectingClient> _disconnectingClients = new();
         /// <summary>
+        /// Next split identifier for outgoing client-to-server split messages.
+        /// </summary>
+        private int _nextClientSplitId;
+        /// <summary>
         /// Lowest MTU of all transports for channels.
         /// </summary>
         private int[] _lowestMtus;
@@ -147,14 +151,22 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         public const byte UNPACKED_SIZE_LENGTH = 4;
         /// <summary>
+        /// </summary>
+        private const byte SPLIT_ID_LENGTH = 4;
+        /// <summary>
         /// Number of bytes sent to indicate split count.
         /// </summary>
         private const byte SPLIT_COUNT_LENGTH = 4;
         /// <summary>
+        /// Number of bytes sent to indicate split part index.
+        /// </summary>
+        private const byte SPLIT_PARTINDEX_LENGTH = 4;
+        /// <summary>
         /// Number of bytes required for split data.
         /// </summary>
         /// // todo: This shouldn't have to include TickBytes but there is a parse error if it's not included. Figure out why.
-        public const byte SPLIT_INDICATOR_LENGTH = UNPACKED_TICK_LENGTH + PACKETID_LENGTH + SPLIT_COUNT_LENGTH;
+        public const byte SPLIT_INDICATOR_LENGTH =
+            UNPACKED_TICK_LENGTH + PACKETID_LENGTH + SPLIT_ID_LENGTH + SPLIT_COUNT_LENGTH + SPLIT_PARTINDEX_LENGTH;
         /// <summary>
         /// Number of channels supported.
         /// </summary>
@@ -253,6 +265,8 @@ namespace FishNet.Managing.Transporting
             // Reset toServer data.
             foreach (PacketBundle pb in _toServerBundles)
                 pb.Reset(resetSendLast: true);
+
+            _nextClientSplitId = 0;
         }
 
         /// <summary>
@@ -700,24 +714,37 @@ namespace FishNet.Managing.Transporting
             }
 
             byte channelId = (byte)Channel.Reliable;
-            PooledWriter headerWriter = WriterPool.Retrieve();
-            headerWriter.WritePacketIdUnpacked(PacketId.Split);
-            headerWriter.WriteInt32(requiredMessages);
-            ArraySegment<byte> headerSegment = headerWriter.GetArraySegment();
+
+            int splitId = (conn != null) ? conn.NextSplitId++ : _nextClientSplitId++;
 
             int writeIndex = 0;
-            bool firstWrite = true;
-            // Send to connection until everything is written.
+            int partIndex = 0;
+
             while (writeIndex < segment.Count)
             {
-                int headerReduction = 0;
-                if (firstWrite)
+                PooledWriter headerWriter = WriterPool.Retrieve();
+                headerWriter.WritePacketIdUnpacked(PacketId.Split);
+                headerWriter.WriteInt32(splitId);
+                headerWriter.WriteInt32(requiredMessages);
+                headerWriter.WriteInt32(partIndex);
+                ArraySegment<byte> headerSegment = headerWriter.GetArraySegment();
+
+                if (maxMessageSize <= 0)
                 {
-                    headerReduction = headerSegment.Count;
-                    firstWrite = false;
+                    headerWriter.Store();
+                    _networkManager.LogError($"Split message capacity is invalid ({maxMessageSize}). Check MTU and split overhead calculations.");
+                    return;
                 }
-                int chunkSize = Mathf.Min(segment.Count - writeIndex - headerReduction, maxMessageSize);
-                // Make a new array segment for the chunk that is getting split.
+
+                int remaining = segment.Count - writeIndex;
+                int chunkSize = Mathf.Min(remaining, maxMessageSize);
+                if (chunkSize <= 0)
+                {
+                    headerWriter.Store();
+                    _networkManager.LogError($"Computed split chunk size is invalid ({chunkSize}).");
+                    return;
+                }
+
                 ArraySegment<byte> splitSegment = new(segment.Array, segment.Offset + writeIndex, chunkSize);
 
                 // If connection is specified then it's going to a client.
@@ -733,10 +760,15 @@ namespace FishNet.Managing.Transporting
                     _toServerBundles[channelId].Write(splitSegment, false, orderType);
                 }
 
+                headerWriter.Store();
                 writeIndex += chunkSize;
+                partIndex++;
             }
 
-            headerWriter.Store();
+            if (partIndex != requiredMessages)
+            {
+                _networkManager.LogWarning($"Split send produced {partIndex} parts, but {requiredMessages} were expected. This may indicate an MTU calculation mismatch.");
+            }
         }
         #endregion
 
