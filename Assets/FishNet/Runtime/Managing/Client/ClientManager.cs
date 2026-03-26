@@ -141,7 +141,32 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Used to read splits.
         /// </summary>
-        private SplitReader _splitReader = new();
+        private SplitReader _splitReader;
+
+        /// <summary>
+        /// Gets the current SplitReader.
+        /// </summary>
+        /// <returns></returns>
+        private bool TryGetSplitReader(int expectedMessages, out SplitReader splitReader)
+        {
+            if (_splitReader == null)
+            {
+                if (NetworkManager is null)
+                {
+                    NetworkManagerExtensions.LogError($"SplitReader cannot be returned because the NetworkManager reference is null.");
+                    splitReader = null;
+
+                    return false;
+                }
+
+                _splitReader = ResettableObjectCaches<SplitReader>.Retrieve();
+                _splitReader.Initialize(NetworkManager, NetworkManager.TransportManager.MaximumClientPacketSize, isSenderClient: false, expectedMessages);
+            }
+
+            splitReader = _splitReader;
+            return true;
+        }
+
         /// <summary>
         /// </summary>
         [NonSerialized]
@@ -447,18 +472,32 @@ namespace FishNet.Managing.Client
                     #endif
                     // Skip packetId.
                     reader.ReadPacketId();
-                    int expectedMessages;
-                    _splitReader.GetHeader(reader, out expectedMessages);
-                    _splitReader.Write(NetworkManager.TimeManager.LastPacketTick.LastRemoteTick, reader, expectedMessages);
+
+                    int expectedMessages = reader.ReadInt32();
+
+                    if (!TryGetSplitReader(expectedMessages, out SplitReader splitReader))
+                    {
+                        NetworkManager.LogError($"Something went wrong when trying to get the [{nameof(splitReader)}] for a server message.");
+                        return;
+                    }
+
+                    if (!splitReader.Write(reader))
+                    {
+                        NetworkManager.LogError($"Something went wrong when writing a split message from the server.");
+                        return;
+                    }
+
                     /* If fullMessage returns 0 count then the split
                      * has not written fully yet. Otherwise, if there is
                      * data within then reinitialize reader with the
                      * full message. */
-                    ArraySegment<byte> fullMessage = _splitReader.GetFullMessage();
-                    if (fullMessage.Count == 0)
+                    if (!splitReader.TryGetFullMessage(out ArraySegment<byte> fullMessage))
                         return;
 
                     reader.Initialize(fullMessage, NetworkManager, dataSource);
+
+                    //Once here the split reader can be stored.
+                    ResettableObjectCaches<SplitReader>.StoreAndDefault(ref _splitReader);
                 }
 
                 while (reader.Remaining > 0)
@@ -468,16 +507,6 @@ namespace FishNet.Managing.Client
                         packetId = reader.ReadPacketId();
                         #if DEVELOPMENT
                         NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: true);
-                        // if (!NetworkManager.IsServerStarted)
-                        //     print = true;
-                        // if (print)
-                        // {
-                        //     if (packetId == PacketId.ObserversRpc)
-                        //         Debug.Log($"PacketId {packetId} - Remaining {reader.Remaining}.");
-                        //     else
-                        //         Debug.LogWarning($"PacketId {packetId} - Remaining {reader.Remaining}.");
-                        // }
-                        // print = false;
                         #endif
                     }
                     bool spawnOrDespawn = packetId == PacketId.ObjectSpawn || packetId == PacketId.ObjectDespawn;

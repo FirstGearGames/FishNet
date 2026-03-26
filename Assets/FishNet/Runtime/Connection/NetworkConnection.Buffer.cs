@@ -6,6 +6,7 @@ using FishNet.Object;
 using FishNet.Transporting;
 using System;
 using System.Collections.Generic;
+using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
 namespace FishNet.Connection
@@ -21,6 +22,10 @@ namespace FishNet.Connection
         /// True if this object has been dirtied.
         /// </summary>
         private bool _serverDirtied;
+        /// <summary>
+        /// SplitReader being used as-needed.
+        /// </summary>
+        private SplitReader _splitReader;
         #endregion
 
         /// <summary>
@@ -35,6 +40,36 @@ namespace FishNet.Connection
             }
         }
 
+        /// <summary>
+        /// Gets the current SplitReader.
+        /// </summary>
+        /// <returns></returns>
+        internal bool TryGetSplitReader(int expectedMessages, out SplitReader splitReader)
+        {
+            if (_splitReader == null)
+            {
+                if (NetworkManager is null)
+                {
+                    NetworkManagerExtensions.LogError($"SplitReader cannot be returned because the NetworkManager reference is null.");
+                    splitReader = null;
+
+                    return false;
+                }
+
+                _splitReader = ResettableObjectCaches<SplitReader>.Retrieve();
+                _splitReader.Initialize(NetworkManager, NetworkManager.TransportManager.MaximumClientPacketSize, isSenderClient: true, expectedMessages);
+            }
+
+            splitReader = _splitReader;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Stores the current SpitReader on this connection.
+        /// </summary>
+        internal void StoreSplitReader() => ResettableObjectCaches<SplitReader>.StoreAndDefault(ref _splitReader);
+        
         /// <summary>
         /// Sends a broadcast to this connection.
         /// </summary>

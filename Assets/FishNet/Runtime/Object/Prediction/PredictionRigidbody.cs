@@ -105,7 +105,9 @@ namespace FishNet.Object.Prediction
         public static void WritePredictionRigidbody(this Writer w, PredictionRigidbody pr)
         {
             w.Write(pr.Rigidbody.GetState(pr.RotationPacking));
-            w.WriteList(pr.GetPendingForces());
+            /* This used to write pr.GetPendingForces() but is no longer needed, assuming the user properly
+             * reconciles everything that modifies the predictionRigidbody. */
+            w.WriteList<PredictionRigidbody.EntryData>(null);
         }
 
         [DefaultReader]

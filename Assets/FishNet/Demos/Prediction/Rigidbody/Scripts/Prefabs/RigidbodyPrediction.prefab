@@ -320,7 +320,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584312066425166658
+  _initializedTimestamp: -8584297170534745459
   NetworkObserver: {fileID: 0}
   _enablePrediction: 1
   _predictionType: 1
@@ -336,9 +336,9 @@ MonoBehaviour:
   _spectatorInterpolation: 3
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 2
+  <PrefabId>k__BackingField: 3
   <SpawnableCollectionId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 13573084401941807464
+  <AssetPathHash>k__BackingField: 5247723621796122902
   SceneId: 0
   SerializedTransformProperties:
     Position: {x: -4.80351, y: 0.18147132, z: 5.430528}
@@ -402,7 +402,7 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 2, y: 1, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4223887704561426673
 GameObject:
@@ -497,7 +497,7 @@ BoxCollider:
   m_GameObject: {fileID: 4223887704561426673}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}

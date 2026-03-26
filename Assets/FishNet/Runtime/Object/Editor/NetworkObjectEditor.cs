@@ -15,6 +15,7 @@ namespace FishNet.Object.Editing
         private SerializedProperty _initializeOrder;
         private SerializedProperty _preventDespawnOnDisconnect;
         private SerializedProperty _defaultDespawnType;
+        private SerializedProperty _useLevelOfDetail;
         private SerializedProperty _enablePrediction;
         private SerializedProperty _enableStateForwarding;
         private SerializedProperty _networkTransform;
@@ -44,7 +45,8 @@ namespace FishNet.Object.Editing
             _initializeOrder = serializedObject.FindProperty(nameof(_initializeOrder));
             _preventDespawnOnDisconnect = serializedObject.FindProperty(nameof(_preventDespawnOnDisconnect));
             _defaultDespawnType = serializedObject.FindProperty(nameof(_defaultDespawnType));
-
+            _useLevelOfDetail = serializedObject.FindProperty(nameof(_useLevelOfDetail));
+            
             _enablePrediction = serializedObject.FindProperty(nameof(_enablePrediction));
             _enableStateForwarding = serializedObject.FindProperty(nameof(_enableStateForwarding));
             _networkTransform = serializedObject.FindProperty(nameof(_networkTransform));
@@ -97,6 +99,14 @@ namespace FishNet.Object.Editing
                 EditorGUILayout.PropertyField(_initializeOrder);
                 EditorGUILayout.PropertyField(_preventDespawnOnDisconnect);
                 EditorGUILayout.PropertyField(_defaultDespawnType);
+
+                bool isPlaying = Application.isPlaying;
+                if (isPlaying)
+                    GUI.enabled = false;
+                
+                EditorGUILayout.PropertyField(_useLevelOfDetail, new GUIContent("* Use Level of Detail"));
+                
+                GUI.enabled = true;
             }
 
             void ShowPredictionTab()

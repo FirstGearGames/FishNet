@@ -51,10 +51,7 @@ namespace FishNet.CodeGenerating.Extension
                     ExplicitThis = baseMd.ExplicitThis
                 };
                 foreach (ParameterDefinition pd in baseMd.Parameters)
-                {
-                    session.ImportReference(pd.ParameterType);
-                    baseMr.Parameters.Add(pd);
-                }
+                    baseMr.Parameters.Add(pd.CloneImported(session, baseMr));
             }
             else
             {
@@ -154,19 +151,15 @@ namespace FishNet.CodeGenerating.Extension
                 };
                 md.Body.InitLocals = methodTemplate.Body.InitLocals;
 
+                foreach (GenericParameter item in methodTemplate.GenericParameters)
+                {
+                    md.GenericParameters.Add(new(item.Name, md) { Attributes = item.Attributes });
+                }
+
                 if (copyParameters)
                 {
                     foreach (ParameterDefinition pd in methodTemplate.Parameters)
-                    {
-                        session.ImportReference(pd.ParameterType.CachedResolve(session));
-                        md.Parameters.Add(pd);
-                    }
-                }
-
-                foreach (GenericParameter item in methodTemplate.GenericParameters)
-                {
-                    session.ImportReference(item);
-                    md.GenericParameters.Add(item);
+                        md.Parameters.Add(pd.CloneImported(session, md));
                 }
 
                 td.Methods.Add(md);

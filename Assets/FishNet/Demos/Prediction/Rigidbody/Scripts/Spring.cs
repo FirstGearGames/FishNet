@@ -22,7 +22,7 @@ namespace FishNet.Demo.Prediction.Rigidbodies
             transform.Rotate(new Vector3(0f, 1f, 0f) * (_rotateRate * Time.deltaTime));
         }
 
-        private void NetworkTrigger_OnEnter(Collider c)
+        private void NetworkTrigger_OnEnter(Collider c, uint tick)
         {
             if (!c.transform.root.TryGetComponent(out RigidbodyPrediction rbp))
                 return;

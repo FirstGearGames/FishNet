@@ -94,7 +94,7 @@ namespace FishNet.Transporting.Tugboat.Client
 
             NetManager = new(listener, _packetLayer, false);
             NetManager.DontRoute = ((Tugboat)Transport).DontRoute;
-            NetManager.MtuOverride = _mtu + NetConstants.FragmentedHeaderTotalSize;
+            NetManager.MtuOverride = _mtu;// + NetConstants.FragmentedHeaderTotalSize;
 
             UpdateTimeout(_timeout);
 

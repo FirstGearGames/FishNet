@@ -132,8 +132,8 @@ namespace FishNet.Transporting.Tugboat.Server
             NetManager = new(listener, _packetLayer, false);
             NetManager.DontRoute = ((Tugboat)Transport).DontRoute;
             NetManager.ReuseAddress = ((Tugboat)Transport).ReuseAddress;
-            NetManager.MtuOverride = _mtu + NetConstants.FragmentedHeaderTotalSize;
-
+            NetManager.MtuOverride = _mtu;// + NetConstants.FragmentedHeaderTotalSize;
+            
             UpdateTimeout(_timeout);
 
             // Set bind addresses.

@@ -40,14 +40,6 @@ namespace FishNet.Transporting.Tugboat
         [Tooltip("Allows the same address and port to be used multiple times by the server. This can be useful if you wish to launch multiple builds or server instances on the same machine using the same configuration.")]
         [SerializeField]
         private bool _reuseAddress;
-        /* Channels. */
-        /// <summary>
-        /// Maximum transmission unit for the unreliable channel.
-        /// </summary>
-        [Tooltip("Maximum transmission unit for the unreliable channel.")]
-        [Range(MINIMUM_UDP_MTU, MAXIMUM_UDP_MTU)]
-        [SerializeField]
-        private int _unreliableMtu = 1023;
         /* Server. */
         /// <summary>
         /// IPv4 address to bind server to.
@@ -118,13 +110,9 @@ namespace FishNet.Transporting.Tugboat
         /// </summary>
         private const ushort MAX_TIMEOUT_SECONDS = 1800;
         /// <summary>
-        /// Minimum UDP packet size allowed.
-        /// </summary>
-        private const int MINIMUM_UDP_MTU = 576;
-        /// <summary>
         /// Maximum UDP packet size allowed.
         /// </summary>
-        private const int MAXIMUM_UDP_MTU = 1023;
+        private const int MAXIMUM_UDP_MTU = 1350;
         #endregion
 
         #region Initialization and unity.
@@ -465,8 +453,8 @@ namespace FishNet.Transporting.Tugboat
         {
             if (server)
                 return StartServer();
-            else
-                return StartClient(_clientAddress);
+
+            return StartClient(_clientAddress);
         }
 
         /// <summary>
@@ -477,8 +465,8 @@ namespace FishNet.Transporting.Tugboat
         {
             if (server)
                 return StopServer();
-            else
-                return StopClient();
+
+            return StopClient();
         }
 
         /// <summary>
@@ -511,9 +499,9 @@ namespace FishNet.Transporting.Tugboat
         private void InitializeSocket(bool asServer)
         {
             if (asServer)
-                ServerSocket.Initialize(this, _unreliableMtu, _packetLayer, _enableIpv6);
+                ServerSocket.Initialize(this, MAXIMUM_UDP_MTU, _packetLayer, _enableIpv6);
             else
-                ClientSocket.Initialize(this, _unreliableMtu, _packetLayer);
+                ClientSocket.Initialize(this, MAXIMUM_UDP_MTU, _packetLayer);
         }
 
         /// <summary>
@@ -533,8 +521,8 @@ namespace FishNet.Transporting.Tugboat
         {
             if (ServerSocket == null)
                 return false;
-            else
-                return ServerSocket.StopConnection();
+
+            return ServerSocket.StopConnection();
         }
 
         /// <summary>
@@ -564,8 +552,8 @@ namespace FishNet.Transporting.Tugboat
         {
             if (ClientSocket == null)
                 return false;
-            else
-                return ClientSocket.StopConnection();
+
+            return ClientSocket.StopConnection();
         }
         #endregion
         #endregion
@@ -577,7 +565,7 @@ namespace FishNet.Transporting.Tugboat
         /// <param name = "channelId"></param>
         private void SanitizeChannel(ref byte channelId)
         {
-            if (channelId < 0 || channelId >= TransportManager.CHANNEL_COUNT)
+            if (channelId >= TransportManager.CHANNEL_COUNT)
             {
                 NetworkManager.LogWarning($"Channel of {channelId} is out of range of supported channels. Channel will be defaulted to reliable.");
                 channelId = 0;
@@ -592,20 +580,8 @@ namespace FishNet.Transporting.Tugboat
         /// <returns></returns>
         public override int GetMTU(byte channel)
         {
-            return _unreliableMtu;
+            return MAXIMUM_UDP_MTU - NetConstants.MaxUdpHeaderSize;
         }
-        #endregion
-
-        #region Editor.
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            if (_unreliableMtu < 0)
-                _unreliableMtu = MINIMUM_UDP_MTU;
-            else if (_unreliableMtu > MAXIMUM_UDP_MTU)
-                _unreliableMtu = MAXIMUM_UDP_MTU;
-        }
-#endif
         #endregion
     }
 }

@@ -138,7 +138,7 @@ namespace FishNet.Connection
         internal PacketBundle(NetworkManager manager, int mtu, int reserve = 0, DataOrderType orderType = DataOrderType.Default)
         {
             _isSendLastBundle = orderType == DataOrderType.Last;
-            // If this is not the send last packetbundle then make a new one.
+            // If this is not the send last packetBundle then make a new one.
             if (!_isSendLastBundle)
                 _sendLastBundle = new(manager, mtu, reserve, DataOrderType.Last);
 
@@ -216,16 +216,34 @@ namespace FishNet.Connection
                 return;
             }
 
-
+            /* A buffer is added during initialization, so one
+             * will always be present. */
             ByteBuffer ba = _buffers[_bufferIndex];
-            /* Make a new buffer if...
-             * forcing a new buffer and data has already been written to the current.
-             * or---
-             * segment.Count is more than what is remaining in the buffer. */
-            bool useNewBuffer = (forceNewBuffer && ba.Length > _reserve) || segment.Count > ba.Remaining;
-            if (useNewBuffer)
+
+            //True if nothing has been written to the buffer.
+            bool isBufferEmpty = ba.Length == _reserve;
+
+            /* If nothing has been written yet there
+             * is no reason to force a new buffer. */
+            if (isBufferEmpty)
+            {
+                forceNewBuffer = false;
+            }
+            else
+            {
+                if (!forceNewBuffer)
+                {
+                    bool canBufferHoldSegmentCount = segment.Count <= ba.Remaining;
+
+                    if (!canBufferHoldSegmentCount)
+                        forceNewBuffer = true;
+                }
+            }
+
+            if (forceNewBuffer)
             {
                 _bufferIndex++;
+
                 // If need to make a new buffer then do so.
                 if (_buffers.Count <= _bufferIndex)
                 {

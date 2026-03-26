@@ -19,8 +19,8 @@ namespace FishNet.Component.Prediction
 
         public RigidbodyState(Rigidbody rb, AutoPackType rotationPacking = AutoPackType.Packed)
         {
-            Position = rb.transform.position;
-            Rotation = rb.transform.rotation;
+            Position = rb.transform.localPosition;
+            Rotation = rb.transform.localRotation;
             IsKinematic = rb.isKinematic;
             
             #if UNITY_6000_1_OR_NEWER
@@ -49,8 +49,8 @@ namespace FishNet.Component.Prediction
 
         public Rigidbody2DState(Rigidbody2D rb, AutoPackType rotationPacking = AutoPackType.Packed)
         {
-            Position = rb.transform.position;
-            Rotation = rb.transform.rotation;
+            Position = rb.transform.localPosition;
+            Rotation = rb.transform.localRotation;
             RotationPacking = rotationPacking;
             
             #if UNITY_6000_1_OR_NEWER
@@ -176,8 +176,8 @@ namespace FishNet.Component.Prediction
         public static void SetState(this Rigidbody rb, RigidbodyState state)
         {
             Transform t = rb.transform;
-            t.position = state.Position;
-            t.rotation = state.Rotation;
+            t.localPosition = state.Position;
+            t.localRotation = state.Rotation;
             rb.isKinematic = state.IsKinematic;
 
             if (!state.IsKinematic)

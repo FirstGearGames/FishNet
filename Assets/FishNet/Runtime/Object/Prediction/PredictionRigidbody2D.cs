@@ -90,7 +90,9 @@ namespace FishNet.Object.Prediction
         public static void WritePredictionRigidbody2D(this Writer w, PredictionRigidbody2D pr)
         {
             w.Write(pr.Rigidbody2D.GetState(pr.RotationPacking));
-            w.WriteList(pr.GetPendingForces());
+            /* This used to write pr.GetPendingForces() but is no longer needed, assuming the user properly
+             * reconciles everything that modifies the predictionRigidbody. */
+            w.WriteList<PredictionRigidbody2D.EntryData>(null);
         }
 
         public static PredictionRigidbody2D ReadPredictionRigidbody2D(this Reader r)

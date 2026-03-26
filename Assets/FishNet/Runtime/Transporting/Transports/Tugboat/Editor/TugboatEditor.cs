@@ -12,7 +12,6 @@ namespace FishNet.Transporting.Tugboat.Editing
         private SerializedProperty _stopSocketsOnThread;
         private SerializedProperty _dontRoute;
         private SerializedProperty _reuseAddress;
-        private SerializedProperty _unreliableMtu;
         private SerializedProperty _ipv4BindAddress;
         private SerializedProperty _enableIpv6;
         private SerializedProperty _ipv6BindAddress;
@@ -25,7 +24,6 @@ namespace FishNet.Transporting.Tugboat.Editing
             _stopSocketsOnThread = serializedObject.FindProperty(nameof(_stopSocketsOnThread));
             _dontRoute = serializedObject.FindProperty(nameof(_dontRoute));
             _reuseAddress = serializedObject.FindProperty(nameof(_reuseAddress));
-            _unreliableMtu = serializedObject.FindProperty(nameof(_unreliableMtu));
             _ipv4BindAddress = serializedObject.FindProperty(nameof(_ipv4BindAddress));
             _enableIpv6 = serializedObject.FindProperty(nameof(_enableIpv6));
             _ipv6BindAddress = serializedObject.FindProperty(nameof(_ipv6BindAddress));
@@ -47,12 +45,6 @@ namespace FishNet.Transporting.Tugboat.Editing
             EditorGUI.indentLevel++;
             EditorGUILayout.PropertyField(_stopSocketsOnThread);
             EditorGUILayout.PropertyField(_dontRoute);
-            EditorGUI.indentLevel--;
-            EditorGUILayout.Space();
-
-            EditorGUILayout.LabelField("Channels", EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(_unreliableMtu);
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 

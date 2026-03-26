@@ -349,7 +349,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             ILProcessor processor = writerMd.Body.GetILProcessor();
             // Add all parameters from the original.
             for (int i = 0; i < originalMd.Parameters.Count; i++)
-                writerMd.Parameters.Add(originalMd.Parameters[i]);
+                writerMd.Parameters.Add(originalMd.Parameters[i].CloneImported(Session, writerMd));
             // Get channel if it exist, and get target parameter.
             ParameterDefinition channelParameterDef = GetChannelParameter(writerMd, RpcType.None);
 
@@ -413,7 +413,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
             // Add all parameters from the original.
             for (int i = 0; i < originalMd.Parameters.Count; i++)
-                writerMd.Parameters.Add(originalMd.Parameters[i]);
+                writerMd.Parameters.Add(originalMd.Parameters[i].CloneImported(Session, writerMd));
             // Add in channel if it doesnt exist.
             ParameterDefinition channelParameterDef = GetChannelParameter(writerMd, RpcType.Server);
 
@@ -880,7 +880,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * that some reason is the resolution, because Unity. However, even with this fix if the
              * developer makes use of the generic properties of the class from the offending method
              * there is a fair chance the application will crash. */
-#if !UNITY_2022_3_OR_NEWER
+            #if !UNITY_2022_3_OR_NEWER
             /* If the declaring type has a generic then we need to see if any
              * logic instructions call methods in another or same generic class. */
             ILProcessor processor = createdMd.Body.GetILProcessor();
@@ -894,7 +894,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
 
                 Instruction v = instructions[i];
                 OpCode instrOpCode = v.OpCode;
-                
+
                 if (instrOpCode == OpCodes.Callvirt || instrOpCode == OpCodes.Call)
                 {
                     MethodDefinition calledMd = null;
@@ -919,7 +919,7 @@ namespace FishNet.CodeGenerating.Processing.Rpc
                     }
                 }
             }
-#endif
+            #endif
 
             return createdMd;
         }

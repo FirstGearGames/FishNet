@@ -205,18 +205,74 @@ namespace FishNet.Object
             NetworkObserver = NetworkManager.ObserverManager.AddDefaultConditions(this);
         }
 
+        internal void ClearObservers()
+        {
+            int startCount = Observers.Count;
+
+            Observers.Clear();
+
+            /* Done before ObserversActiveChanged because
+             * that trickles into storing the LOD collection.
+             * Realistically, the collection does not need to be
+             * cleared because when it's stored it would be
+             * then, but keeping this here for intent. */
+            ClearObserverLevelOfDetail();
+            
+            if (startCount > 0)
+                ObserversActiveChanged();
+        }
+
+        internal bool AddObserver(NetworkConnection connection)
+        {
+            int startCount = Observers.Count;
+
+            bool added = Observers.Add(connection);
+
+            if (added)
+            {
+                if (TimeManager != null)
+                    ObserverAddedTick = TimeManager.LocalTick;
+
+                if (startCount == 0)
+                    ObserversActiveChanged();        
+                
+                /* Add after ObserversActiveChanged because
+                * the LOD might not be setup yet otherwise;
+                 * LOD uses hot loading. */
+                AddObserverLevelOfDetail(connection);
+            }
+
+            return added;
+        }
+
         /// <summary>
         /// Removes a connection from observers for this object returning if the connection was removed.
         /// </summary>
         /// <param name = "connection"></param>
         internal bool RemoveObserver(NetworkConnection connection)
         {
+            RemoveObserverLevelOfDetail(connection);
+
             int startCount = Observers.Count;
+
             bool removed = Observers.Remove(connection);
-            if (removed)
-                TryInvokeOnObserversActive(startCount);
+
+            //Like with clear, remove before calling ObserversActiveChange.
+            RemoveObserverLevelOfDetail(connection);
+            
+            if (removed && startCount == 0)
+                ObserversActiveChanged();
 
             return removed;
+        }
+
+        /// <summary>
+        /// Called when observers active has changed.
+        /// </summary>
+        private void ObserversActiveChanged()
+        {
+            ObserversActiveChanged_LevelOfDetail();
+            OnObserversActive?.Invoke(this);
         }
 
         /// <summary>
@@ -232,17 +288,17 @@ namespace FishNet.Object
                 NetworkManager.LogWarning($"An invalid connection was used when rebuilding observers.");
                 return ObserverStateChange.Unchanged;
             }
-            
+
             // Valid not not active.
             if (!connection.IsActive)
             {
                 /* Just remove from observers since connection isn't active
                  * and return unchanged because nothing should process
                  * given the connection isnt active. */
-                Observers.Remove(connection);
+                RemoveObserver(connection);
                 return ObserverStateChange.Unchanged;
             }
-            
+
             if (IsDeinitializing)
             {
                 /* If object is deinitializing it's either being despawned
@@ -254,34 +310,14 @@ namespace FishNet.Object
             // Update hashgrid if needed.
             UpdateForNetworkObject(!timedOnly);
 
-            int startCount = Observers.Count;
             ObserverStateChange osc = NetworkObserver.RebuildObservers(connection, timedOnly);
 
             if (osc == ObserverStateChange.Added)
-                Observers.Add(connection);
+                AddObserver(connection);
             else if (osc == ObserverStateChange.Removed)
-                Observers.Remove(connection);
-
-            if (osc != ObserverStateChange.Unchanged)
-                TryInvokeOnObserversActive(startCount);
+                RemoveObserver(connection);
 
             return osc;
-        }
-
-        /// <summary>
-        /// Invokes OnObserversActive if observers are now 0 but previously were not, or if was previously 0 but now has observers.
-        /// </summary>
-        /// <param name = "startCount"></param>
-        private void TryInvokeOnObserversActive(int startCount)
-        {
-            if (TimeManager != null)
-                ObserverAddedTick = TimeManager.LocalTick;
-
-            if (OnObserversActive != null)
-            {
-                if ((Observers.Count > 0 && startCount == 0) || (Observers.Count == 0 && startCount > 0))
-                    OnObserversActive.Invoke(this);
-            }
         }
 
         /// <summary>

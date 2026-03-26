@@ -362,7 +362,8 @@ namespace FishNet.Object
 
             if (_graphicalObject == null)
             {
-                NetworkManager.Log($"GraphicalObject is null on {gameObject.name}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field.");
+                //Removed per community request; the document has shown to no longer use this field for a hefty duration.
+                //NetworkManager.Log($"GraphicalObject is null on {gameObject.name}. This may be intentional, and acceptable, if you are smoothing between ticks yourself. Otherwise consider assigning the GraphicalObject field.");
             }
             else
             {

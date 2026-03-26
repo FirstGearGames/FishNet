@@ -113,7 +113,7 @@ namespace FishNet.Object
                     continue;
 
 
-                tm.SendToClient((byte)Channel.Reliable, bRpc.Writer.GetArraySegment(), conn, true, bRpc.OrderType);
+                tm.SendToClient((byte)Channel.Reliable, bRpc.Writer.GetArraySegment(), conn, bRpc.OrderType);
             }
         }
 
@@ -338,7 +338,7 @@ namespace FishNet.Object
             if (!IsSpawnedWithWarning())
                 return;
 
-            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
+            channel = _transportManagerCache.GetReliableChannelIfOverMTU(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, channel);
 
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.ServerRpc, channel);
 
@@ -347,7 +347,7 @@ namespace FishNet.Object
                 _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.ServerRpc, GetRpcName(PacketId.ServerRpc, hash), writer.Length, gameObject, asServer: false);
             #endif
 
-            _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), true, orderType);
+            _networkObjectCache.NetworkManager.TransportManager.SendToServer((byte)channel, writer.GetArraySegment(), orderType);
             writer.StoreLength();
         }
 
@@ -364,12 +364,12 @@ namespace FishNet.Object
             if (!IsSpawnedWithWarning())
                 return;
 
-            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
+            channel = _transportManagerCache.GetReliableChannelIfOverMTU(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, channel);
 
             PooledWriter writer = lCreateRpc(channel);
             SetNetworkConnectionCache(excludeServer, excludeOwner);
 
-            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, true, orderType);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, orderType);
 
             /* If buffered then dispose of any already buffered
              * writers and replace with new one. Writers should
@@ -428,7 +428,7 @@ namespace FishNet.Object
             if (!IsSpawnedWithWarning())
                 return;
 
-            _transportManagerCache.CheckSetReliableChannel(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, ref channel);
+            channel = _transportManagerCache.GetReliableChannelIfOverMTU(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, channel);
 
             if (validateTarget)
             {
@@ -468,7 +468,8 @@ namespace FishNet.Object
                 _networkTrafficStatistics.AddOutboundPacketIdData(PacketId.TargetRpc, GetRpcName(PacketId.TargetRpc, hash), writer.Length, gameObject, asServer: true);
             #endif
 
-            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target, true, orderType);
+            _networkObjectCache.NetworkManager.TransportManager.SendToClient((byte)channel, writer.GetArraySegment(), target, orderType);
+            
             writer.Store();
         }
 

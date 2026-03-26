@@ -171,7 +171,7 @@ MonoBehaviour:
   _reduceReconcilesWithFramerate: 1
   _minimumClientReconcileFramerate: 50
   _createLocalStates: 1
-  _stateInterpolation: 1
+  _stateInterpolation: 2
   _stateOrder: 1
   _dropExcessiveReplicates: 1
   _maximumServerReplicates: 15
@@ -1374,6 +1374,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _runInRelease: 0
   _networkTraffic:
-    _enableMode: 0
-    _updateClient: 0
-    _updateServer: 0
+    _enableMode: 1
+    _updateClient: 1
+    _updateServer: 1

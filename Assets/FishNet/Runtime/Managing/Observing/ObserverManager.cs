@@ -1,12 +1,11 @@
-﻿using FishNet.Component.Observing;
-using FishNet.Connection;
+﻿using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Observing;
 using FishNet.Utility;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing.Timing;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [assembly: InternalsVisibleTo(UtilityConstants.DEMOS_ASSEMBLY_NAME)]
 [assembly: InternalsVisibleTo(UtilityConstants.TEST_ASSEMBLY_NAME)]
@@ -18,7 +17,7 @@ namespace FishNet.Managing.Observing
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("FishNet/Manager/ObserverManager")]
-    public sealed class ObserverManager : MonoBehaviour
+    public sealed partial class ObserverManager : MonoBehaviour
     {
         #region Serialized.
         /// <summary>
@@ -71,7 +70,7 @@ namespace FishNet.Managing.Observing
         /// </summary>
         private const float MINIMUM_TIMED_OBSERVERS_DURATION = 0.1f;
         /// <summary>
-        /// Maxmimum time allowed for timed observers to rebuild.
+        /// Maximum time allowed for timed observers to rebuild.
         /// </summary>
         private const float MAXIMUM_TIMED_OBSERVERS_DURATION = 20f;
         #endregion
@@ -85,6 +84,13 @@ namespace FishNet.Managing.Observing
             _networkManager = manager;
             // Update the current value to itself so it becomes clamped. This is just to protect against the user manually setting it outside clamp somehow.
             SetMaximumTimedObserversDuration(MaximumTimedObserversDuration);
+
+            _useLevelOfDetail = InitializeLevelOfDetailValues();
+        }
+
+        private void Update()
+        {
+            UpdateLevelOfDetails();
         }
 
         /// <summary>
@@ -213,5 +219,6 @@ namespace FishNet.Managing.Observing
 
             return result;
         }
+
     }
 }

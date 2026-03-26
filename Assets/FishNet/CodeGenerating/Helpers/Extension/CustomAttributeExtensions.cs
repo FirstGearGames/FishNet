@@ -3,8 +3,67 @@ using System.Linq;
 
 namespace FishNet.CodeGenerating.Helping.Extension
 {
-    internal static class CustomAttributeExtensions
+   internal static class CustomAttributeExtensions
     {
+        private static IGenericParameterProvider GetSafeContext(CodegenSession session, IGenericParameterProvider context)
+        {
+            return (context != null && context.Module == session.Module) ? context : null;
+        }
+
+        /// <summary>
+        /// Clones an attribute into the current session module.
+        /// </summary>
+        internal static CustomAttribute CloneImported(this CustomAttribute customAttr, CodegenSession session, IGenericParameterProvider context = null)
+        {
+            IGenericParameterProvider safeContext = GetSafeContext(session, context);
+            MethodReference ctor = (safeContext == null) ? session.ImportReference(customAttr.Constructor) : session.ImportReference(customAttr.Constructor, safeContext);
+            CustomAttribute result = new(ctor);
+
+            foreach (CustomAttributeArgument item in customAttr.ConstructorArguments)
+                result.ConstructorArguments.Add(item.CloneImported(session, safeContext));
+
+            foreach (CustomAttributeNamedArgument item in customAttr.Fields)
+                result.Fields.Add(item.CloneImported(session, safeContext));
+
+            foreach (CustomAttributeNamedArgument item in customAttr.Properties)
+                result.Properties.Add(item.CloneImported(session, safeContext));
+
+            return result;
+        }
+
+        /// <summary>
+        /// Clones an attribute argument into the current session module.
+        /// </summary>
+        internal static CustomAttributeArgument CloneImported(this CustomAttributeArgument customAttrArg, CodegenSession session, IGenericParameterProvider context = null)
+        {
+            IGenericParameterProvider safeContext = GetSafeContext(session, context);
+            TypeReference typeRef = safeContext == null ? session.ImportReference(customAttrArg.Type) : session.ImportReference(customAttrArg.Type, safeContext);
+            object value = customAttrArg.Value;
+
+            if (value is TypeReference tr)
+            {
+                value = (safeContext == null) ? session.ImportReference(tr) : session.ImportReference(tr, safeContext);
+            }
+            else if (value is CustomAttributeArgument[] arguments)
+            {
+                CustomAttributeArgument[] clonedArguments = new CustomAttributeArgument[arguments.Length];
+                for (int i = 0; i < arguments.Length; i++)
+                    clonedArguments[i] = arguments[i].CloneImported(session, safeContext);
+
+                value = clonedArguments;
+            }
+
+            return new(typeRef, value);
+        }
+
+        /// <summary>
+        /// Clones a named attribute argument into the current session module.
+        /// </summary>
+        internal static CustomAttributeNamedArgument CloneImported(this CustomAttributeNamedArgument customAttrNamedArg, CodegenSession session, IGenericParameterProvider context = null)
+        {
+            return new(customAttrNamedArg.Name, customAttrNamedArg.Argument.CloneImported(session, context));
+        }
+        
         /// <summary>
         /// Finds a field within an attribute.
         /// </summary>

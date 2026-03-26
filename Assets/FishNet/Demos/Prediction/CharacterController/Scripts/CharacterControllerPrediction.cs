@@ -431,7 +431,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// <summary>
         /// Called when the trigger on this object enters another collider.
         /// </summary>
-        private void CharacterTrigger_OnEnter(Collider c)
+        private void CharacterTrigger_OnEnter(Collider c, uint tick)
         {
             //We only care about moving platforms.
             if (!c.TryGetComponent(out MovingPlatform mp))
@@ -444,7 +444,7 @@ namespace FishNet.Demo.Prediction.CharacterControllers
         /// <summary>
         /// Called when the trigger on this object exits another collider.
         /// </summary>
-        private void CharacterTrigger_OnExit(Collider c)
+        private void CharacterTrigger_OnExit(Collider c, uint tick)
         {
             if (c == null)
                 return;

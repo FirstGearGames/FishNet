@@ -93,7 +93,7 @@ namespace FishNet.Managing.Server
             CollectionCaches<NetworkConnection>.Store(connCache);
             CollectionCaches<NetworkObject>.Store(nobCache);
         }
-
+        
         /// <summary>
         /// Indicates that a networkObserver component should be updated regularly. This is done automatically.
         /// </summary>
@@ -105,7 +105,7 @@ namespace FishNet.Managing.Server
             else
                 _timedNetworkObservers.Add(networkObject);
         }
-
+        
         /// <summary>
         /// Indicates that a networkObserver component no longer needs to be updated regularly. This is done automatically.
         /// </summary>
@@ -375,10 +375,10 @@ namespace FishNet.Managing.Server
                     NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, _writer.GetArraySegment(), nc);
 
 
-#if DEVELOPMENT && !UNITY_SERVER
+                    #if DEVELOPMENT && !UNITY_SERVER
                     if (NetworkTrafficStatistics != null)
                         NetworkTrafficStatistics.AddOutboundPacketIdData(PacketId.BulkSpawnOrDespawn, string.Empty, _writer.Length, gameObject: null, asServer: true);
-#endif
+                    #endif
 
                     _writer.Clear();
 
@@ -399,36 +399,36 @@ namespace FishNet.Managing.Server
                 return;
             _writer.Clear();
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             PacketId trafficPacketId;
-#endif
+            #endif
             conn.UpdateHashGridPositions(!timedOnly);
             // If observer state changed then write changes.
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
             if (osc == ObserverStateChange.Added)
             {
                 WriteSpawn(nob, _writer, conn);
-#if DEVELOPMENT && !UNITY_SERVER
+                #if DEVELOPMENT && !UNITY_SERVER
                 trafficPacketId = PacketId.ObjectSpawn;
-#endif
+                #endif
             }
             else if (osc == ObserverStateChange.Removed)
             {
                 nob.InvokeOnServerDespawn(conn);
                 WriteDespawn(nob, nob.GetDefaultDespawnType(), _writer);
-#if DEVELOPMENT && !UNITY_SERVER
+                #if DEVELOPMENT && !UNITY_SERVER
                 trafficPacketId = PacketId.ObjectDespawn;
-#endif
+                #endif
             }
             else
             {
                 return;
             }
 
-#if DEVELOPMENT && !UNITY_SERVER
+            #if DEVELOPMENT && !UNITY_SERVER
             if (NetworkTrafficStatistics != null)
                 NetworkTrafficStatistics.AddOutboundPacketIdData(trafficPacketId, string.Empty, _writer.Length, gameObject: null, asServer: true);
-#endif
+            #endif
 
             NetworkManager.TransportManager.SendToClient((byte)Channel.Reliable, _writer.GetArraySegment(), conn);
 

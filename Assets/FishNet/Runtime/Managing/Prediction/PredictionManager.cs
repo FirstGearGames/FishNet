@@ -199,8 +199,7 @@ namespace FishNet.Managing.Predicting
         public event PostPhysicsSyncTransformDel OnPostPhysicsTransformSync;
 
         public delegate void PostPhysicsSyncTransformDel(uint clientTick, uint serverTick);
-
-        public event PostPhysicsSyncTransformDel OnPostReconcileSyncTransforms;
+        
         /// <summary>
         /// Called before physics is simulated when replaying a replicate method.
         /// </summary>
@@ -682,12 +681,6 @@ namespace FishNet.Managing.Predicting
                         OnPostPhysicsTransformSync?.Invoke(ClientStateTick, ServerStateTick);
                 }
 
-                using (_pm_OnPostReconcileSyncTransforms.Auto())
-                    OnPostReconcileSyncTransforms?.Invoke(ClientStateTick, ServerStateTick);
-
-                Physics.SyncTransforms();
-                Physics2D.SyncTransforms();
-
                 /* Set first replicate to be the 1 tick
                  * after reconcile. This is because reconcile calcs
                  * should be performed after replicate has run.
@@ -729,7 +722,7 @@ namespace FishNet.Managing.Predicting
 
                 using (_pm_OnPostReconcile.Auto())
                     OnPostReconcile?.Invoke(ClientStateTick, ServerStateTick);
-
+                
                 ClientStateTick = TimeManager.UNSET_TICK;
                 ServerStateTick = TimeManager.UNSET_TICK;
                 ClientReplayTick = TimeManager.UNSET_TICK;
@@ -772,7 +765,7 @@ namespace FishNet.Managing.Predicting
 
                     lastReplicateTick = ncLocalTick;
                 }
-
+                
                 foreach (PooledWriter writer in nc.PredictionStateWriters)
                 {
                     #if DEVELOPMENT && !UNITY_SERVER
@@ -798,9 +791,8 @@ namespace FishNet.Managing.Predicting
                     writer.WriteInt32Unpacked(dataLength);
                     // Channel is defaulted to unreliable.
                     Channel channel = Channel.Unreliable;
-                    // If a single state exceeds MTU it must be sent on reliable. This is extremely unlikely.
-                    _networkManager.TransportManager.CheckSetReliableChannel(segment.Count, ref channel);
-                    tm.SendToClient((byte)channel, segment, nc, splitLargeMessages: true);
+
+                    tm.SendToClient((byte)channel, segment, nc);
                 }
 
                 nc.StorePredictionStateWriters();
@@ -831,9 +823,6 @@ namespace FishNet.Managing.Predicting
                 reader.ReadTickUnpacked();
                 int payloadLength = reader.ReadInt32Unpacked();
                 reader.Skip(payloadLength);
-
-                // if (!_networkManager.IsServerStarted)
-                //     Debug.Log($"Discarding state " + lastRemoteTick);
             }
             else
             {
@@ -855,12 +844,10 @@ namespace FishNet.Managing.Predicting
                  * add onto the data. Otherwise, add a new state packet. */
                 if (_stateLookups.TryGetValue(clientTick, out StatePacket sp1))
                 {
-                    //Debug.Log($"Updating state " + clientTick);
                     sp1.AddData(segment, channel);
                 }
                 else
                 {
-                    //Debug.Log($"Adding state " + clientTick);
                     StatePacket sp2 = ResettableObjectCaches<StatePacket>.Retrieve();
                     sp2.Update(segment, clientTick, lastRemoteTick, channel);
                     _stateLookups[clientTick] = sp2;

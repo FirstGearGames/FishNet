@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using FishNet.Managing.Server;
 using FishNet.Managing.Statistic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -41,6 +42,7 @@ namespace FishNet.Managing.Object
         /// Invoked when Spawned is cleared.
         /// </summary>
         public event Action OnSpawnedClear;
+
         /// <summary>
         /// Delegate for when there is change to Spawned.
         /// </summary>
@@ -48,11 +50,10 @@ namespace FishNet.Managing.Object
         #endregion
 
         #region Private Profiler Markers
-        private static readonly ProfilerMarker _pm_ParseReplicateRpc =
-            new("ManagedObjects.ParseReplicateRpc(PooledReader, NetworkConnection, Channel)");
+        private static readonly ProfilerMarker _pm_ParseReplicateRpc = new("ManagedObjects.ParseReplicateRpc(PooledReader, NetworkConnection, Channel)");
         #endregion
 
-        #region Protected. 
+        #region Protected.
         /// <summary>
         /// Returns the next ObjectId to use.
         /// </summary>
@@ -78,8 +79,8 @@ namespace FishNet.Managing.Object
         public IReadOnlyDictionary<ulong, NetworkObject> SceneObjects => SceneObjects_Internal;
         /// <summary>
         /// </summary>
-        [NonSerialized] protected NetworkTrafficStatistics NetworkTrafficStatistics;
-
+        [NonSerialized]
+        protected NetworkTrafficStatistics NetworkTrafficStatistics;
 
         /// <summary>
         /// Called to add an object to Spawned.
@@ -107,7 +108,6 @@ namespace FishNet.Managing.Object
             _spawned.Clear();
             OnSpawnedClear?.Invoke();
         }
-
         #endregion
 
         #region Private.
@@ -157,12 +157,36 @@ namespace FishNet.Managing.Object
         }
 
         /// <summary>
+        /// Attempts to remove an old ObjectId when an object had called Initialize without deinitializing first.
+        /// </summary>
+        /// <returns>True if clean-up was successful.</returns>
+        internal void ObjectInitializedWithoutDeinitializing(int oldId, NetworkObject callingNetworkObject)
+        {
+            // Check for the oldId in spawned.
+            if (_spawned.TryGetValueIL2CPP(oldId, out NetworkObject oldNetworkObject))
+            {
+                /* If the old networkObject is the same as new then remove
+                 * the old entry from spawned and return the Id. */
+                if (callingNetworkObject == oldNetworkObject || oldNetworkObject == null)
+                {
+                    _spawned.Remove(oldId);
+                    if (this is ServerObjects serverObjects)
+                        serverObjects.CacheObjectId(oldId);
+
+                    return;
+                }
+                
+                NetworkManager.LogError($"Initialization occurred twice on object {this.ToString()} and recovery not clean up as expected. The prior Id of [{oldId}] belonged to a different object {oldNetworkObject} when it was expected to belong to the first.");
+            }
+        }
+
+        /// <summary>
         /// Removes a NetworkedObject from spawned.
         /// </summary>
         protected virtual void RemoveFromSpawned(NetworkObject nob, bool fromOnDestroy, bool asServer)
         {
             RemoveFromSpawnedCollectionAndInvoke(nob);
-            
+
             // Do the same with SceneObjects.
             if (fromOnDestroy && nob.IsSceneObject)
                 RemoveFromSceneObjects(nob);
@@ -378,9 +402,9 @@ namespace FishNet.Managing.Object
         /// <param name = "nob"></param>
         protected virtual void DespawnWithoutSynchronization(NetworkObject nob, bool recursive, bool asServer, DespawnType despawnType, bool removeFromSpawned)
         {
-#if FISHNET_STABLE_RECURSIVE_DESPAWNS
+            #if FISHNET_STABLE_RECURSIVE_DESPAWNS
             recursive = false;
-#endif
+            #endif
 
             GetNetworkObjectOption getOption = recursive ? GetNetworkObjectOption.All : GetNetworkObjectOption.Self;
             List<NetworkObject> allNobs = nob.GetNetworkObjects(getOption);
@@ -493,11 +517,11 @@ namespace FishNet.Managing.Object
 
                 /* Default logging for server is errors only. Use error on client and warning
                  * on servers to reduce chances of allocation attacks. */
-#if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
+                #if DEVELOPMENT_BUILD || UNITY_EDITOR || !UNITY_SERVER
                 NetworkManager.LogError(msg);
-#else
+                #else
                 NetworkManager.LogWarning(msg);
-#endif
+                #endif
                 reader.Clear();
             }
             /* If length is known then is unreliable packet. It's possible
@@ -524,8 +548,7 @@ namespace FishNet.Managing.Object
             using (_pm_ParseReplicateRpc.Auto())
             {
                 #if DEVELOPMENT
-                NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining,
-                    out string rpcInformation, out uint expectedReadAmount);
+                NetworkBehaviour.ReadDebugForValidatedRpc(NetworkManager, reader, out int startReaderRemaining, out string rpcInformation, out uint expectedReadAmount);
                 #endif
                 int readerStartAfterDebug = reader.Position;
 
@@ -537,13 +560,12 @@ namespace FishNet.Managing.Object
                     SkipDataLength((ushort)PacketId.ServerRpc, reader, dataLength);
 
                 #if DEVELOPMENT
-                NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader,
-                    startReaderRemaining, rpcInformation, expectedReadAmount, channel);
+                NetworkBehaviour.TryPrintDebugForValidatedRpc(fromRpcLink: false, NetworkManager, reader, startReaderRemaining, rpcInformation, expectedReadAmount, channel);
                 #endif
             }
         }
 
-#if DEVELOPMENT
+        #if DEVELOPMENT
         /// <summary>
         /// Checks to write a scene object's details into a writer.
         /// </summary>
@@ -568,6 +590,6 @@ namespace FishNet.Managing.Object
                 objectName = r.ReadStringAllocated();
             }
         }
-#endif
+        #endif
     }
 }

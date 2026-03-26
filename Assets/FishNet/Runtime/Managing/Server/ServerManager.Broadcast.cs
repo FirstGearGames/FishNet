@@ -129,7 +129,7 @@ namespace FishNet.Managing.Server
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(writer, message);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             AddOutboundNetworkTraffic<T>(segment.Count);
@@ -156,7 +156,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(writer, message);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             int sentBytes = 0;
@@ -349,7 +349,7 @@ namespace FishNet.Managing.Server
 
             bool failedAuthentication = false;
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(writer, message);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
             int sentBytes = 0;

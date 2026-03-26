@@ -7,6 +7,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using FishNet.Broadcast;
+using FishNet.Managing.Transporting;
 using FishNet.Transporting;
 using UnityEngine.SceneManagement;
 using static FishNet.Managing.Timing.EstimatedTick;
@@ -462,6 +463,8 @@ namespace FishNet.Connection
             foreach (PacketBundle p in _toClientBundles)
                 p.Dispose();
             _toClientBundles.Clear();
+            
+            StoreSplitReader();
 
             ServerConnectionTick = 0;
             PacketTick.Reset();

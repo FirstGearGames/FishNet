@@ -417,11 +417,6 @@ namespace FishNet.Object
                 ResetState(asServer: true);
                 ResetState(asServer: false);
             }
-            //Client is started and is scene object.
-            else if (IsClientStarted && IsSceneObject)
-            {
-                ResetState(asServer: false);
-            }
         }
 
         private void OnDestroy()
@@ -429,6 +424,7 @@ namespace FishNet.Object
             CollectionCaches<NetworkBehaviour>.Store(_predictionBehaviours);
             ResettableT2CollectionCaches<Transform, PreReconcilingTransformProperties>.Store(_rigidbodyTransformsPreReconcileProperties);
             CollectionCaches<PreReconcilingTransformProperties>.Store(_updatedPreReconcilingTransformProperties);
+            CollectionCaches<NetworkConnection, uint>.StoreAndDefault(ref ObserverLevelOfDetailDivisors);
 
             SetIsDestroying(DespawnType.Destroy);
 
@@ -463,7 +459,7 @@ namespace FishNet.Object
             if (Owner.IsValid)
                 Owner.RemoveObject(this);
 
-            Observers.Clear();
+            ClearObservers();
             if (NetworkBehaviours.Count > 0)
             {
                 NetworkBehaviour thisNb = NetworkBehaviours[0];
@@ -652,7 +648,13 @@ namespace FishNet.Object
                 SetOwner(owner);
 
                 if (ObjectId != UNSET_OBJECTID_VALUE)
-                    NetworkManager.LogError($"Object was initialized twice without being reset. Object {ToString()}");
+                {
+                    if (ObjectId != objectId)
+                    {
+                        ServerManager.Objects.ObjectInitializedWithoutDeinitializing(oldId: objectId, this);
+                        ClientManager.Objects.ObjectInitializedWithoutDeinitializing(oldId: objectId, this);
+                    }
+                }
 
                 ObjectId = objectId;
 
@@ -716,6 +718,7 @@ namespace FishNet.Object
         {
             if (!CanChangeParent(true))
                 return;
+
             if (nob == null)
             {
                 UnsetParent();
@@ -731,6 +734,8 @@ namespace FishNet.Object
 
             NetworkBehaviour newParent = nob.NetworkBehaviours[0];
             UpdateParent(newParent);
+
+            Update_LevelOfDetail();
         }
 
         /// <summary>
@@ -990,7 +995,7 @@ namespace FishNet.Object
 
             // Iterate all cached transforms and get networkbehaviours.
             List<NetworkBehaviour> nbCache = CollectionCaches<NetworkBehaviour>.RetrieveList();
-            //
+            // 
             List<NetworkBehaviour> nbCache2 = CollectionCaches<NetworkBehaviour>.RetrieveList();
             for (int i = 0; i < transformCache.Count; i++)
             {
@@ -1021,7 +1026,7 @@ namespace FishNet.Object
 
             // Copy to array.
             int nbCount = nbCache.Count;
-            //
+            // 
             for (int i = 0; i < nbCount; i++)
             {
                 NetworkBehaviour nb = nbCache[i];
@@ -1142,7 +1147,7 @@ namespace FishNet.Object
             SetInitializedStatus(false, asServer);
 
             if (asServer)
-                Observers.Clear();
+                ClearObservers();
         }
 
         /// <summary>
@@ -1166,7 +1171,7 @@ namespace FishNet.Object
             // // If nested then set active state to serialized value.
             // if (IsNested)
             //     gameObject.SetActive(WasActiveDuringEdit);
-            //
+            // 
             SetOwner(NetworkManager.EmptyConnection);
             if (NetworkObserver != null)
                 NetworkObserver.Deinitialize(false);
@@ -1268,7 +1273,7 @@ namespace FishNet.Object
                 // If sharing then send to all observers.
                 if (NetworkManager.ServerManager.ShareIds)
                 {
-                    NetworkManager.TransportManager.SendToClients((byte)Channel.Reliable, writer.GetArraySegment(), this);
+                    NetworkManager.TransportManager.SendToClients((byte)Channel.Reliable, writer.GetArraySegment());
                 }
                 // Only sending to old / new.
                 else

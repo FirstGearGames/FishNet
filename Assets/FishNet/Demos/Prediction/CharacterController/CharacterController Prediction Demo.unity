@@ -188,6 +188,8 @@ MonoBehaviour:
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   _initializedTimestamp: 0
+  _useLevelOfDetail: 0
+  _useRootLevelOfDetail: 1
   NetworkObserver: {fileID: 0}
   _enablePrediction: 1
   _predictionType: 0
@@ -342,7 +344,7 @@ MonoBehaviour:
   _timingType: 0
   _allowTickDropping: 0
   _maximumFrameTicks: 2
-  _tickRate: 60
+  _tickRate: 10
   _pingInterval: 1
   _physicsMode: 1
 --- !u!114 &192429409
@@ -586,6 +588,22 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 7443408886491487332}
     m_Modifications:
+    - target: {fileID: 818862022, guid: 0570b6f7f713dc44a90463654bbcd8d0, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 155.1001
+      objectReference: {fileID: 0}
+    - target: {fileID: 818862022, guid: 0570b6f7f713dc44a90463654bbcd8d0, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -52.69995
+      objectReference: {fileID: 0}
+    - target: {fileID: 3414662637240338350, guid: 0570b6f7f713dc44a90463654bbcd8d0, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 78.1001
+      objectReference: {fileID: 0}
+    - target: {fileID: 3414662637240338350, guid: 0570b6f7f713dc44a90463654bbcd8d0, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -121.400024
+      objectReference: {fileID: 0}
     - target: {fileID: 4393252310969058990, guid: 0570b6f7f713dc44a90463654bbcd8d0, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -1396,7 +1414,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ca42d40476d05444acd0179c78b44cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _staminaBar: {fileID: 2021829093}
 --- !u!1 &1977106728
 GameObject:
   m_ObjectHideFlags: 0
@@ -1577,6 +1594,8 @@ MonoBehaviour:
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   _initializedTimestamp: 0
+  _useLevelOfDetail: 1
+  _useRootLevelOfDetail: 1
   NetworkObserver: {fileID: 0}
   _enablePrediction: 1
   _predictionType: 0
@@ -1707,6 +1726,9 @@ GameObject:
   - component: {fileID: 192429404}
   - component: {fileID: 7443408886491487336}
   - component: {fileID: 7443408886491487339}
+  - component: {fileID: 7443408886491487340}
+  - component: {fileID: 7443408886491487341}
+  - component: {fileID: 7443408886491487342}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1774,3 +1796,61 @@ MonoBehaviour:
   _frameRate: 500
   _shareIds: 1
   _startOnHeadless: 1
+--- !u!114 &7443408886491487340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886491487334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 756c28cd3141c4140ae776188ee26729, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _runInRelease: 0
+  _networkTraffic:
+    _enableMode: 1
+    _updateClient: 1
+    _updateServer: 1
+--- !u!114 &7443408886491487341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886491487334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bc8f0363ddc75946a958043c5e49a83, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _runInRelease: 0
+  _secondsAveraged: 1
+  _updateInterval: 1
+  _color: {r: 1, g: 1, b: 1, a: 1}
+  _placement: 1
+  _showOutgoing: 1
+  _showIncoming: 1
+--- !u!114 &7443408886491487342
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7443408886491487334}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d331f979d46e8e4a9fc90070c596d44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _updateHostVisibility: 1
+  _maximumTimedObserversDuration: 3
+  _defaultConditions: []
+  _useLevelOfDetail: 1
+  _maximumLevelOfDetailInterval: 2
+  _levelOfDetailUpdateDuration: 4
+  _levelOfDetailDistances:
+  - 10
+  - 30
+  - 50

@@ -1,10 +1,6 @@
-using FishNet.Managing;
-using FishNet.Object;
 using GameKit.Dependencies.Utilities;
-using GameKit.Dependencies.Utilities.Types;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using TimeManagerCls = FishNet.Managing.Timing.TimeManager;
 
@@ -15,15 +11,15 @@ namespace FishNet.Component.Prediction
         /// <summary>
         /// Called when another collider enters this collider.
         /// </summary>
-        public event Action<Collider2D> OnEnter;
+        public event Action<Collider2D, uint> OnEnter;
         /// <summary>
         /// Called when another collider stays in this collider.
         /// </summary>
-        public event Action<Collider2D> OnStay;
+        public event Action<Collider2D, uint> OnStay;
         /// <summary>
         /// Called when another collider exits this collider.
         /// </summary>
-        public event Action<Collider2D> OnExit;
+        public event Action<Collider2D, uint> OnExit;
         /// <summary>
         /// The colliders on this object.
         /// </summary>
@@ -33,66 +29,82 @@ namespace FishNet.Component.Prediction
         /// </summary>
         private Collider2D[] _hits;
         /// <summary>
-        /// The history of collider data.
+        /// Colliders which are entered for a tick, be it stay or for the first time.
         /// </summary>
-        private Dictionary<Collider2D, CollisionData> _enteredColliders;
+        private Dictionary<uint, HashSet<Collider2D>> _enteredColliders;
 
         protected override void Awake()
         {
             base.Awake();
 
-            _enteredColliders = CollectionCaches<Collider2D, CollisionData>.RetrieveDictionary();
+            _enteredColliders = CollectionCaches<uint, HashSet<Collider2D>>.RetrieveDictionary();
             _hits = CollectionCaches<Collider2D>.RetrieveArray();
             if (_hits.Length < MaximumSimultaneousHits)
                 _hits = new Collider2D[MaximumSimultaneousHits];
         }
 
-        private void OnDestroy()
+        
+        public override void OnStopNetwork()
         {
-            CollectionCaches<Collider2D, CollisionData>.StoreAndDefault(ref _enteredColliders);
+            base.OnStopNetwork();
+
+            StoreEnteredColliders(keepDictionary: true);
+            _enteredColliders?.Clear();
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            CollectionCaches<uint, HashSet<Collider2D>>.StoreAndDefault(ref _enteredColliders);
             CollectionCaches<Collider2D>.StoreAndDefault(ref _hits, _hits.Length);
         }
 
         /// <summary>
         /// Called by the PredictionManager immediately before a reconcile begins.
         /// </summary>
-        protected override void PredictionManager_OnPreReconcile(uint clientTick, uint serverTick)
+        protected override void PredictionManager_OnPostPhysicsTransformSync(uint clientTick, uint serverTick)
         {
-            /* Remove entries older than the reconcile clientTick, if
-             * the entry is exited - as in the collider is no longer occupied. */
-            if (_enteredColliders.Count > 0)
-            {
-                List<Collider2D> entriesToRemove = CollectionCaches<Collider2D>.RetrieveList();
+            if (IsStopping)
+                return;
 
-                foreach (KeyValuePair<Collider2D, CollisionData> kvp in _enteredColliders)
+            if (clientTick > 0)
+            {
+                List<uint> keysToRemove = CollectionCaches<uint>.RetrieveList();
+
+                uint maximumTick = clientTick - 2;
+                foreach (uint enteredTick in _enteredColliders.Keys)
                 {
-                    uint exitTick = kvp.Value.ExitTick;
-                    if (exitTick != TimeManagerCls.UNSET_TICK && exitTick < clientTick)
-                        entriesToRemove.Add(kvp.Key);
+                    if (enteredTick < maximumTick)
+                        keysToRemove.Add(enteredTick);
                 }
 
-                foreach (Collider2D entry in entriesToRemove)
-                    _enteredColliders.Remove(entry);
+                foreach (uint tick in keysToRemove)
+                {
+                    HashSet<Collider2D> colliders = _enteredColliders[tick];
+                    CollectionCaches<Collider2D>.Store(colliders);
 
-                CollectionCaches<Collider2D>.Store(entriesToRemove);
+                    _enteredColliders.Remove(tick);
+                }
+
+                CollectionCaches<uint>.Store(keysToRemove);
             }
 
             /* Call base only after removing old entries. This ensures old entries are removed
              * before CheckColliders is called. */
-            base.PredictionManager_OnPreReconcile(clientTick, serverTick);
+            base.PredictionManager_OnPostPhysicsTransformSync(clientTick, serverTick);
         }
 
         /// <summary>
         /// Checks for any collider changes;
         /// </summary>
-        protected override void CheckColliders(uint clientTick)
+        protected override void CheckColliders(uint localTick)
         {
-            // Initial checks failed.
-            if (!TryPrepareColliderCheck(clientTick))
+                // Initial checks failed.
+            if (!TryPrepareColliderCheck(localTick))
                 return;
 
             HashSet<Collider2D> current = CollectionCaches<Collider2D>.RetrieveHashSet();
-            Dictionary<Collider2D, CollisionData> entered = _enteredColliders;
 
             /* Previous may not be set here if there were
              * no collisions during the previous tick. */
@@ -108,6 +120,7 @@ namespace FishNet.Component.Prediction
                 if (IsTrigger != col.isTrigger)
                     continue;
 
+                // Number of hits from the checks.
                 // Number of hits from the checks.
                 int hits;
                 if (col is CircleCollider2D circleCollider)
@@ -125,78 +138,78 @@ namespace FishNet.Component.Prediction
                         continue;
 
                     current.Add(hit);
+                }
 
-                    // Already entered.
-                    if (entered.TryGetValueIL2CPP(hit, out CollisionData collisionData))
+                /* If the colliders already exist then the tick is being
+                 * run again, which would indicate this is being run during a reconcile.
+                 *
+                 * Since this key will have its data replaced with current, store the prior collection.*/
+                if (_enteredColliders.TryGetValueIL2CPP(localTick, out HashSet<Collider2D> enteredColliders))
+                {
+                    CollectionCaches<Collider2D>.Store(enteredColliders);
+                    _enteredColliders.Remove(localTick);
+                }
+
+                const uint unsetLastTick = uint.MaxValue;
+                uint lastTick = localTick > 1 ? localTick - 1 : unsetLastTick;
+
+                _enteredColliders.TryGetValueIL2CPP(lastTick, out HashSet<Collider2D> lastEnteredColliders);
+
+                /* If there are entered colliders then
+                 * update enteredColliders for the tick. */
+                if (current.Count > 0)
+                {
+                    _enteredColliders[localTick] = current;
+
+                    /* If there were no colliders last tick
+                     * then without a doubt enter should be called since
+                     * the collider could not possibly be present already. */
+                    if (lastEnteredColliders == null)
                     {
-                        /* If entered tick is beyond the tick being checked then
-                         * that means the collider entered at a later time, and something
-                         * is not aligning. Invoke OnExit and OnEnter again. */
-                        if (collisionData.EnterTick >= clientTick || collisionData.ExitTick != TimeManagerCls.UNSET_TICK)
+                        //Invoke OnEnter for every collider in current.
+                        foreach (Collider2D c in current)
+                            OnEnter?.Invoke(c, localTick);
+                    }
+                    /* If the last collection is found then
+                     * check to invoke Enter or Stay. */
+                    else
+                    {
+                        foreach (Collider2D c in current)
                         {
-                            OnExit?.Invoke(hit);
-                            OnEnter?.Invoke(hit);
-                            // Also update position in collection.
-                            entered[hit] = new(clientTick);
+                            if (lastEnteredColliders.Contains(c))
+                                OnStay?.Invoke(c, localTick);
+                            else
+                                OnEnter?.Invoke(c, localTick);
                         }
                     }
-                    // Not yet in entered state.
-                    else
-                    {
-                        OnEnter?.Invoke(hit);
-                        // Also update position in collection.
-                        entered[hit] = new(clientTick);
-                    }
-
-                    // Always invoke OnStay when collider hits.
-                    OnStay?.Invoke(hit);
+                }
+                //If current is empty the collection can be stored.
+                else
+                {
+                    CollectionCaches<Collider2D>.Store(current);
                 }
 
-                List<Collider2D> collidersExited = CollectionCaches<Collider2D>.RetrieveList();
-                /* Check to invoke exit on any colliders which are no longer
-                 * in the entered state. */
-                foreach (Collider2D c in entered.Keys)
+                /* Check to invoke OnExit. */
+                if (lastEnteredColliders != null)
                 {
-                    // Collider was still entered, no need to check exit.
-                    if (current.Contains(c))
-                        continue;
-                    /* Entered tick will be the same as tick if first
-                     * entering for this tick. It's not possible for Unity physics
-                     * to invoke Enter/Exit on the same tick, as it doesn't make sense
-                     * to anyway. When the same tick, continue. */
-                    if (entered[c].EnterTick == clientTick)
-                        continue;
-
-                    collidersExited.Add(c);
+                    /* If current does not have the colliders from
+                     * the last tick, then an exit has occurred. */
+                    foreach (Collider2D c in lastEnteredColliders)
+                    {
+                        if (!current.Contains(c))
+                            OnExit?.Invoke(c, localTick);
+                    }
                 }
 
-                // Invoke for exited and remove from entered.
-                foreach (Collider2D c in collidersExited)
+                /* If the server is started the lastEnteredColliders can
+                 * be discarded since the server will never reconcile, and
+                 * will never need to check them again. */
+                if (IsServerStarted)
                 {
-                    /* If here then the entered collider was not hit
-                     * this trace. Invoke exit and remove from entered. */
-                    OnExit?.Invoke(c);
-
-                    if (IsServerStarted)
-                    {
-                        entered.Remove(c);
-                    }
-                    else
-                    {
-                        /* Only re-add if the entered tick is beyond
-                         * the current tick; this would indicate a new enter.
-                         * Otherwise, we are at an exit only. */
-                        uint enteredTick = entered[c].EnterTick;
-                        if (enteredTick > clientTick)
-                            entered[c] = new(entered[c].EnterTick, clientTick);
-                        else
-                            entered.Remove(c);
-                    }
-                    // entered.Remove(c);
+                    if (lastTick is not unsetLastTick)
+                        _enteredColliders.Remove(lastTick);
                 }
             }
-
-            CollectionCaches<Collider2D>.Store(current);
         }
 
         /// <summary>
@@ -260,18 +273,34 @@ namespace FishNet.Component.Prediction
              * to get the proper tick to invoke. */
             if (invokeOnExit)
             {
-                foreach (KeyValuePair<Collider2D, CollisionData> kvp in _enteredColliders)
+                uint largestTick = 0;
+                foreach (uint tick in _enteredColliders.Keys)
+                    largestTick = Math.Max(tick, largestTick);
+                
+                if (_enteredColliders.TryGetValueIL2CPP(largestTick, out HashSet<Collider2D> colliders))
                 {
-                    /* This indicates an exit has not yet invoked.
-                     * It's possible for an item to invoked an exit and still
-                     * have its state cached for properly executing events during
-                     * a reconcile. */
-                    if (kvp.Value.ExitTick == TimeManagerCls.UNSET_TICK)
-                        OnExit?.Invoke(kvp.Key);
+                    if (colliders != null)
+                    {
+                        foreach (Collider2D c in colliders)
+                            OnExit?.Invoke(c, TimeManagerCls.UNSET_TICK);
+                    }
                 }
             }
 
+            StoreEnteredColliders(keepDictionary: true);
             _enteredColliders.Clear();
+        }
+
+        /// <summary>
+        /// Stores each Collider HashSet within EnteredColliders.
+        /// </summary>
+        private void StoreEnteredColliders(bool keepDictionary)
+        {
+            foreach (HashSet<Collider2D> colliders in _enteredColliders.Values)
+                CollectionCaches<Collider2D>.Store(colliders);
+
+            if (!keepDictionary)
+                CollectionCaches<uint, HashSet<Collider2D>>.Store(_enteredColliders);
         }
     }
 }

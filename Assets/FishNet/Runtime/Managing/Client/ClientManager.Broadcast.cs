@@ -112,7 +112,7 @@ namespace FishNet.Managing.Client
             }
 
             PooledWriter writer = WriterPool.Retrieve();
-            BroadcastsSerializers.WriteBroadcast(NetworkManager, writer, message, ref channel);
+            BroadcastsSerializers.WriteBroadcast(writer, message);
             ArraySegment<byte> segment = writer.GetArraySegment();
 
 #if DEVELOPMENT && !UNITY_SERVER

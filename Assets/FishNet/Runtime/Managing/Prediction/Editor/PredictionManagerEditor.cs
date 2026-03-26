@@ -18,7 +18,7 @@ namespace FishNet.Managing.Predicting.Editing
         //Server.
         private SerializedProperty _dropExcessiveReplicates;
         private SerializedProperty _maximumServerReplicates;
-       //private SerializedProperty _maximumConsumeCount;
+       
 
         protected virtual void OnEnable()
         {
