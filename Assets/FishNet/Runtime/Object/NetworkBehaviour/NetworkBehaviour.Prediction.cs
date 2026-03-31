@@ -19,6 +19,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing.Observing;
 using GameKit.Dependencies.Utilities.Types;
 using Unity.Profiling;
 using UnityEngine;
@@ -139,7 +140,7 @@ namespace FishNet.Object
                     /* The checked data is greater than
                      * what was being searched. This means
                      * to insert right before it. */
-                    
+
                     if (lTick > tick)
                     {
                         result = DataPlacementResult.InsertMiddle;
@@ -226,7 +227,7 @@ namespace FishNet.Object
         /// <remarks>This is only used by prediction.</remarks>
         private TransformProperties _lastCheckedTransformProperties;
         #endregion
-        
+
         /// <summary>
         /// Called when the object is destroyed.
         /// </summary>
@@ -438,7 +439,7 @@ namespace FishNet.Object
                     #if !UNITY_SERVER
                     observersWrittenTo = Observers.Count;
                     #endif
-                    
+
                     //Send to everyone unconditionally when not using LOD.
                     foreach (NetworkConnection nc in Observers)
                         nc.WriteState(writer);
@@ -910,7 +911,7 @@ namespace FishNet.Object
             #endif
 
             channel = _transportManagerCache.GetReliableChannelIfOverMTU(methodWriter.Length + MAXIMUM_RPC_HEADER_SIZE, channel);
-            
+
             PooledWriter writer = CreateRpc(hash, methodWriter, PacketId.Replicate, channel);
 
             #if !UNITY_SERVER
@@ -1319,7 +1320,7 @@ namespace FishNet.Object
         {
             const long unsetHistoryIndex = -1;
             long historyIndex = unsetHistoryIndex;
-            
+
             /* There should always be entries, except when the object
              * first spawns.
              *
@@ -1350,7 +1351,7 @@ namespace FishNet.Object
                     uint lrTick = reconcilesHistory[(int)historyIndex].Tick;
                     if (lrTick != reconcileTick)
                         historyIndex = unsetHistoryIndex;
-                    
+
                     //If index is set and behaviour is not reconciling then apply data.
                     if (!IsBehaviourReconciling && historyIndex != unsetHistoryIndex)
                     {
@@ -1425,7 +1426,7 @@ namespace FishNet.Object
                     replicatesHistory[i].Dispose();
                 replicatesHistory.RemoveRange(true, removeCount);
             }
-            
+
             //Set on the networkObject that a reconcile can now occur.
             _networkObjectCache.IsObjectReconciling = true;
 

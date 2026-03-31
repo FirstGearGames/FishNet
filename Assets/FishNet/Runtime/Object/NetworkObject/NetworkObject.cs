@@ -735,7 +735,7 @@ namespace FishNet.Object
             NetworkBehaviour newParent = nob.NetworkBehaviours[0];
             UpdateParent(newParent);
 
-            Update_LevelOfDetail();
+            SetLevelOfDetailUsage(); 
         }
 
         /// <summary>

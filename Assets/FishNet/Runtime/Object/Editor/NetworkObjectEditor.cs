@@ -21,6 +21,7 @@ namespace FishNet.Object.Editing
         private SerializedProperty _networkTransform;
         private SerializedProperty _predictionType;
         private SerializedProperty _localReconcileCorrectionType;
+        private SerializedProperty _localLevelOfDetailCalculationType;
         private SerializedProperty _graphicalObject;
         private SerializedProperty _detachGraphicalObject;
         private SerializedProperty _ownerSmoothedProperties;
@@ -52,6 +53,7 @@ namespace FishNet.Object.Editing
             _networkTransform = serializedObject.FindProperty(nameof(_networkTransform));
             _predictionType = serializedObject.FindProperty(nameof(_predictionType));
             _localReconcileCorrectionType = serializedObject.FindProperty(nameof(_localReconcileCorrectionType));
+            _localLevelOfDetailCalculationType = serializedObject.FindProperty(nameof(_localLevelOfDetailCalculationType));
             _graphicalObject = serializedObject.FindProperty(nameof(_graphicalObject));
             _detachGraphicalObject = serializedObject.FindProperty(nameof(_detachGraphicalObject));
 
@@ -108,7 +110,7 @@ namespace FishNet.Object.Editing
                 
                 GUI.enabled = true;
             }
-
+ 
             void ShowPredictionTab()
             {
                 SaveTabIndex();
@@ -116,8 +118,9 @@ namespace FishNet.Object.Editing
                 if (_enablePrediction.boolValue == true)
                 {
                     EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(_localLevelOfDetailCalculationType);
                     EditorGUILayout.PropertyField(_predictionType);
-
+                    
                     bool isRigidbodyPredictionType = _predictionType.intValue == (int)NetworkObject.PredictionType.Rigidbody2D || _predictionType.intValue == (int)NetworkObject.PredictionType.Rigidbody;
                     if (isRigidbodyPredictionType)
                     {

@@ -8,6 +8,7 @@ using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using FishNet.Managing.Observing;
 using FishNet.Managing.Predicting;
 using FishNet.Managing.Statistic;
 using FishNet.Object;
@@ -770,6 +771,9 @@ namespace FishNet.Managing.Timing
                     _elapsedTickTime -= timePerSimulation;
                     Tick++;
                     LocalTick++;
+                    
+                    //Cache localTick to ObserverManager for performance.
+                    NetworkManager.ObserverManager.LocalTick = LocalTick;
                 }
             } while (_elapsedTickTime >= timePerSimulation);
         }

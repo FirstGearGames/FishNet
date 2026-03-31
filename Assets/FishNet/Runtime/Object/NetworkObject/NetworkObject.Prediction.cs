@@ -32,6 +32,23 @@ namespace FishNet.Object
         }
 
         /// <summary>
+        /// How local reconciles are applied when using level of detail.
+        /// </summary>
+        internal enum LocalReconcileLODCalculationType 
+        {
+            /// <summary>
+            /// Local reconciles will only be applied on very near objects.
+            /// </summary>
+            /// <remarks>This will cause only very near objects to reconcile using local reconcile data.</remarks>
+            CloseObjectsOnly,
+            /// <summary>
+            /// Local reconciles will be applied on any object which the tick fits the Level of detail window.
+            /// </summary>
+            /// <remarks>Using this option will result in more objects reconciling when the server does not send reconcile data due to level of detail, but the client thinks it should have it.</remarks>
+            ObjectsWithinLevelOfDetail,
+        }
+
+        /// <summary>
         /// How to correct, or reset a rigidbody transform after a reconcile when the reconcile state is local, and the rigidbody has near nil differences from when the reconcile started.
         /// </summary>
         /// <remarks>Due to physics not being deterministic a reconcile can cause a rigidbody to finish with different results than what it started it, even if the rigidbody did not experience any difference in forces. These options allow FishNet to reset the rigidbody to as it were before the reconcile if the differences are minor enough. By resetting values de-synchronization and subtly observed shaking can be prevented or significantly reduced.</remarks>

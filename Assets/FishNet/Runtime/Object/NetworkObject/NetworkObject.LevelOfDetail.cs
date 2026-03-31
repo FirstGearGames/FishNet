@@ -16,10 +16,21 @@ namespace FishNet.Object
         /// <summary>
         /// True if level of detail has been initialized, indicating it can be used.
         /// </summary>
-        internal bool IsLevelOfDetailInitialized { get; private set; }
+        internal bool ServerIsLevelOfDetailInitialized { get; private set; }
+        /// <summary>
+        /// True if LocalLevelOfDetailCalculationType is set to close only.
+        /// </summary>
+        internal bool IsLocalReconcileLODCloseObjectsOnly => _localLevelOfDetailCalculationType == LocalReconcileLODCalculationType.CloseObjectsOnly;
+        /// <summary>
+        /// How local reconciles are applied when using level of detail, specifically when the server had not sent a reconcile.
+        /// </summary>
+        [Tooltip("How local reconciles are applied when using level of detail calculations, specifically when the server had not sent a reconcile.")]
+        [SerializeField]
+        private LocalReconcileLODCalculationType _localLevelOfDetailCalculationType = LocalReconcileLODCalculationType.CloseObjectsOnly;
         /// <summary>
         /// True if to enable level of detail for this object. Level of detail supports prediction objects. This feature must be enabled on the ObserverManager to function.
         /// </summary>
+        internal bool UseLevelOfDetail => _useLevelOfDetail;
         [Tooltip("True if to enable level of detail for this object. Level of detail supports prediction objects. This feature must be enabled on the ObserverManager to function.")]
         [SerializeField]
         private bool _useLevelOfDetail = false;
@@ -37,7 +48,7 @@ namespace FishNet.Object
         /// <summary>
         /// Updates the level of detail status based on current conditions.
         /// </summary>
-        private void Update_LevelOfDetail()
+        private void SetLevelOfDetailUsage()
         {
             }
 

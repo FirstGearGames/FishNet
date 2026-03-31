@@ -140,7 +140,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &33715565
 Transform:
   m_ObjectHideFlags: 0
@@ -188,6 +188,7 @@ MonoBehaviour:
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   _initializedTimestamp: 0
+  _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 0
   _useRootLevelOfDetail: 1
   NetworkObserver: {fileID: 0}
@@ -260,7 +261,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &128315957
 Transform:
   m_ObjectHideFlags: 0
@@ -1594,6 +1595,7 @@ MonoBehaviour:
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
   _initializedTimestamp: 0
+  _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 1
   _useRootLevelOfDetail: 1
   NetworkObserver: {fileID: 0}
@@ -1728,7 +1730,6 @@ GameObject:
   - component: {fileID: 7443408886491487339}
   - component: {fileID: 7443408886491487340}
   - component: {fileID: 7443408886491487341}
-  - component: {fileID: 7443408886491487342}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1832,25 +1833,3 @@ MonoBehaviour:
   _placement: 1
   _showOutgoing: 1
   _showIncoming: 1
---- !u!114 &7443408886491487342
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7443408886491487334}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d331f979d46e8e4a9fc90070c596d44, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _updateHostVisibility: 1
-  _maximumTimedObserversDuration: 3
-  _defaultConditions: []
-  _useLevelOfDetail: 1
-  _maximumLevelOfDetailInterval: 2
-  _levelOfDetailUpdateDuration: 4
-  _levelOfDetailDistances:
-  - 10
-  - 30
-  - 50
