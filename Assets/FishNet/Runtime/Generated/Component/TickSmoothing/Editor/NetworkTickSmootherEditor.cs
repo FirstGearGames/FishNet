@@ -42,6 +42,9 @@ namespace FishNet.Component.Transforming.Beta
             _showSpectatorSmoothingSettings = EditorGUILayout.Foldout(_showSpectatorSmoothingSettings, new GUIContent("Spectator Smoothing", "Smoothing applied when object not the owner. This is when server and there is an owner, or when client and not the owner."));
             if (_showSpectatorSmoothingSettings)
             {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_favorPredictionNetworkTransform, new GUIContent("Favor NetworkTransform"));
+                EditorGUI.indentLevel--;
                 EditorGUILayout.PropertyField(_spectatorMovementSettings);
             }
 

@@ -78,6 +78,7 @@ namespace FishNet.CodeGenerating.Processing
                 CreateNetworkInitializeMethods(td, out networkInitializeIfDisabledMd);
                 CallNetworkInitialize(networkInitializeIfDisabledMd);
 
+
                 /* Prediction. */
                 /* Run prediction first since prediction will modify
                  * user data passed into prediction methods. Because of this
@@ -193,6 +194,7 @@ namespace FishNet.CodeGenerating.Processing
             // Fallthrough / pass.
             return false;
         }
+
 
         /// <summary>
         /// Calls the next awake method if the nested awake was created by codegen.

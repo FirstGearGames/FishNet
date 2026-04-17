@@ -18,6 +18,7 @@ namespace FishNet.Managing.Observing
         /// Most recent LocalTick value on the TimeManager.
         /// </summary>
         internal uint LocalTick;
+
         [Tooltip("True to enable level of detail.")]
         [SerializeField]
         private bool _useLevelOfDetail;
@@ -41,6 +42,7 @@ namespace FishNet.Managing.Observing
         [Tooltip("Distances for each level of detail change. Each distance is an exponential increase. When the largest distance is surpassed the maximum delay is used; while within the first distance standard delays are used.")]
         [SerializeField]
         private List<float> _levelOfDetailDistances = new();
+
         #region Consts.
         /// <summary>
         /// Minimum time allowed for the maximum level of detail send interval.
@@ -66,6 +68,7 @@ namespace FishNet.Managing.Observing
         /// <returns>New UseLevelOfDetail value.</returns>
         private bool InitializeLevelOfDetailValues()
         {
+
             return false;
         }
         
@@ -74,5 +77,5 @@ namespace FishNet.Managing.Observing
         /// </summary>
         public void SetLevelOfDetailRecalculationDuration(float duration) => _levelOfDetailUpdateDuration = Mathf.Clamp(duration, MINIMUM_LEVEL_OF_DETAIL_UPDATE_DURATION, MAXIMUM_LEVEL_OF_DETAIL_UPDATE_DURATION);
 
-        }
+    }
 }

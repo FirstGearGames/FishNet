@@ -50,6 +50,6 @@ namespace FishNet.Component.ColliderRollback
 #pragma warning restore CS0414
         #endregion
 
-        }
+    }
 }
 #endif

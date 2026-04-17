@@ -72,6 +72,6 @@ namespace FishNet.Component.ColliderRollback
 	        }
         }
 
-        }
+    }
 }
 #endif

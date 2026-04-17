@@ -95,7 +95,7 @@ namespace FishNet.Serializing
     {
         public float2 Readfloat2()
         {
-            return new float2
+            return new()
             {
                 x = ReadSingle(),
                 y = ReadSingle()
@@ -104,7 +104,7 @@ namespace FishNet.Serializing
 
         public float3 Readfloat3()
         {
-            return new float3()
+            return new()
             {
                 x = ReadSingle(),
                 y = ReadSingle(),
@@ -114,7 +114,7 @@ namespace FishNet.Serializing
 
         public float4 Readfloat4()
         {
-            return new float4()
+            return new()
             {
                 x = ReadSingle(),
                 y = ReadSingle(),
@@ -125,7 +125,7 @@ namespace FishNet.Serializing
 
         public float2x2 Readfloat2x2()
         {
-            return new float2x2()
+            return new()
             {
                 c0 = Readfloat2(),
                 c1 = Readfloat2()
@@ -134,7 +134,7 @@ namespace FishNet.Serializing
 
         public float2x3 Readfloat2x3()
         {
-            return new float2x3()
+            return new()
             {
                 c0 = Readfloat2(),
                 c1 = Readfloat2(),
@@ -144,7 +144,7 @@ namespace FishNet.Serializing
 
         public float2x4 Readfloat2x4()
         {
-            return new float2x4()
+            return new()
             {
                 c0 = Readfloat2(),
                 c1 = Readfloat2(),
@@ -155,7 +155,7 @@ namespace FishNet.Serializing
 
         public float3x2 Readfloat3x2()
         {
-            return new float3x2()
+            return new()
             {
                 c0 = Readfloat3(),
                 c1 = Readfloat3()
@@ -164,7 +164,7 @@ namespace FishNet.Serializing
 
         public float3x3 Readfloat3x3()
         {
-            return new float3x3()
+            return new()
             {
                 c0 = Readfloat3(),
                 c1 = Readfloat3(),
@@ -174,7 +174,7 @@ namespace FishNet.Serializing
 
         public float3x4 Readfloat3x4()
         {
-            return new float3x4()
+            return new()
             {
                 c0 = Readfloat3(),
                 c1 = Readfloat3(),
@@ -185,7 +185,7 @@ namespace FishNet.Serializing
 
         public float4x2 Readfloat4x2()
         {
-            return new float4x2()
+            return new()
             {
                 c0 = Readfloat4(),
                 c1 = Readfloat4()
@@ -194,7 +194,7 @@ namespace FishNet.Serializing
 
         public float4x3 Readfloat4x3()
         {
-            return new float4x3()
+            return new()
             {
                 c0 = Readfloat4(),
                 c1 = Readfloat4(),
@@ -204,7 +204,7 @@ namespace FishNet.Serializing
 
         public float4x4 Readfloat4x4()
         {
-            return new float4x4()
+            return new()
             {
                 c0 = Readfloat4(),
                 c1 = Readfloat4(),

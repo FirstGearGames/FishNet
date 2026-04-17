@@ -88,6 +88,7 @@ namespace FishNet.Managing.Observing
             _useLevelOfDetail = InitializeLevelOfDetailValues();
         }
 
+
         /// <summary>
         /// Sets a new value for UpdateHostVisibility.
         /// </summary>

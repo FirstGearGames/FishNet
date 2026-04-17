@@ -62,6 +62,7 @@ namespace FishNet.CodeGenerating.ILCore
             if (!session.Initialize(assemblyDef.MainModule))
                 return null;
 
+
             bool modified = false;
 
             bool fnAssembly = IsFishNetAssembly(compiledAssembly);
@@ -332,6 +333,7 @@ namespace FishNet.CodeGenerating.ILCore
 
                 modified |= session.GetClass<QolAttributeProcessor>().Process(td, codeStripping);
             }
+
 
             return modified;
         }

@@ -5,5 +5,5 @@ namespace FishNet.Transporting.Yak
 {
     internal struct LocalPacket
     {
-        }
+    }
 }

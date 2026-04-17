@@ -41,6 +41,6 @@ namespace FishNet.Transporting.Yak
         /// </summary>
         internal void ClearQueue(ref Queue<LocalPacket> queue)
         {
-            }
+        }
     }
 }

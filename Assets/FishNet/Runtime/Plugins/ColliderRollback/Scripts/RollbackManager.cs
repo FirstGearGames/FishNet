@@ -69,38 +69,42 @@ namespace FishNet.Component.ColliderRollback
         internal ushort Interpolation = 2;
         #endregion
 
+
+
         /// <summary>
         /// Initializes this script for use.
         /// </summary>
         /// <param name = "manager"></param>
         internal void InitializeOnce_Internal(NetworkManager manager)
         {
-            }
+        }
+
+
 
         [Obsolete("Use Rollback(Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics, bool) instead.")] //Remove on V5
         public void Rollback(Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         [Obsolete("Use Rollback(Scene, Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics, bool) instead.")] //Remove on V5
         public void Rollback(Scene scene, Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         [Obsolete("Use Rollback(int, Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics, bool) instead.")] //Remove on V5
         public void Rollback(int sceneHandle, Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         [Obsolete("Use Rollback(Scene, Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics2D, bool) instead.")] //Remove on V5
         public void Rollback(Scene scene, Vector2 origin, Vector2 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         [Obsolete("Use Rollback(Vector3, Vector3, float, PreciseTick, RollbackPhysicsType.Physics2D, bool) instead.")] //Remove on V5
         public void Rollback(Vector2 origin, Vector2 normalizedDirection, float distance, PreciseTick pt, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         /// <summary>
         /// Rolls back all colliders.
@@ -110,7 +114,7 @@ namespace FishNet.Component.ColliderRollback
         /// <param name = "asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
         public void Rollback(PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         /// <summary>
         /// Rolls back all colliders in a scene.
@@ -121,7 +125,7 @@ namespace FishNet.Component.ColliderRollback
         /// <param name = "asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
         public void Rollback(Scene scene, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         /// <summary>
         /// Rolls back all colliders in a scene.
@@ -132,7 +136,7 @@ namespace FishNet.Component.ColliderRollback
         /// <param name = "asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
         public void Rollback(int sceneHandle, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         /// <summary>
         /// Rolls back colliders hit by a test cast against bounding boxes.
@@ -145,7 +149,7 @@ namespace FishNet.Component.ColliderRollback
         /// <param name = "asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
         public void Rollback(Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         /// <summary>
         /// Rolls back colliders hit by a test cast against bounding boxes, in a specific scene.
@@ -159,7 +163,7 @@ namespace FishNet.Component.ColliderRollback
         /// <param name = "asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
         public void Rollback(Scene scene, Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
-            }
+        }
 
         /// <summary>
         /// Rolls back colliders hit by a test cast against bounding boxes, in a specific scene.
@@ -173,15 +177,16 @@ namespace FishNet.Component.ColliderRollback
         /// <param name = "asOwnerAndClientHost">True if IsOwner of the object the raycast is for. This can be ignored and only provides more accurate results for clientHost.</param>
         public void Rollback(int sceneHandle, Vector3 origin, Vector3 normalizedDirection, float distance, PreciseTick pt, RollbackPhysicsType physicsType, bool asOwnerAndClientHost = false)
         {
-            }
+        }
+
 
         /// <summary>
         /// Returns all ColliderRollback objects back to their original position.
         /// </summary>
         public void Return()
         {
-            }
-
         }
+
+    }
 }
 #endif

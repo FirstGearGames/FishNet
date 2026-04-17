@@ -1,15 +1,11 @@
 using FishNet.Connection;
 using FishNet.Managing;
-using FishNet.Managing.Logging;
 using LiteNetLib;
 using LiteNetLib.Layers;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace FishNet.Transporting.Tugboat.Server
 {
@@ -121,7 +117,7 @@ namespace FishNet.Transporting.Tugboat.Server
         /// <summary>
         /// Threaded operation to process server actions.
         /// </summary>
-        private void ThreadedSocket()
+        private void StartSocket()
         {
             EventBasedNetListener listener = new();
             listener.ConnectionRequestEvent += Listener_ConnectionRequestEvent;
@@ -263,7 +259,8 @@ namespace FishNet.Transporting.Tugboat.Server
             _ipv6BindAddress = ipv6BindAddress;
             ResetQueues();
 
-            Task.Run(ThreadedSocket);
+            StartSocket();
+            //Task.Run(StartSocket);
 
             return true;
         }

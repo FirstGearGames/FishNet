@@ -159,11 +159,12 @@ namespace FishNet.Transporting.Tugboat
             if (NetManager == null)
                 return;
 
-            bool threaded;
-            if (Transport is Tugboat tb)
-                threaded = tb.StopSocketsOnThread;
-            else
-                threaded = false;
+            const bool threaded = false;
+            // bool threaded;
+            // if (Transport is Tugboat tb)
+            //     threaded = tb.StopSocketsOnThread;
+            // else
+            //     threaded = false;
 
             //If using a thread.
             if (threaded)

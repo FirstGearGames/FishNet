@@ -13,5 +13,5 @@ namespace FishNet.Example.ColliderRollbacks
     /// </summary>
     public class Fire : NetworkBehaviour
     {
-        }
+    }
 }

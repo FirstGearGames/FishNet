@@ -99,14 +99,14 @@ namespace FishNet.Example
                     return "Invalid";
             }
 
-            GUILayout.BeginArea(new Rect(4, 110, 256, 9000));
-            Vector2 defaultResolution = new Vector2(1920f, 1080f);
-            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(Screen.width / defaultResolution.x, Screen.height / defaultResolution.y, 1));
+            GUILayout.BeginArea(new(4, 110, 256, 9000));
+            Vector2 defaultResolution = new(1920f, 1080f);
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new(Screen.width / defaultResolution.x, Screen.height / defaultResolution.y, 1));
 
             GUIStyle style = GUI.skin.GetStyle("button");
             int originalFontSize = style.fontSize;
 
-            Vector2 buttonSize = new Vector2(165f, 42f);
+            Vector2 buttonSize = new(165f, 42f);
             style.fontSize = 26;
             // Server button.
             if (Application.platform != RuntimePlatform.WebGLPlayer)

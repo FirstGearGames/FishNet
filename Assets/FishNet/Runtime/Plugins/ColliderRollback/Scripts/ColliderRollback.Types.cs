@@ -20,6 +20,6 @@ namespace FishNet.Component.ColliderRollback
             Manual
         }
 
-        }
+    }
 }
 #endif

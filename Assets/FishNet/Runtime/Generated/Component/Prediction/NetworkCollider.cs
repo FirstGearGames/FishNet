@@ -207,8 +207,11 @@ namespace FishNet.Component.Prediction
                  * will never need to check them again. */
                 if (IsServerStarted)
                 {
-                    if (lastTick is not unsetLastTick)
-                        _enteredColliders.Remove(lastTick);
+                    if (lastTick is not unsetLastTick && _enteredColliders.TryGetValueIL2CPP(localTick, out HashSet<Collider> lEnteredColliders))
+                    {
+                        CollectionCaches<Collider>.Store(lEnteredColliders);
+                        _enteredColliders.Remove(localTick);
+                    }
                 }
             }
         }

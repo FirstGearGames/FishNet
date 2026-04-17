@@ -37,7 +37,7 @@ namespace FishNet.Serializing
     {
         public half Readhalf()
         {
-            return new half { value = ReadUInt16() };
+            return new() { value = ReadUInt16() };
         }
 
         public half2 Readhalf2()

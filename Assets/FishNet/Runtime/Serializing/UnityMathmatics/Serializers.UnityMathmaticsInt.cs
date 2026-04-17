@@ -95,7 +95,7 @@ namespace FishNet.Serializing
     {
         public int2 Readint2()
         {
-            return new int2
+            return new()
             {
                 x = ReadInt32(),
                 y = ReadInt32()
@@ -104,7 +104,7 @@ namespace FishNet.Serializing
 
         public int3 Readint3()
         {
-            return new int3()
+            return new()
             {
                 x = ReadInt32(),
                 y = ReadInt32(),
@@ -114,7 +114,7 @@ namespace FishNet.Serializing
 
         public int4 Readint4()
         {
-            return new int4()
+            return new()
             {
                 x = ReadInt32(),
                 y = ReadInt32(),
@@ -125,7 +125,7 @@ namespace FishNet.Serializing
 
         public int2x2 Readint2x2()
         {
-            return new int2x2()
+            return new()
             {
                 c0 = Readint2(),
                 c1 = Readint2()
@@ -134,7 +134,7 @@ namespace FishNet.Serializing
 
         public int2x3 Readint2x3()
         {
-            return new int2x3()
+            return new()
             {
                 c0 = Readint2(),
                 c1 = Readint2(),
@@ -144,7 +144,7 @@ namespace FishNet.Serializing
 
         public int2x4 Readint2x4()
         {
-            return new int2x4()
+            return new()
             {
                 c0 = Readint2(),
                 c1 = Readint2(),
@@ -155,7 +155,7 @@ namespace FishNet.Serializing
 
         public int3x2 Readint3x2()
         {
-            return new int3x2()
+            return new()
             {
                 c0 = Readint3(),
                 c1 = Readint3()
@@ -164,7 +164,7 @@ namespace FishNet.Serializing
 
         public int3x3 Readint3x3()
         {
-            return new int3x3()
+            return new()
             {
                 c0 = Readint3(),
                 c1 = Readint3(),
@@ -174,7 +174,7 @@ namespace FishNet.Serializing
 
         public int3x4 Readint3x4()
         {
-            return new int3x4()
+            return new()
             {
                 c0 = Readint3(),
                 c1 = Readint3(),
@@ -185,7 +185,7 @@ namespace FishNet.Serializing
 
         public int4x2 Readint4x2()
         {
-            return new int4x2()
+            return new()
             {
                 c0 = Readint4(),
                 c1 = Readint4()
@@ -194,7 +194,7 @@ namespace FishNet.Serializing
 
         public int4x3 Readint4x3()
         {
-            return new int4x3()
+            return new()
             {
                 c0 = Readint4(),
                 c1 = Readint4(),
@@ -204,7 +204,7 @@ namespace FishNet.Serializing
 
         public int4x4 Readint4x4()
         {
-            return new int4x4()
+            return new()
             {
                 c0 = Readint4(),
                 c1 = Readint4(),

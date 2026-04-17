@@ -50,21 +50,21 @@ namespace FishNet.Object
         /// </summary>
         private void SetLevelOfDetailUsage()
         {
-            }
+        }
 
         /// <summary>
         /// Called ObserversActive has changed.
         /// </summary>
         private void ObserversActiveChanged_LevelOfDetail()
         {
-            }
+        }
 
         /// <summary>
         /// Clears observers for level of detail.
         /// </summary>
         private void ClearObserverLevelOfDetail()
         {
-            }
+        }
 
         /// <summary>
         /// Adds an observer to level of detail if needed.
@@ -72,13 +72,13 @@ namespace FishNet.Object
         /// <remarks>A connection is only added if this object supports level of detail.</remarks>
         private void AddObserverLevelOfDetail(NetworkConnection connection)
         {
-            }
+        }
 
         /// <summary>
         /// Removes an observer from level of detail if needed.
         /// </summary>
         private void RemoveObserverLevelOfDetail(NetworkConnection connection)
         {
-            }
+        }
     }
 }
