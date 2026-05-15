@@ -210,7 +210,7 @@ namespace FishNet.Component.Prediction
                     if (lastTick is not unsetLastTick && _enteredColliders.TryGetValueIL2CPP(localTick, out HashSet<Collider> lEnteredColliders))
                     {
                         CollectionCaches<Collider>.Store(lEnteredColliders);
-                        _enteredColliders.Remove(localTick);
+                        _enteredColliders.Remove(lastTick);
                     }
                 }
             }
