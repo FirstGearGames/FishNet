@@ -121,7 +121,14 @@ namespace FishNet.Component.Prediction
                     continue;
 
                 // Number of hits from the checks.
-                int hits = PhysicsScene2D.OverlapCollider(col, _hits, InteractableLayers);
+                // Number of hits from the checks.
+                int hits;
+                if (col is CircleCollider2D circleCollider)
+                    hits = GetCircleCollider2DHits(circleCollider, InteractableLayers);
+                else if (col is BoxCollider2D boxCollider)
+                    hits = GetBoxCollider2DHits(boxCollider, rotation, InteractableLayers);
+                else
+                    hits = PhysicsScene2D.OverlapCollider(col, _hits, InteractableLayers);
 
                 /* Check hits for enter/exit callbacks. */
                 for (int i = 0; i < hits; i++)
@@ -208,7 +215,28 @@ namespace FishNet.Component.Prediction
             }
         }
 
+        /// <summary>
+        /// Checks for circle collisions.
+        /// </summary>
+        /// <returns>Number of colliders hit.</returns>
+        private int GetCircleCollider2DHits(CircleCollider2D circleCollider, int layerMask)
+        {
+            circleCollider.GetCircleOverlapParams(out Vector3 center, out float radius);
+            radius += AdditionalSize;
+            return gameObject.scene.GetPhysicsScene2D().OverlapCircle(center, radius, _hits, layerMask);
+        }
 
+        /// <summary>
+        /// Checks for Box collisions.
+        /// </summary>
+        /// <returns>Number of colliders hit.</returns>
+        private int GetBoxCollider2DHits(BoxCollider2D boxCollider, Quaternion rotation, int layerMask)
+        {
+            boxCollider.GetBox2DOverlapParams(out Vector3 center, out Vector3 halfExtents);
+            Vector3 additional = Vector3.one * AdditionalSize;
+            halfExtents += additional;
+            return gameObject.scene.GetPhysicsScene2D().OverlapBox(center, halfExtents, rotation.z, _hits, layerMask);
+        }
 
         /// <summary>
         /// Finds colliders on this object to check.
