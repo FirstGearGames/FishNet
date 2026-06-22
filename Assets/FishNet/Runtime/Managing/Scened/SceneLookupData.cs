@@ -1,4 +1,5 @@
-﻿using GameKit.Dependencies.Utilities;
+﻿using FishNet.Utility;
+using GameKit.Dependencies.Utilities;
 using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
@@ -24,7 +25,6 @@ namespace FishNet.Managing.Scened
             return names;
         }
 
-        
         /// <summary>
         /// Returns Names from SceneLookupData.
         /// </summary>
@@ -46,13 +46,33 @@ namespace FishNet.Managing.Scened
     public class SceneLookupData : IEquatable<SceneLookupData>
     {
         /// <summary>
-        /// Handle of the scene. If value is 0, then handle is not used.
+        /// Raw handle of the scene. If value is 0, then handle is not used.
         /// </summary>
-        public int Handle;
+        private ulong _rawHandle;
+
+        /// <summary>
+        /// Legacy 32-bit handle view.
+        /// </summary>
+        public int Handle
+        {
+            get => unchecked((int)_rawHandle);
+            set => _rawHandle = unchecked((uint)value);
+        }
+
+        /// <summary>
+        /// Raw scene handle value.
+        /// </summary>
+        public ulong RawHandle
+        {
+            get => _rawHandle;
+            set => _rawHandle = value;
+        }
+
         /// <summary>
         /// Name of the scene.
         /// </summary>
         public string Name = string.Empty;
+
         /// <summary>
         /// Returns the scene name without a directory path should one exist.
         /// </summary>
@@ -62,16 +82,17 @@ namespace FishNet.Managing.Scened
             {
                 if (string.IsNullOrEmpty(Name))
                     return string.Empty;
-                
+
                 string name = System.IO.Path.GetFileName(Name);
                 return RemoveUnityExtension(name);
             }
         }
+
         /// <summary>
         /// Returns if this data is valid for use.
         /// Being valid does not mean that the scene exist, rather that there is enough data to try and lookup a scene.
         /// </summary>
-        public bool IsValid => Name != string.Empty || Handle != 0;
+        public bool IsValid => Name != string.Empty || RawHandle != 0;
 
         #region Const
         /// <summary>
@@ -89,7 +110,7 @@ namespace FishNet.Managing.Scened
         /// <param name = "scene">Scene to generate from.</param>
         public SceneLookupData(Scene scene)
         {
-            Handle = scene.handle;
+            RawHandle = UnityCompatibility.GetSceneHandleRaw(scene);
             Name = scene.name;
         }
 
@@ -111,11 +132,29 @@ namespace FishNet.Managing.Scened
 
         /// <summary>
         /// </summary>
+        /// <param name = "handle">Raw scene handle to generate from.</param>
+        public SceneLookupData(ulong handle)
+        {
+            RawHandle = handle;
+        }
+
+        /// <summary>
+        /// </summary>
         /// <param name = "handle">Scene handle to generate from.</param>
         /// <param name = "name">Name to generate from if handle is 0.</param>
         public SceneLookupData(int handle, string name)
         {
             Handle = handle;
+            Name = name;
+        }
+
+        /// <summary>
+        /// </summary>
+        /// <param name = "handle">Raw scene handle to generate from.</param>
+        /// <param name = "name">Name to generate from if handle is 0.</param>
+        public SceneLookupData(ulong handle, string name)
+        {
+            RawHandle = handle;
             Name = name;
         }
 
@@ -159,10 +198,10 @@ namespace FishNet.Managing.Scened
                 return false;
 
             // True if both handles are empty.
-            bool bothHandlesEmpty = Handle == 0 && sld.Handle == 0;
+            bool bothHandlesEmpty = RawHandle == 0 && sld.RawHandle == 0;
 
             // If both have handles and they match.
-            if (!bothHandlesEmpty && sld.Handle == Handle)
+            if (!bothHandlesEmpty && sld.RawHandle == RawHandle)
                 return true;
             // If neither have handles and name matches.
             else if (bothHandlesEmpty && sld.Name == Name)
@@ -175,7 +214,7 @@ namespace FishNet.Managing.Scened
         public override int GetHashCode()
         {
             int hashCode = 2053068273;
-            hashCode = hashCode * -1521134295 + Handle.GetHashCode();
+            hashCode = hashCode * -1521134295 + RawHandle.GetHashCode();
             hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Name);
             return hashCode;
         }
@@ -187,7 +226,7 @@ namespace FishNet.Managing.Scened
 
         public override string ToString()
         {
-            return $"Name {Name}, Handle {Handle}";
+            return $"Name {Name}, Handle {RawHandle}";
             // return base.ToString();
         }
         #endregion
@@ -215,6 +254,13 @@ namespace FishNet.Managing.Scened
         public static SceneLookupData CreateData(int handle) => new(handle);
 
         /// <summary>
+        /// Returns a new SceneLookupData.
+        /// </summary>
+        /// <param name = "scene">Raw scene handle to create from.</param>
+        /// <returns></returns>
+        public static SceneLookupData CreateData(ulong handle) => new(handle);
+
+        /// <summary>
         /// Returns a SceneLookupData collection.
         /// </summary>
         /// <param name = "scenes">Scenes to create from.</param>
@@ -234,6 +280,13 @@ namespace FishNet.Managing.Scened
         /// <param name = "handles">Scene handles to create from.</param>
         /// <returns></returns>
         public static SceneLookupData[] CreateData(List<int> handles) => CreateData(handles.ToArray());
+
+        /// <summary>
+        /// Returns a SceneLookupData collection.
+        /// </summary>
+        /// <param name = "handles">Raw scene handles to create from.</param>
+        /// <returns></returns>
+        public static SceneLookupData[] CreateData(List<ulong> handles) => CreateData(handles.ToArray());
 
         /// <summary>
         /// Returns a SceneLookupData collection.
@@ -297,12 +350,12 @@ namespace FishNet.Managing.Scened
                     for (int i = 0; i < result.Count; i++)
                     {
                         bool nameMatches = result[i].Name == item.Name;
-                        bool handleMatches = result[i].Handle == item.Handle;
+                        bool handleMatches = result[i].RawHandle == item.RawHandle;
                         // Handle is the same (could be 0 handle).
                         if (handleMatches)
                         {
                             // If handle matches and not default then the same scene was added multiple times.
-                            if (item.Handle != 0)
+                            if (item.RawHandle != 0)
                                 failingIndex = i;
                         }
                         // Name is the same.
@@ -365,6 +418,32 @@ namespace FishNet.Managing.Scened
 
             return result.ToArray();
         }
+
+        /// <summary>
+        /// Returns a SceneLookupData collection.
+        /// </summary>
+        /// <param name = "handles">Raw scene handles to create from.</param>
+        /// <returns></returns>
+        public static SceneLookupData[] CreateData(ulong[] handles)
+        {
+            bool invalidFound = false;
+            List<SceneLookupData> result = new();
+            foreach (ulong item in handles)
+            {
+                if (item == 0)
+                {
+                    invalidFound = true;
+                    continue;
+                }
+
+                result.Add(CreateData(item));
+            }
+
+            if (invalidFound)
+                NetworkManagerExtensions.LogWarning(INVALID_SCENE);
+
+            return result.ToArray();
+        }
         #endregion
 
         /// <summary>
@@ -390,7 +469,7 @@ namespace FishNet.Managing.Scened
         {
             foundByHandle = false;
 
-            if (Handle == 0 && string.IsNullOrEmpty(NameOnly))
+            if (RawHandle == 0 && string.IsNullOrEmpty(NameOnly))
             {
                 NetworkManagerExtensions.LogWarning("Scene handle and name is unset; scene cannot be returned.");
                 return default;
@@ -398,11 +477,11 @@ namespace FishNet.Managing.Scened
 
             Scene result = default;
 
-            // Lookup my handle.
-            if (Handle != 0)
+            // Lookup by handle first.
+            if (RawHandle != 0)
             {
-                result = SceneManager.GetScene(Handle);
-                if (result.handle != 0)
+                result = GetSceneByRawHandle(RawHandle);
+                if (UnityCompatibility.HasValidSceneHandle(result))
                     foundByHandle = true;
             }
 
@@ -411,6 +490,22 @@ namespace FishNet.Managing.Scened
                 result = SceneManager.GetScene(NameOnly, null, warnIfDuplicates);
 
             return result;
+        }
+
+        /// <summary>
+        /// Returns a currently loaded scene by raw scene handle.
+        /// </summary>
+        private static Scene GetSceneByRawHandle(ulong rawHandle)
+        {
+            int count = UnityEngine.SceneManagement.SceneManager.sceneCount;
+            for (int i = 0; i < count; i++)
+            {
+                Scene scene = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
+                if (scene.IsValid() && UnityCompatibility.GetSceneHandleRaw(scene) == rawHandle)
+                    return scene;
+            }
+
+            return default;
         }
     }
 }
