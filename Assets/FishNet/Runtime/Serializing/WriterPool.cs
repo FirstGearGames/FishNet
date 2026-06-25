@@ -90,6 +90,14 @@ namespace FishNet.Serializing
             // There is already one pooled.
             if (_lengthPool.TryGetValue(index, out stack) && stack.TryPop(out result))
             {
+                if (stack.Count == 0)
+                    _lengthPool.Remove(index);
+
+                result.Clear(networkManager);
+            }
+            // There is a larger writer pooled.
+            else if (TryPopLengthWriterAbove(index, out result))
+            {
                 result.Clear(networkManager);
             }
             // Not pooled yet or failed to pop.
@@ -105,6 +113,46 @@ namespace FishNet.Serializing
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Tries to pop the closest writer from a bucket above minimum index.
+        /// </summary>
+        private static bool TryPopLengthWriterAbove(int minimumIndex, out PooledWriter writer)
+        {
+            int foundIndex = int.MaxValue;
+            Stack<PooledWriter> foundStack = null;
+
+            foreach (KeyValuePair<int, Stack<PooledWriter>> entry in _lengthPool)
+            {
+                if (entry.Key <= minimumIndex)
+                    continue;
+                if (entry.Value.Count == 0)
+                    continue;
+                if (entry.Key < foundIndex)
+                {
+                    foundIndex = entry.Key;
+                    foundStack = entry.Value;
+                }
+            }
+
+            if (foundStack == null)
+            {
+                writer = null;
+                return false;
+            }
+
+            bool popped = foundStack.TryPop(out writer);
+            if (!popped)
+            {
+                writer = null;
+                return false;
+            }
+
+            if (foundStack.Count == 0)
+                _lengthPool.Remove(foundIndex);
+
+            return true;
         }
 
         /// <summary>
