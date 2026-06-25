@@ -1,6 +1,6 @@
-﻿using GameKit.Dependencies.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using GameKit.Dependencies.Utilities;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened
@@ -24,7 +24,7 @@ namespace FishNet.Managing.Scened
             return names;
         }
 
-        
+
         /// <summary>
         /// Returns Names from SceneLookupData.
         /// </summary>
@@ -48,7 +48,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Handle of the scene. If value is 0, then handle is not used.
         /// </summary>
-        public int Handle;
+        public ulong Handle;
         /// <summary>
         /// Name of the scene.
         /// </summary>
@@ -62,7 +62,7 @@ namespace FishNet.Managing.Scened
             {
                 if (string.IsNullOrEmpty(Name))
                     return string.Empty;
-                
+
                 string name = System.IO.Path.GetFileName(Name);
                 return RemoveUnityExtension(name);
             }
@@ -89,7 +89,7 @@ namespace FishNet.Managing.Scened
         /// <param name = "scene">Scene to generate from.</param>
         public SceneLookupData(Scene scene)
         {
-            Handle = scene.handle;
+            Handle = scene.handle.GetRawData();
             Name = scene.name;
         }
 
@@ -104,7 +104,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "handle">Scene handle to generate from.</param>
-        public SceneLookupData(int handle)
+        public SceneLookupData(ulong handle)
         {
             Handle = handle;
         }
@@ -113,7 +113,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name = "handle">Scene handle to generate from.</param>
         /// <param name = "name">Name to generate from if handle is 0.</param>
-        public SceneLookupData(int handle, string name)
+        public SceneLookupData(ulong handle, string name)
         {
             Handle = handle;
             Name = name;
@@ -212,7 +212,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name = "scene">Scene handle to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData CreateData(int handle) => new(handle);
+        public static SceneLookupData CreateData(ulong handle) => new(handle);
 
         /// <summary>
         /// Returns a SceneLookupData collection.
@@ -233,7 +233,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name = "handles">Scene handles to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData[] CreateData(List<int> handles) => CreateData(handles.ToArray());
+        public static SceneLookupData[] CreateData(List<ulong> handles) => CreateData(handles.ToArray());
 
         /// <summary>
         /// Returns a SceneLookupData collection.
@@ -345,11 +345,11 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name = "handles">Scene handles to create from.</param>
         /// <returns></returns>
-        public static SceneLookupData[] CreateData(int[] handles)
+        public static SceneLookupData[] CreateData(ulong[] handles)
         {
             bool invalidFound = false;
             List<SceneLookupData> result = new();
-            foreach (int item in handles)
+            foreach (var item in handles)
             {
                 if (item == 0)
                 {
@@ -402,7 +402,7 @@ namespace FishNet.Managing.Scened
             if (Handle != 0)
             {
                 result = SceneManager.GetScene(Handle);
-                if (result.handle != 0)
+                if (result.handle.GetRawData() != 0)
                     foundByHandle = true;
             }
 

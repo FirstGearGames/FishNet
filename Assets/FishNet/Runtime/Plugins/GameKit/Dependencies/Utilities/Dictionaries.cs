@@ -11,7 +11,7 @@ namespace GameKit.Dependencies.Utilities
         /// </summary>
         public static bool TryGetValueIL2CPP<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key, out TValue value)
         {
-            #if ENABLE_IL2CPP && UNITY_IOS || UNITY_ANDROID
+#if ENABLE_IL2CPP && UNITY_IOS || UNITY_ANDROID
             if (dict.ContainsKey(key))
             {
                 value = dict[key];
@@ -20,12 +20,12 @@ namespace GameKit.Dependencies.Utilities
 
                 value = default;
                 return false;
-            #else
+#else
             return dict.TryGetValue(key, out value);
-            #endif
+#endif
         }
 
-     
+
         /// <summary>
         /// Returns values as a list.
         /// </summary>

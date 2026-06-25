@@ -42,7 +42,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandle">Scene to unload by handle.</param>
-        public SceneUnloadData(int sceneHandle) : this(new int[] { sceneHandle }) { }
+        public SceneUnloadData(ulong sceneHandle) : this(new[] { sceneHandle }) { }
 
         /// <summary>
         /// </summary>
@@ -65,7 +65,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandles">Scenes to unload by handles.</param>
-        public SceneUnloadData(List<int> sceneHandles) : this(sceneHandles.ToArray()) { }
+        public SceneUnloadData(List<ulong> sceneHandles) : this(sceneHandles.ToArray()) { }
 
         /// <summary>
         /// </summary>
@@ -86,7 +86,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandles">Scenes to unload by handles.</param>
-        public SceneUnloadData(int[] sceneHandles)
+        public SceneUnloadData(ulong[] sceneHandles)
         {
             SceneLookupDatas = SceneLookupData.CreateData(sceneHandles);
         }

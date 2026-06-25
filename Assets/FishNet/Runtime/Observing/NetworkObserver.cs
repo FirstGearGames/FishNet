@@ -1,11 +1,11 @@
-﻿using FishNet.Connection;
+﻿using System.Collections.Generic;
+using FishNet.Connection;
 using FishNet.Documenting;
+using FishNet.Managing;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
-using System.Collections.Generic;
-using FishNet.Managing;
 using UnityEngine;
 
 namespace FishNet.Observing
@@ -158,7 +158,7 @@ namespace FishNet.Observing
                     /* Use GetInstanceId to ensure the object is actually
                      * instantiated. If Id is negative, then it's instantiated
                      * and not a reference to the original object. */
-                    if (destroyed && item.GetInstanceID() < 0)
+                    if (destroyed && item.GetEntityId().IsValid())
                         Destroy(item);
                 }
 
@@ -309,10 +309,10 @@ namespace FishNet.Observing
             if (!_initialized)
             {
                 string goName = gameObject == null ? "Empty" : gameObject.name;
-                
+
                 NetworkManager nm = _networkObject == null ? null : _networkObject.NetworkManager;
                 nm.LogError($"{GetType().Name} is not initialized on NetworkObject [{goName}]. RebuildObservers should not be called. If you are able to reproduce this error consistently please report this issue.");
-                
+
                 return ObserverStateChange.Unchanged;
             }
 

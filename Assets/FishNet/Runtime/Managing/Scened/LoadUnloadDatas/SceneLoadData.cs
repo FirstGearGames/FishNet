@@ -1,7 +1,7 @@
-﻿using FishNet.Object;
-using FishNet.Serializing.Helping;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using FishNet.Object;
+using FishNet.Serializing.Helping;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Managing.Scened
@@ -50,13 +50,13 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandle">Scene to load by handle.</param>
-        public SceneLoadData(int sceneHandle) : this(new int[] { sceneHandle }, null) { }
+        public SceneLoadData(ulong sceneHandle) : this(new[] { sceneHandle }, null) { }
 
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandle">Scene to load by handle.</param>
         /// <param name = "sceneName">Scene to load by name.</param>
-        public SceneLoadData(int sceneHandle, string sceneName) : this(new SceneLookupData(sceneHandle, sceneName)) { }
+        public SceneLoadData(ulong sceneHandle, string sceneName) : this(new SceneLookupData(sceneHandle, sceneName)) { }
 
         /// <summary>
         /// </summary>
@@ -76,7 +76,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandles">Scenes to load by handle.</param>
-        public SceneLoadData(List<int> sceneHandles) : this(sceneHandles.ToArray(), null) { }
+        public SceneLoadData(List<ulong> sceneHandles) : this(sceneHandles.ToArray(), null) { }
 
         /// <summary>
         /// </summary>
@@ -91,7 +91,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// </summary>
         /// <param name = "sceneHandles">Scenes to load by handle.</param>
-        public SceneLoadData(int[] sceneHandles) : this(sceneHandles, null) { }
+        public SceneLoadData(ulong[] sceneHandles) : this(sceneHandles, null) { }
 
         /// <summary>
         /// </summary>
@@ -132,7 +132,7 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name = "sceneHandles">Scenes to load by handle.</param>
         /// <param name = "movedNetworkObjects">NetworkObjects to move to the first specified scene.</param>
-        public SceneLoadData(int[] sceneHandles, NetworkObject[] movedNetworkObjects)
+        public SceneLoadData(ulong[] sceneHandles, NetworkObject[] movedNetworkObjects)
         {
             SceneLookupData[] datas = SceneLookupData.CreateData(sceneHandles);
             Construct(datas, movedNetworkObjects);
