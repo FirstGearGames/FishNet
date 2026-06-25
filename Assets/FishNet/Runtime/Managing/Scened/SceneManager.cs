@@ -635,7 +635,7 @@ namespace FishNet.Managing.Scened
                 /* True if SceneConnections has no more connections
                  * in its scene, as well if the scene checked is in
                  * has no other clients pending load confirmation. */
-                bool isSceneNowEmpty = removed && hs.Count == 0 && !_pendingClientSceneLoads.HasSceneAnyPendingLoads(scene.handle.GetRawData());
+                bool isSceneNowEmpty = removed && hs.Count == 0 && !_pendingClientSceneLoads.HasSceneAnyPendingLoads(scene.GetHandleId());
 
                 //True if not a global scene and not in scenes to be manually unloaded.
                 bool notGlobalAndNotManualUnload = !IsGlobalScene(scene) && !_manualUnloadScenes.Contains(scene);
@@ -1081,7 +1081,7 @@ namespace FishNet.Managing.Scened
                     {
                         requestedLoadSceneNames.Add(s.name);
                         if (byHandle)
-                            requestedLoadSceneHandles.Add(s.handle.GetRawData());
+                            requestedLoadSceneHandles.Add(s.GetHandleId());
                     }
 
                     if (CanLoadScene(data, lookupData))
@@ -1137,7 +1137,7 @@ namespace FishNet.Managing.Scened
                     {
                         Scene[] sceneConnectionsKeys = SceneConnections.Keys.ToArray();
                         for (int i = 0; i < sceneConnectionsKeys.Length; i++)
-                            connectionScenesHandlesCached.Add(sceneConnectionsKeys[i].handle.GetRawData());
+                            connectionScenesHandlesCached.Add(sceneConnectionsKeys[i].GetHandleId());
 
                         // If global then remove all connections from all scenes.
                         if (data.ScopeType == SceneScopeType.Global)
@@ -1155,7 +1155,7 @@ namespace FishNet.Managing.Scened
                     else
                     {
                         foreach (Scene s in NetworkManager.ClientManager.Connection.Scenes)
-                            connectionScenesHandlesCached.Add(s.handle.GetRawData());
+                            connectionScenesHandlesCached.Add(s.GetHandleId());
                     }
                 }
 
@@ -1181,7 +1181,7 @@ namespace FishNet.Managing.Scened
                         if (requestedLoadSceneNames.Contains(s.name))
                             continue;
                         // Same as above but using handles.
-                        if (requestedLoadSceneHandles.Contains(s.handle.GetRawData()))
+                        if (requestedLoadSceneHandles.Contains(s.GetHandleId()))
                             continue;
                         /* Cannot unload global scenes. If
                          * replace scenes was used for a global
@@ -1193,7 +1193,7 @@ namespace FishNet.Managing.Scened
                         if (_manualUnloadScenes.Contains(s))
                             continue;
 
-                        bool inScenesCache = connectionScenesHandlesCached.Contains(s.handle.GetRawData());
+                        bool inScenesCache = connectionScenesHandlesCached.Contains(s.GetHandleId());
                         HashSet<NetworkConnection> conns;
                         bool inScenesCurrent = SceneConnections.ContainsKey(s);
                         // If was in scenes previously but isnt now then no connections reside in the scene.
@@ -2251,7 +2251,7 @@ namespace FishNet.Managing.Scened
             for (int i = 0; i < count; i++)
             {
                 Scene s = UnitySceneManager.GetSceneAt(i);
-                if (s.handle.GetRawData() == sceneHandle)
+                if (s.GetHandleId() == sceneHandle)
                     return s;
             }
 
@@ -2354,7 +2354,7 @@ namespace FishNet.Managing.Scened
             {
                 Scene s = scenes[i];
 
-                if (SceneConnections.TryGetValueIL2CPP(s, out _) || _pendingClientSceneLoads.HasSceneAnyPendingLoads(s.handle.GetRawData()))
+                if (SceneConnections.TryGetValueIL2CPP(s, out _) || _pendingClientSceneLoads.HasSceneAnyPendingLoads(s.GetHandleId()))
                 {
                     scenes.RemoveAt(i);
                     i--;

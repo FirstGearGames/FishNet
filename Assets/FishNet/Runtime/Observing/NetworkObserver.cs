@@ -158,7 +158,7 @@ namespace FishNet.Observing
                     /* Use GetInstanceId to ensure the object is actually
                      * instantiated. If Id is negative, then it's instantiated
                      * and not a reference to the original object. */
-                    if (destroyed && item.GetEntityId().IsValid())
+                    if (destroyed && item.GetInstanceID() < 0)
                         Destroy(item);
                 }
 

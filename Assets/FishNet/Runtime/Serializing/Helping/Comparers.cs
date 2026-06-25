@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using FishNet.Managing.Scened;
 using UnityEngine.SceneManagement;
 
 namespace FishNet.Serializing.Helping
@@ -48,7 +49,7 @@ namespace FishNet.Serializing.Helping
             if (!a.IsValid() || !b.IsValid())
                 return false;
 
-            if (a.handle.GetRawData() != 0 || b.handle.GetRawData() != 0)
+            if (a.GetHandleId() != 0 || b.GetHandleId() != 0)
                 return a.handle == b.handle;
 
             return a.name == b.name;
