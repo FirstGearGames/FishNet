@@ -155,11 +155,18 @@ namespace FishNet.Observing
                 foreach (ObserverCondition item in _observerConditions)
                 {
                     item.Deinitialize(destroyed);
-                    /* Use GetInstanceId to ensure the object is actually
-                     * instantiated. If Id is negative, then it's instantiated
-                     * and not a reference to the original object. */
+                    /* Conditions are always Instantiate() clones at this point
+                     * (see Initialize), so destroying any valid entry only ever
+                     * destroys the clone, never the source asset.
+                     * On 6000.5+ use the EntityId API: GetInstanceID()/`< 0`
+                     * route through the obsolete EntityId<->int conversion (CS0618). */
+#if UNITY_6000_5_OR_NEWER
+                    if (destroyed && item.GetEntityId().IsValid())
+                        Destroy(item);
+#else
                     if (destroyed && item.GetInstanceID() < 0)
                         Destroy(item);
+#endif
                 }
 
                 // Clean up lists.
