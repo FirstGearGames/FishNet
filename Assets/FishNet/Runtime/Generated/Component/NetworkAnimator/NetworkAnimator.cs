@@ -8,6 +8,7 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
+using FishNet.Transporting;
 using FishNet.Utility;
 using FishNet.Utility.Performance;
 using GameKit.Dependencies.Utilities;
@@ -334,6 +335,25 @@ namespace FishNet.Component.Animating
         [Tooltip("True to synchronize server results back to owner. Typically used when you are changing animations on the server and are relying on the server response to update the clients animations.")]
         [SerializeField]
         private bool _sendToOwner;
+        /// <summary>
+        /// Channel for continuous parameter updates (floats, layer weights, speed). State changes and triggers always send reliably regardless of this setting.
+        /// </summary>
+        [Tooltip("Channel for continuous parameter updates (floats, layer weights, speed). " +
+                 "State changes and triggers always send reliably regardless of this setting. " +
+                 "Default Reliable preserves legacy behavior. Set to Unreliable to relieve " +
+                 "reliable-channel pressure with many concurrent NetworkAnimators. May be " +
+                 "changed at runtime — e.g. set to Reliable when close to a player or for " +
+                 "high-importance entities, Unreliable otherwise.")]
+        [SerializeField]
+        private Channel _continuousChannel = Channel.Reliable;
+        /// <summary>
+        /// Channel for continuous parameter updates (floats, layer weights, speed). May be changed at runtime.
+        /// </summary>
+        public Channel ContinuousChannel
+        {
+            get => _continuousChannel;
+            set => _continuousChannel = value;
+        }
         #endregion
 
         #region Private.
@@ -437,6 +457,16 @@ namespace FishNet.Component.Animating
         /// PooledWriter for this animator.
         /// </summary>
         private PooledWriter _writer = new();
+        /// <summary>
+        /// Events writer for the split-channel path (triggers, STATE, CROSSFADE — always reliable).
+        /// Only used when ContinuousChannel != Reliable.
+        /// </summary>
+        private PooledWriter _eventsWriter = new();
+        /// <summary>
+        /// Values writer for the split-channel path (bool/float/int params, LAYER_WEIGHT, SPEED — channel configurable).
+        /// Only used when ContinuousChannel != Reliable.
+        /// </summary>
+        private PooledWriter _valuesWriter = new();
         /// <summary>
         /// Holds client authoritative updates received to send to other clients.
         /// </summary>
@@ -758,8 +788,23 @@ namespace FishNet.Component.Animating
                  * because there's no way the sent bytes are
                  * ever going to come close to the mtu
                  * when sending a single update. */
-                if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
-                    ServerAnimatorUpdated(updatedBytes);
+                if (_continuousChannel == Channel.Reliable)
+                {
+                    /* LEGACY PATH — bit-for-bit identical to upstream. */
+                    if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
+                        ServerAnimatorUpdated(updatedBytes);
+                }
+                else
+                {
+                    /* SPLIT PATH — opt-in. Events always reliable; values use _continuousChannel. */
+                    if (AnimatorUpdatedSplit(out ArraySegment<byte> events, out ArraySegment<byte> values, _forceAllOnTimed))
+                    {
+                        if (events.Count > 0)
+                            ServerAnimatorEvents(events);
+                        if (values.Count > 0)
+                            ServerAnimatorValues(values, _continuousChannel);
+                    }
+                }
 
                 _forceAllOnTimed = false;
             }
@@ -852,13 +897,28 @@ namespace FishNet.Component.Animating
                 //Sending from server, send what's changed.
                 else
                 {
-                    if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
-                        SendSegment(updatedBytes);
+                    if (_continuousChannel == Channel.Reliable)
+                    {
+                        /* LEGACY PATH — bit-for-bit identical to upstream. */
+                        if (AnimatorUpdated(out ArraySegment<byte> updatedBytes, _forceAllOnTimed))
+                            SendSegment(updatedBytes);
+                    }
+                    else
+                    {
+                        /* SPLIT PATH — opt-in. Events always reliable; values use _continuousChannel. */
+                        if (AnimatorUpdatedSplit(out ArraySegment<byte> events, out ArraySegment<byte> values, _forceAllOnTimed))
+                        {
+                            if (events.Count > 0)
+                                SendEventsSegment(events);
+                            if (values.Count > 0)
+                                SendValuesSegment(values);
+                        }
+                    }
 
                     _forceAllOnTimed = false;
                 }
 
-                //Sends segment to clients
+                //Sends segment to clients (legacy single-RPC path; also used for client-auth relay).
                 void SendSegment(ArraySegment<byte> data)
                 {
                     foreach (NetworkConnection nc in Observers)
@@ -867,6 +927,28 @@ namespace FishNet.Component.Animating
                         if (!_sendToOwner && nc == Owner)
                             continue;
                         TargetAnimatorUpdated(nc, data);
+                    }
+                }
+
+                //Sends events segment to clients (split path, always reliable).
+                void SendEventsSegment(ArraySegment<byte> data)
+                {
+                    foreach (NetworkConnection nc in Observers)
+                    {
+                        if (!_sendToOwner && nc == Owner)
+                            continue;
+                        TargetAnimatorEvents(nc, data);
+                    }
+                }
+
+                //Sends values segment to clients (split path, channel from _continuousChannel).
+                void SendValuesSegment(ArraySegment<byte> data)
+                {
+                    foreach (NetworkConnection nc in Observers)
+                    {
+                        if (!_sendToOwner && nc == Owner)
+                            continue;
+                        TargetAnimatorValues(nc, data, _continuousChannel);
                     }
                 }
             }
@@ -1073,6 +1155,150 @@ namespace FishNet.Component.Animating
                 updatedBytes = _writer.GetArraySegment();
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Same as AnimatorUpdated, but writes events (triggers/STATE/CROSSFADE) and values
+        /// (bool/float/int params/LAYER_WEIGHT/SPEED) into separate streams. Used by the split-channel
+        /// path when ContinuousChannel != Reliable. Returns true if either stream has data.
+        /// </summary>
+        private bool AnimatorUpdatedSplit(out ArraySegment<byte> eventsBytes, out ArraySegment<byte> valuesBytes, bool forceAll = false)
+        {
+            eventsBytes = default;
+            valuesBytes = default;
+            if (_layerWeights == null)
+                return false;
+
+            _eventsWriter.Clear();
+            _valuesWriter.Clear();
+
+            /* Continuous parameters (bool/float/int) — values stream. */
+            for (byte parameterIndex = 0; parameterIndex < _parameterDetails.Count; parameterIndex++)
+            {
+                ParameterDetail pd = _parameterDetails[parameterIndex];
+                if (pd.ControllerParameter.type == AnimatorControllerParameterType.Bool)
+                {
+                    bool next = _animator.GetBool(pd.Hash);
+                    if (forceAll || _bools[pd.TypeIndex] != next)
+                    {
+                        _valuesWriter.WriteUInt8Unpacked(parameterIndex);
+                        _valuesWriter.WriteBoolean(next);
+                        _bools[pd.TypeIndex] = next;
+                    }
+                }
+                else if (pd.ControllerParameter.type == AnimatorControllerParameterType.Float)
+                {
+                    float next = _animator.GetFloat(pd.Hash);
+                    if (forceAll || _floats[pd.TypeIndex] != next)
+                    {
+                        _valuesWriter.WriteUInt8Unpacked(parameterIndex);
+                        _valuesWriter.WriteSingle(next);
+                        _floats[pd.TypeIndex] = next;
+                    }
+                }
+                else if (pd.ControllerParameter.type == AnimatorControllerParameterType.Int)
+                {
+                    int next = _animator.GetInteger(pd.Hash);
+                    if (forceAll || _ints[pd.TypeIndex] != next)
+                    {
+                        _valuesWriter.WriteUInt8Unpacked(parameterIndex);
+                        _valuesWriter.WriteInt32(next);
+                        _ints[pd.TypeIndex] = next;
+                    }
+                }
+            }
+
+            /* Triggers — events stream (one-shots, must arrive). */
+            for (int i = 0; i < _triggerUpdates.Count; i++)
+            {
+                _eventsWriter.WriteUInt8Unpacked(_triggerUpdates[i].ParameterIndex);
+                _eventsWriter.WriteBoolean(_triggerUpdates[i].Setting);
+            }
+            _triggerUpdates.Clear();
+
+            /* States — events stream (must arrive). */
+            if (forceAll)
+            {
+                for (int i = 0; i < _animator.layerCount; i++)
+                    _unsynchronizedLayerStates[i] = new(Time.frameCount);
+            }
+
+            if (_unsynchronizedLayerStates.Count > 0)
+            {
+                int frameCount = Time.frameCount;
+                List<int> sentLayers = CollectionCaches<int>.RetrieveList();
+                foreach (KeyValuePair<int, StateChange> item in _unsynchronizedLayerStates)
+                {
+                    if (frameCount == item.Value.FrameCount)
+                        continue;
+
+                    sentLayers.Add(item.Key);
+                    int layerIndex = item.Key;
+                    StateChange sc = item.Value;
+                    if (!sc.IsCrossfade)
+                    {
+                        if (ReturnCurrentLayerState(out int stateHash, out float normalizedTime, layerIndex))
+                        {
+                            _eventsWriter.WriteUInt8Unpacked(STATE);
+                            _eventsWriter.WriteUInt8Unpacked((byte)layerIndex);
+                            _eventsWriter.WriteInt32Unpacked(stateHash);
+                            _eventsWriter.WriteSingle(normalizedTime);
+                        }
+                    }
+                    else
+                    {
+                        _eventsWriter.WriteUInt8Unpacked(CROSSFADE);
+                        _eventsWriter.WriteUInt8Unpacked((byte)layerIndex);
+                        _eventsWriter.WriteInt32(sc.Hash);
+                        _eventsWriter.WriteBoolean(sc.FixedTime);
+                        _eventsWriter.WriteSingle(sc.DurationTime);
+                        _eventsWriter.WriteSingle(sc.OffsetTime);
+                        _eventsWriter.WriteSingle(sc.NormalizedTransitionTime);
+                    }
+                }
+
+                if (sentLayers.Count > 0)
+                {
+                    for (int i = 0; i < sentLayers.Count; i++)
+                        _unsynchronizedLayerStates.Remove(sentLayers[i]);
+                    CollectionCaches<int>.Store(sentLayers);
+                }
+            }
+
+            /* Layer weights — values stream. */
+            for (int layerIndex = 0; layerIndex < _layerWeights.Length; layerIndex++)
+            {
+                float next = _animator.GetLayerWeight(layerIndex);
+                if (forceAll || _layerWeights[layerIndex] != next)
+                {
+                    _valuesWriter.WriteUInt8Unpacked(LAYER_WEIGHT);
+                    _valuesWriter.WriteUInt8Unpacked((byte)layerIndex);
+                    _valuesWriter.WriteSingle(next);
+                    _layerWeights[layerIndex] = next;
+                }
+            }
+
+            /* Speed — values stream. */
+            float speedNext = _animator.speed;
+            if (forceAll || _speed != speedNext)
+            {
+                _valuesWriter.WriteUInt8Unpacked(SPEED);
+                _valuesWriter.WriteSingle(speedNext);
+                _speed = speedNext;
+            }
+
+            bool any = false;
+            if (_eventsWriter.Position > 0)
+            {
+                eventsBytes = _eventsWriter.GetArraySegment();
+                any = true;
+            }
+            if (_valuesWriter.Position > 0)
+            {
+                valuesBytes = _valuesWriter.GetArraySegment();
+                any = true;
+            }
+            return any;
         }
 
         /// <summary>
@@ -1540,6 +1766,90 @@ namespace FishNet.Component.Animating
              * clientHost will always be on the latest tick.
              * Spectators on the other hand will remain behind
              * a little depending on their components interpolation. */
+            ApplyParametersUpdated(ref data);
+            _clientAuthoritativeUpdates.AddToBuffer(ref data);
+        }
+
+        /// <summary>
+        /// Called on clients to receive the events stream (triggers, STATE, CROSSFADE) — always reliable.
+        /// Used by the split-channel path when ContinuousChannel != Reliable.
+        /// </summary>
+        [TargetRpc(ValidateTarget = false)]
+        private void TargetAnimatorEvents(NetworkConnection connection, ArraySegment<byte> data)
+        {
+            ReceiveTargetAnimatorPayload(connection, data);
+        }
+
+        /// <summary>
+        /// Called on clients to receive the values stream (continuous parameters, LAYER_WEIGHT, SPEED).
+        /// Channel is configurable per call via the trailing arg; defaults to Reliable.
+        /// Used by the split-channel path when ContinuousChannel != Reliable.
+        /// </summary>
+        [TargetRpc(ValidateTarget = false)]
+        private void TargetAnimatorValues(NetworkConnection connection, ArraySegment<byte> data, Channel channel = Channel.Reliable)
+        {
+            ReceiveTargetAnimatorPayload(connection, data);
+        }
+
+        /// <summary>
+        /// Shared receive logic for the split-channel target RPCs.
+        /// Mirrors TargetAnimatorUpdated.
+        /// </summary>
+        private void ReceiveTargetAnimatorPayload(NetworkConnection connection, ArraySegment<byte> data)
+        {
+            if (!_canSynchronizeAnimator)
+                return;
+
+            if (IsServerInitialized && connection.IsLocalClient)
+                return;
+
+            bool clientAuth = ClientAuthoritative;
+            bool isOwner = IsOwner;
+            if (clientAuth && isOwner)
+                return;
+            if (!clientAuth && !_sendToOwner && isOwner)
+                return;
+
+            ReceivedServerData rd = new(data);
+            _fromServerBuffer.Enqueue(rd);
+
+            if (_startTick == 0)
+                _startTick = TimeManager.LocalTick + _interpolation;
+        }
+
+        /// <summary>
+        /// Called on server to receive the events stream from a client-authoritative client — always reliable.
+        /// </summary>
+        [ServerRpc]
+        private void ServerAnimatorEvents(ArraySegment<byte> data)
+        {
+            ReceiveServerAnimatorPayload(data);
+        }
+
+        /// <summary>
+        /// Called on server to receive the values stream from a client-authoritative client.
+        /// Channel is configurable per call; defaults to Reliable.
+        /// </summary>
+        [ServerRpc]
+        private void ServerAnimatorValues(ArraySegment<byte> data, Channel channel = Channel.Reliable)
+        {
+            ReceiveServerAnimatorPayload(data);
+        }
+
+        /// <summary>
+        /// Shared receive logic for the split-channel server RPCs.
+        /// Mirrors ServerAnimatorUpdated.
+        /// </summary>
+        private void ReceiveServerAnimatorPayload(ArraySegment<byte> data)
+        {
+            if (!_canSynchronizeAnimator)
+                return;
+            if (!ClientAuthoritative)
+            {
+                Owner.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"Connection Id {Owner.ClientId} has been kicked for trying to update this object without client authority.");
+                return;
+            }
+
             ApplyParametersUpdated(ref data);
             _clientAuthoritativeUpdates.AddToBuffer(ref data);
         }
