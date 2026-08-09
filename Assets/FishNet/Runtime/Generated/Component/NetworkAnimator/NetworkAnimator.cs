@@ -627,10 +627,16 @@ namespace FishNet.Component.Animating
                 if (TimeManager.LocalTick < _startTick)
                     return;
 
-                ReceivedServerData rd = _fromServerBuffer.Dequeue();
-                ArraySegment<byte> segment = rd.GetArraySegment();
-                ApplyParametersUpdated(ref segment);
-                rd.Dispose();
+                //Apply the entire backlog instead of one entry per tick, so a burst
+                //of updates (e.g. from a caught-up frame) doesn't leave the client
+                //visibly behind for multiple ticks.
+                while (_fromServerBuffer.Count > 0)
+                {
+                    ReceivedServerData rd = _fromServerBuffer.Dequeue();
+                    ArraySegment<byte> segment = rd.GetArraySegment();
+                    ApplyParametersUpdated(ref segment);
+                    rd.Dispose();
+                }
             }
         }
 
