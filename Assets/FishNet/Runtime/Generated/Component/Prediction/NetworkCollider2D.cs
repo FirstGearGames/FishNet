@@ -128,7 +128,7 @@ namespace FishNet.Component.Prediction
                 else if (col is BoxCollider2D boxCollider)
                     hits = GetBoxCollider2DHits(boxCollider, rotation, InteractableLayers);
                 else
-                    hits = 0;
+                    hits = PhysicsScene2D.OverlapCollider(col, _hits, InteractableLayers);
 
                 /* Check hits for enter/exit callbacks. */
                 for (int i = 0; i < hits; i++)
