@@ -14,7 +14,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 {
     internal static class SettingsProvider
     {
-        private static readonly Regex SlashRegex = new(@"[\\// ]");
+        private static readonly Regex SlashRegex = new(@"[\\//]");
         private static PrefabGeneratorConfigurations _settings;
         private static GUIContent _folderIcon;
         private static GUIContent _deleteIcon;
