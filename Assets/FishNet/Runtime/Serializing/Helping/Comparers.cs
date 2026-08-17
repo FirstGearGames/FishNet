@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FishNet.Utility;
+using System;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
@@ -10,6 +11,7 @@ namespace FishNet.Serializing.Helping
         /// Compare if T is default.
         /// </summary>
         public static Func<T, bool> IsDefault { get; set; }
+
         /// <summary>
         /// Compare if T is the same as T2.
         /// </summary>
@@ -48,8 +50,11 @@ namespace FishNet.Serializing.Helping
             if (!a.IsValid() || !b.IsValid())
                 return false;
 
-            if (a.handle != 0 || b.handle != 0)
-                return a.handle == b.handle;
+            ulong aHandle = UnityCompatibility.GetSceneHandleRaw(a);
+            ulong bHandle = UnityCompatibility.GetSceneHandleRaw(b);
+
+            if (aHandle != 0 || bHandle != 0)
+                return aHandle == bHandle;
 
             return a.name == b.name;
         }

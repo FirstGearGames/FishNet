@@ -155,10 +155,12 @@ namespace FishNet.Observing
                 foreach (ObserverCondition item in _observerConditions)
                 {
                     item.Deinitialize(destroyed);
-                    /* Use GetInstanceId to ensure the object is actually
-                     * instantiated. If Id is negative, then it's instantiated
-                     * and not a reference to the original object. */
-                    if (destroyed && item.GetInstanceID() < 0)
+
+                    /* Conditions are replaced with instantiated copies during Initialize.
+                     * Destroy the runtime copies when this observer is being destroyed.
+                     * Do not rely on InstanceID sign because InstanceID is obsolete in Unity 6.5+.
+                     */
+                    if (destroyed)
                         Destroy(item);
                 }
 
@@ -309,10 +311,10 @@ namespace FishNet.Observing
             if (!_initialized)
             {
                 string goName = gameObject == null ? "Empty" : gameObject.name;
-                
+
                 NetworkManager nm = _networkObject == null ? null : _networkObject.NetworkManager;
                 nm.LogError($"{GetType().Name} is not initialized on NetworkObject [{goName}]. RebuildObservers should not be called. If you are able to reproduce this error consistently please report this issue.");
-                
+
                 return ObserverStateChange.Unchanged;
             }
 
