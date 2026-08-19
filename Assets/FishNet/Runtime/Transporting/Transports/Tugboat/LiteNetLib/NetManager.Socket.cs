@@ -620,6 +620,7 @@ namespace LiteNetLib
                 return false;
 
             NetPacket packet;
+            int packetSize;
             if (_extraPacketLayer != null)
             {
                 int headerSize = NetPacket.GetHeaderSize(PacketProperty.Broadcast);
@@ -627,24 +628,25 @@ namespace LiteNetLib
                 packet.Property = PacketProperty.Broadcast;
                 Buffer.BlockCopy(data, start, packet.RawData, headerSize, length);
                 int checksumComputeStart = 0;
-                int preCrcLength = length + headerSize;
+                packetSize = length + headerSize;
                 IPEndPoint emptyEp = null;
-                _extraPacketLayer.ProcessOutBoundPacket(ref emptyEp, ref packet.RawData, ref checksumComputeStart, ref preCrcLength);
+                _extraPacketLayer.ProcessOutBoundPacket(ref emptyEp, ref packet.RawData, ref checksumComputeStart, ref packetSize);
             }
             else
             {
                 packet = PoolGetWithData(PacketProperty.Broadcast, data, start, length);
+                packetSize = packet.Size;
             }
 
             bool broadcastSuccess = false;
             bool multicastSuccess = false;
             try
             {
-                broadcastSuccess = _udpSocketv4.SendTo(packet.RawData, 0, packet.Size, SocketFlags.None, new IPEndPoint(IPAddress.Broadcast, port)) > 0;
+                broadcastSuccess = _udpSocketv4.SendTo(packet.RawData, 0, packetSize, SocketFlags.None, new IPEndPoint(IPAddress.Broadcast, port)) > 0;
 
                 if (_udpSocketv6 != null)
                 {
-                    multicastSuccess = _udpSocketv6.SendTo(packet.RawData, 0, packet.Size, SocketFlags.None, new IPEndPoint(MulticastAddressV6, port)) > 0;
+                    multicastSuccess = _udpSocketv6.SendTo(packet.RawData, 0, packetSize, SocketFlags.None, new IPEndPoint(MulticastAddressV6, port)) > 0;
                 }
             }
             catch (SocketException ex)
