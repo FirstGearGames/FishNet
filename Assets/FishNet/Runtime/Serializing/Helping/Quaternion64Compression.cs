@@ -111,20 +111,16 @@ namespace FishNet.Serializing.Helping
 
         private static float ScaleToFloat_H(ulong v)
         {
-            float unscaled = v * Maximum / IntScale_H;
-
-            if (unscaled > Maximum)
-                unscaled -= Maximum * 2;
-            return unscaled;
+            // Values above IntScale are two's-complement negatives produced by ScaleToUint's mask.
+            long signed = v > IntScale_H ? (long)v - (IntMask_H + 1) : (long)v;
+            return signed * Maximum / IntScale_H;
         }
 
         private static float ScaleToFloat_L(ulong v)
         {
-            float unscaled = v * Maximum / IntScale_L;
-
-            if (unscaled > Maximum)
-                unscaled -= Maximum * 2;
-            return unscaled;
+            // Values above IntScale are two's-complement negatives produced by ScaleToUint's mask.
+            long signed = v > IntScale_L ? (long)v - (IntMask_L + 1) : (long)v;
+            return signed * Maximum / IntScale_L;
         }
 
         public static Quaternion Decompress(ulong compressed)
