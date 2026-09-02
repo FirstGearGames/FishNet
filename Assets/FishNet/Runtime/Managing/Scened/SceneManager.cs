@@ -5,7 +5,7 @@ using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing.Helping;
 using FishNet.Transporting;
-using FishNet.Utility;
+using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using GameKit.Dependencies.Utilities.Types;
 using System;
@@ -16,6 +16,11 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
+#if UNITY_6000_5_OR_NEWER
+using SceneHandle = System.UInt64;
+#else
+using SceneHandle = System.Int32;
+#endif
 
 namespace FishNet.Managing.Scened
 {
@@ -35,11 +40,11 @@ namespace FishNet.Managing.Scened
             /// <summary>
             /// Scene handles which have clients that have not yet confirmed the loading status.
             /// </summary>
-            private Dictionary<ulong, HashSet<NetworkConnection>> _scenesWithPendingLoads = new();
+            private Dictionary<SceneHandle, HashSet<NetworkConnection>> _scenesWithPendingLoads = new();
             /// <summary>
             /// Clients with pending loads, and each scene handle pending.
             /// </summary>
-            private Dictionary<NetworkConnection, List<ulong>> _clientsWithPendingLoads = new();
+            private Dictionary<NetworkConnection, List<SceneHandle>> _clientsWithPendingLoads = new();
             /// <summary>
             /// Clients which have been sent the initial scene load with no scenes specified.
             /// </summary>
@@ -50,11 +55,11 @@ namespace FishNet.Managing.Scened
             /// <summary>
             /// Adds a pending load for a client.
             /// </summary>
-            public void AddClientToScene(NetworkConnection connection, ulong sceneHandle)
+            public void AddClientToScene(NetworkConnection connection, SceneHandle sceneHandle)
             {
                 /* The client has 1 or more pending loads already. See
                  * if the specified scene is already pending. */
-                if (_clientsWithPendingLoads.TryGetValueIL2CPP(connection, out List<ulong> sceneList))
+                if (_clientsWithPendingLoads.TryGetValueIL2CPP(connection, out List<SceneHandle> sceneList))
                 {
                     //Scene is already marked for the connection.
                     if (sceneList.Contains(sceneHandle))
@@ -82,14 +87,14 @@ namespace FishNet.Managing.Scened
             /// Removes a client from all pending loads.
             /// </summary
             /// <returns>Scene handles which no longer have clients pending loads.</returns>
-            internal List<ulong> RemoveClientFromAllScenes(NetworkConnection conn)
+            internal List<SceneHandle> RemoveClientFromAllScenes(NetworkConnection conn)
             {
-                List<ulong> emptyScenes = new();
+                List<SceneHandle> emptyScenes = new();
 
-                if (!_clientsWithPendingLoads.TryGetValueIL2CPP(conn, out List<ulong> sceneList))
+                if (!_clientsWithPendingLoads.TryGetValueIL2CPP(conn, out List<SceneHandle> sceneList))
                     return emptyScenes;
 
-                foreach (ulong sceneHandle in sceneList)
+                foreach (SceneHandle sceneHandle in sceneList)
                 {
                     /* If the scene is in the clients list then it should
                      * be in scenesWithPendingLoads. This is a safety check but
@@ -114,7 +119,7 @@ namespace FishNet.Managing.Scened
             /// </summary
             /// <param name="sceneHasNoPendingLoads">Becomes true if the scene which the connection is being removed from has no more pending loads.</param>
             /// <returns>True if the client had the specified scene as pending.</returns>
-            internal bool RemoveClientFromScene(NetworkConnection conn, ulong sceneHandle, out bool sceneHasNoPendingLoads)
+            internal bool RemoveClientFromScene(NetworkConnection conn, SceneHandle sceneHandle, out bool sceneHasNoPendingLoads)
             {
                 // The scene has does not have any pending clients.
                 if (!_scenesWithPendingLoads.TryGetValueIL2CPP(sceneHandle, out HashSet<NetworkConnection> connectionsLoadingScene))
@@ -137,7 +142,7 @@ namespace FishNet.Managing.Scened
                 /* If client does not have any pending loads then
                  * there is nothing to remove, which means the requested
                  * scene still has clients in it. */
-                if (!_clientsWithPendingLoads.TryGetValueIL2CPP(conn, out List<ulong> sceneList))
+                if (!_clientsWithPendingLoads.TryGetValueIL2CPP(conn, out List<SceneHandle> sceneList))
                 {
                     sceneHasNoPendingLoads = false;
                     return false;
@@ -177,7 +182,7 @@ namespace FishNet.Managing.Scened
             /// <summary>
             /// Returns if a scene has any number of clients still pending load.
             /// </summary>
-            internal bool HasSceneAnyPendingLoads(ulong sceneHandle) => _scenesWithPendingLoads.TryGetValueIL2CPP(sceneHandle, out _);
+            internal bool HasSceneAnyPendingLoads(SceneHandle sceneHandle) => _scenesWithPendingLoads.TryGetValueIL2CPP(sceneHandle, out _);
 
             /// <summary>
             /// Clears all information.
@@ -577,7 +582,7 @@ namespace FishNet.Managing.Scened
             };
 
             foreach (SceneLookupData lookupData in sceneLookupData)
-                _pendingClientSceneLoads.AddClientToScene(connection, lookupData.RawHandle);
+                _pendingClientSceneLoads.AddClientToScene(connection, lookupData.Handle);
 
             connection.Broadcast(msg, requireAuthenticated: true);
         }
@@ -636,7 +641,7 @@ namespace FishNet.Managing.Scened
                 /* True if SceneConnections has no more connections
                  * in its scene, as well if the scene checked is in
                  * has no other clients pending load confirmation. */
-                bool isSceneNowEmpty = removed && hs.Count == 0 && !_pendingClientSceneLoads.HasSceneAnyPendingLoads(UnityCompatibility.GetSceneHandleRaw(scene));
+                bool isSceneNowEmpty = removed && hs.Count == 0 && !_pendingClientSceneLoads.HasSceneAnyPendingLoads(scene.GetRawHandle());
 
                 //True if not a global scene and not in scenes to be manually unloaded.
                 bool notGlobalAndNotManualUnload = !IsGlobalScene(scene) && !_manualUnloadScenes.Contains(scene);
@@ -692,9 +697,9 @@ namespace FishNet.Managing.Scened
                 foreach (SceneLookupData item in msg.SceneLookupDatas)
                 {
                     //Make sure the sceneId is pending.
-                    if (!_pendingClientSceneLoads.RemoveClientFromScene(conn, item.RawHandle, out _))
+                    if (!_pendingClientSceneLoads.RemoveClientFromScene(conn, item.Handle, out _))
                     {
-                        KickClient($"Client {conn.ToString()} sent a scene load response for handle [{item.RawHandle}], but client was not sent a load for this handle.");
+                        KickClient($"Client {conn.ToString()} sent a scene load response for handle [{item.Handle}], but client was not sent a load for this handle.");
                         break;
                     }
 
@@ -1035,7 +1040,7 @@ namespace FishNet.Managing.Scened
                 else if (asServer && data.ScopeType == SceneScopeType.Global)
                 {
                     _globalSceneLoadData = sceneLoadData;
-                    string[] names = sceneLoadData.SceneLookupDatas.GetNames();
+                    string[] names = sceneLoadData.SceneLookupDatas.GetFulLNamesOnly();
                     // Add to server global scenes which are currently loading.
                     foreach (string item in names)
                         _serverGlobalScenesLoading.Add(item);
@@ -1059,7 +1064,7 @@ namespace FishNet.Managing.Scened
                 /* Scene queue data scenes.
                  * All scenes in the scene queue data whether they will be loaded or not. */
                 List<string> requestedLoadSceneNames = new();
-                List<ulong> requestedLoadSceneHandles = new();
+                List<SceneHandle> requestedLoadSceneHandles = new();
 
                 /* Make a null filled array. This will be populated
                  * using loaded scenes, or already loaded (eg cannot be loaded) scenes. */
@@ -1082,7 +1087,7 @@ namespace FishNet.Managing.Scened
                     {
                         requestedLoadSceneNames.Add(s.name);
                         if (byHandle)
-                            requestedLoadSceneHandles.Add(UnityCompatibility.GetSceneHandleRaw(s));
+                            requestedLoadSceneHandles.Add(s.GetRawHandle());
                     }
 
                     if (CanLoadScene(data, lookupData))
@@ -1125,7 +1130,7 @@ namespace FishNet.Managing.Scened
                 }
 
                 // Connection scenes handles prior to ConnectionScenes being modified.
-                List<ulong> connectionScenesHandlesCached = new();
+                List<SceneHandle> connectionScenesHandlesCached = new();
                 // If replacing scenes.
                 if (replaceScenes != ReplaceOption.None)
                 {
@@ -1138,7 +1143,7 @@ namespace FishNet.Managing.Scened
                     {
                         Scene[] sceneConnectionsKeys = SceneConnections.Keys.ToArray();
                         for (int i = 0; i < sceneConnectionsKeys.Length; i++)
-                            connectionScenesHandlesCached.Add(UnityCompatibility.GetSceneHandleRaw(sceneConnectionsKeys[i]));
+                            connectionScenesHandlesCached.Add(sceneConnectionsKeys[i].GetRawHandle());
 
                         // If global then remove all connections from all scenes.
                         if (data.ScopeType == SceneScopeType.Global)
@@ -1156,7 +1161,7 @@ namespace FishNet.Managing.Scened
                     else
                     {
                         foreach (Scene s in NetworkManager.ClientManager.Connection.Scenes)
-                            connectionScenesHandlesCached.Add(UnityCompatibility.GetSceneHandleRaw(s));
+                            connectionScenesHandlesCached.Add(s.GetRawHandle());
                     }
                 }
 
@@ -1182,7 +1187,7 @@ namespace FishNet.Managing.Scened
                         if (requestedLoadSceneNames.Contains(s.name))
                             continue;
                         // Same as above but using handles.
-                        if (requestedLoadSceneHandles.Contains(UnityCompatibility.GetSceneHandleRaw(s)))
+                        if (requestedLoadSceneHandles.Contains(s.GetRawHandle()))
                             continue;
                         /* Cannot unload global scenes. If
                          * replace scenes was used for a global
@@ -1194,7 +1199,7 @@ namespace FishNet.Managing.Scened
                         if (_manualUnloadScenes.Contains(s))
                             continue;
 
-                        bool inScenesCache = connectionScenesHandlesCached.Contains(UnityCompatibility.GetSceneHandleRaw(s));
+                        bool inScenesCache = connectionScenesHandlesCached.Contains(s.GetRawHandle());
                         HashSet<NetworkConnection> conns;
                         bool inScenesCurrent = SceneConnections.ContainsKey(s);
                         // If was in scenes previously but isnt now then no connections reside in the scene.
@@ -1277,7 +1282,7 @@ namespace FishNet.Managing.Scened
                      * 1f / 2f is 0.5f. */
                     float maximumIndexWorth = 1f / (float)loadableScenes.Count;
 
-                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].Name, loadSceneParameters);
+                    _sceneProcessor.BeginLoadAsync(loadableScenes[i].FullName, loadSceneParameters);
                     while (!_sceneProcessor.IsPercentComplete())
                     {
                         float percent = _sceneProcessor.GetPercentComplete();
@@ -1329,7 +1334,7 @@ namespace FishNet.Managing.Scened
                         /* If the first lookup data contains a handle and the scene
                          * is found for that handle then use that as the moved to scene.
                          * Nobs always move to the first specified scene. */
-                        if (sceneLoadData.SceneLookupDatas[0].RawHandle != 0 && !string.IsNullOrEmpty(firstScene.name))
+                        if (sceneLoadData.SceneLookupDatas[0].Handle != 0 && !string.IsNullOrEmpty(firstScene.name))
                         {
                             firstValidScene = firstScene;
                         }
@@ -1347,7 +1352,7 @@ namespace FishNet.Managing.Scened
                             /* Shouldn't be possible since the scene will always exist either by
                              * just being loaded or already loaded. */
                             if (string.IsNullOrEmpty(lastSameSceneName.name))
-                                NetworkManager.LogError($"Scene {sceneLoadData.SceneLookupDatas[0].Name} could not be found in loaded scenes.");
+                                NetworkManager.LogError($"Scene {sceneLoadData.SceneLookupDatas[0].FullName} could not be found in loaded scenes.");
                             else
                                 firstValidScene = lastSameSceneName;
                         }
@@ -1504,7 +1509,7 @@ namespace FishNet.Managing.Scened
                     {
                         SceneLookupData[] slds = msg.QueueData.SceneLoadData.SceneLookupDatas;
                         foreach (SceneLookupData sld in slds)
-                            AddPendingLoad(lConns, sld.RawHandle);
+                            AddPendingLoad(lConns, sld.Handle);
                     }
                 }
                 /* If running as client then send a message
@@ -2246,28 +2251,26 @@ namespace FishNet.Managing.Scened
         /// </summary>
         /// <param name = "sceneHandle"></param>
         /// <returns></returns>
-        public static Scene GetScene(int sceneHandle)
-        {
-            return GetScene(unchecked((uint)sceneHandle));
-        }
-
-        /// <summary>
-        /// Returns a scene by raw handle.
-        /// </summary>
-        /// <param name = "sceneHandle"></param>
-        /// <returns></returns>
-        public static Scene GetScene(ulong sceneHandle)
+        public static Scene GetScene(SceneHandle sceneHandle)
         {
             int count = UnitySceneManager.sceneCount;
             for (int i = 0; i < count; i++)
             {
                 Scene s = UnitySceneManager.GetSceneAt(i);
-                if (UnityCompatibility.GetSceneHandleRaw(s) == sceneHandle)
+                if (s.GetRawHandle() == sceneHandle)
                     return s;
             }
 
             return new();
         }
+#if UNITY_6000_5_OR_NEWER
+        /// <summary>
+        /// Returns a scene by legacy 32-bit handle.
+        /// </summary>
+        /// <param name = "sceneHandle"></param>
+        /// <returns></returns>
+        public static Scene GetScene(int sceneHandle) => GetScene(FishNet.Utility.Extension.Scenes.ToRawHandle(sceneHandle));
+#endif
         #endregion
 
         /// <summary>
@@ -2328,7 +2331,7 @@ namespace FishNet.Managing.Scened
             int startCount = newGlobalScenes.Count;
             // Remove scenes.
             for (int i = 0; i < datas.Length; i++)
-                newGlobalScenes.Remove(datas[i].Name);
+                newGlobalScenes.Remove(datas[i].FullName);
 
             // If any were removed remake globalscenes.
             if (startCount != newGlobalScenes.Count)
@@ -2365,7 +2368,7 @@ namespace FishNet.Managing.Scened
             {
                 Scene s = scenes[i];
 
-                if (SceneConnections.TryGetValueIL2CPP(s, out _) || _pendingClientSceneLoads.HasSceneAnyPendingLoads(UnityCompatibility.GetSceneHandleRaw(s)))
+                if (SceneConnections.TryGetValueIL2CPP(s, out _) || _pendingClientSceneLoads.HasSceneAnyPendingLoads(s.GetRawHandle()))
                 {
                     scenes.RemoveAt(i);
                     i--;
@@ -2376,7 +2379,7 @@ namespace FishNet.Managing.Scened
         /// <summary>
         /// Adds a pending load for a connection.
         /// </summary>
-        private void AddPendingLoad(NetworkConnection[] conns, ulong sceneHandle)
+        private void AddPendingLoad(NetworkConnection[] conns, SceneHandle sceneHandle)
         {
             foreach (NetworkConnection c in conns)
             {

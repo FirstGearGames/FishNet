@@ -18,7 +18,6 @@ namespace FishNet.CodeGenerating.Processing
             bool modified = false;
             List<MethodDefinition> methods = typeDef.Methods.ToList();
 
-
             foreach (MethodDefinition md in methods)
             {
                 // Has RPC attribute, doesn't quality for a quality of life attribute.
@@ -153,11 +152,10 @@ namespace FishNet.CodeGenerating.Processing
 
             bool StripMethod(MethodDefinition md)
             {
-
                 // Fall through.
                 return false;
             }
         }
 
-    }
+        }
 }

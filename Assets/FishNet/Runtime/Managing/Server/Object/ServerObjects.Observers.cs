@@ -93,7 +93,7 @@ namespace FishNet.Managing.Server
             CollectionCaches<NetworkConnection>.Store(connCache);
             CollectionCaches<NetworkObject>.Store(nobCache);
         }
-        
+
         /// <summary>
         /// Indicates that a networkObserver component should be updated regularly. This is done automatically.
         /// </summary>
@@ -105,7 +105,7 @@ namespace FishNet.Managing.Server
             else
                 _timedNetworkObservers.Add(networkObject);
         }
-        
+
         /// <summary>
         /// Indicates that a networkObserver component no longer needs to be updated regularly. This is done automatically.
         /// </summary>
@@ -459,6 +459,7 @@ namespace FishNet.Managing.Server
 
             // If observer state changed then write changes.
             ObserverStateChange osc = nob.RebuildObservers(conn, timedOnly);
+
             if (osc == ObserverStateChange.Added)
             {
                 WriteSpawn(nob, _writer, conn);
@@ -478,9 +479,21 @@ namespace FishNet.Managing.Server
              * This is to ensure runtime children have visibility updated
              * in relation to parent.
              *
+             * This has to be done recursively to support children with
+             * nested NetworkObjects.
+             *
              * If here there is change. */
             foreach (NetworkBehaviour item in nob.RuntimeChildNetworkBehaviours)
                 RebuildObservers(item.NetworkObject, conn, addedNobs, timedOnly);
+
+            List<NetworkObject> nestedNetworkObjects = nob.GetNetworkObjects(GetNetworkObjectOption.AllNested);
+            if (nestedNetworkObjects != null)
+            {
+                foreach (NetworkObject nestedNetworkObject in nestedNetworkObjects)
+                    RebuildObservers(nestedNetworkObject, conn, addedNobs, timedOnly);
+
+                CollectionCaches<NetworkObject>.Store(nestedNetworkObjects);
+            }
         }
     }
 }

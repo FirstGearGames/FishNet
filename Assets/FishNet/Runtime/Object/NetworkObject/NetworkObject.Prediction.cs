@@ -34,7 +34,7 @@ namespace FishNet.Object
         /// <summary>
         /// How local reconciles are applied when using level of detail.
         /// </summary>
-        internal enum LocalReconcileLODCalculationType 
+        internal enum LocalReconcileLODCalculationType
         {
             /// <summary>
             /// Local reconciles will only be applied on very near objects.
@@ -63,58 +63,11 @@ namespace FishNet.Object
             /// Only reset the transform.
             /// </summary>
             TransformOnly = 1,
-            /* Velocities support will be available next release.
-             * To support velocities as well PreReconcilingTransformProperties must
-             * also store each rigidbody associated with the transform. This should not
-             * be too difficult given we already check for a rb to exist before adding
-             * the transform.
-             *
-             * When adding velocities support only add velocity data if feature
-             * it set to reset velocities; same applies when comparing and resetting.
-             * */
             /// <summary>
-            /// Reset the transform and rigidbody velocities.
+            /// Reset the transform and the rigidbody velocities and sleep state.
             /// </summary>
-            /// <remarks>This setting is included even though it is not yet functional so that it becomes effective immediately on availability should it be the selected option.</remarks>
+            /// <remarks>Rigidbodies for the reset are read from the object's <see cref = "RigidbodyPauser"/>.</remarks>
             TransformAndVelocities = 2
-        }
-
-        /// <summary>
-        /// Properties of a Transform and properties associated with it.
-        /// </summary>
-        internal class PreReconcilingTransformProperties : IResettable
-        {
-            /// <summary>
-            /// NetworkBehaviours that are predicted on the transform.
-            /// </summary>
-            public readonly List<NetworkBehaviour> NetworkBehaviours = new();
-            /// <summary>
-            /// Transform on the first added NetworkBehaviour.
-            /// </summary>
-            public Transform Transform { get; private set; }
-            /// <summary>
-            /// Properties of the transform during PreReconcile.
-            /// </summary>
-            public TransformProperties Properties;
-
-            // ReSharper disable once EmptyConstructor
-            public PreReconcilingTransformProperties() { }
-
-            public void AddNetworkBehaviour(NetworkBehaviour networkBehaviour)
-            {
-                NetworkBehaviours.Add(networkBehaviour);
-
-                if (Transform == null)
-                    Transform = networkBehaviour.transform;
-            }
-
-            public void ResetState()
-            {
-                NetworkBehaviours.Clear();
-                Transform = null;
-            }
-
-            public void InitializeState() { }
         }
         #endregion
 
@@ -262,13 +215,14 @@ namespace FishNet.Object
         /// </summary>
         private HashSet<NetworkBehaviour> _predictionBehaviours;
         /// <summary>
-        /// Properties of a transform before reconcile when the transform may be affected by a rigidbody.
+        /// Snapshot of the rigidbodies' transform and simulation state captured on the most recent remote reconcile.
+        /// A local reconcile with an insignificant change resets to it. Null unless the object uses 3D rigidbody prediction.
         /// </summary>
-        private Dictionary<Transform, PreReconcilingTransformProperties> _rigidbodyTransformsPreReconcileProperties;
+        private List<RigidbodyPauser.RigidbodyData> _remoteRigidbodySnapshot;
         /// <summary>
-        /// Values which were updated within <see cref="_rigidbodyTransformsPreReconcileProperties"/> during preReconcile.
+        /// 2D equivalent of <see cref="_remoteRigidbodySnapshot"/>. Null unless the object uses 2D rigidbody prediction.
         /// </summary>
-        private List<PreReconcilingTransformProperties> _updatedPreReconcilingTransformProperties;
+        private List<RigidbodyPauser.Rigidbody2DData> _remoteRigidbody2dSnapshot;
         #endregion
 
         #region Private Profiler Markers
@@ -303,10 +257,7 @@ namespace FishNet.Object
             if (!_predictionBehavioursRegistered)
             {
                 foreach (NetworkBehaviour behaviour in NetworkBehaviours)
-                {
                     TryRegisterPredictionBehaviour(behaviour);
-                    RegisterPredictionRigidbodyTransform(behaviour);
-                }
 
                 _predictionBehavioursRegistered = true;
             }
@@ -375,6 +326,12 @@ namespace FishNet.Object
                 _rigidbodyPauser = ResettableObjectCaches<RigidbodyPauser>.Retrieve();
                 RigidbodyType rbType = _predictionType == PredictionType.Rigidbody ? RigidbodyType.Rigidbody : RigidbodyType.Rigidbody2D;
                 _rigidbodyPauser.UpdateRigidbodies(transform, rbType, getInChildren: true);
+
+                //Rent the remote snapshot list matching the rigidbody type.
+                if (_predictionType == PredictionType.Rigidbody)
+                    _remoteRigidbodySnapshot = CollectionCaches<RigidbodyPauser.RigidbodyData>.RetrieveList();
+                else
+                    _remoteRigidbody2dSnapshot = CollectionCaches<RigidbodyPauser.Rigidbody2DData>.RetrieveList();
             }
 
             if (_graphicalObject == null)
@@ -414,6 +371,18 @@ namespace FishNet.Object
                 ResettableObjectCaches<TransformTickSmoother>.Store(PredictionSmoother);
                 PredictionSmoother = null;
                 ResettableObjectCaches<RigidbodyPauser>.StoreAndDefault(ref _rigidbodyPauser);
+
+                //The snapshot lists live and die with the pauser; return them here only.
+                if (_remoteRigidbodySnapshot != null)
+                {
+                    CollectionCaches<RigidbodyPauser.RigidbodyData>.Store(_remoteRigidbodySnapshot);
+                    _remoteRigidbodySnapshot = null;
+                }
+                if (_remoteRigidbody2dSnapshot != null)
+                {
+                    CollectionCaches<RigidbodyPauser.Rigidbody2DData>.Store(_remoteRigidbody2dSnapshot);
+                    _remoteRigidbody2dSnapshot = null;
+                }
             }
         }
 
@@ -471,40 +440,6 @@ namespace FishNet.Object
         {
             using (_pm_OnPreReconcile.Auto())
             {
-                if (IsClientInitialized)
-                {
-                    /* Always call clear. It's cheap and will prevent possible issues
-                     * should users be toggling related settings during testing. */
-                    _updatedPreReconcilingTransformProperties.Clear();
-
-                    //Rigidbody corrections.
-                    if (_localReconcileCorrectionType != RigidbodyLocalReconcileCorrectionType.Disabled)
-                    {
-                        foreach (KeyValuePair<Transform, PreReconcilingTransformProperties> kvp in _rigidbodyTransformsPreReconcileProperties)
-                        {
-                            PreReconcilingTransformProperties tpc = kvp.Value;
-                            bool addedEntry = false;
-
-                            foreach (NetworkBehaviour nb in tpc.NetworkBehaviours)
-                            {
-                                //Only update transform data if reconciling using local data.
-                                if (nb.IsBehaviourReconciling && !nb.IsReconcileRemote)
-                                {
-                                    tpc.Properties.Update(kvp.Key);
-                                    _updatedPreReconcilingTransformProperties.Add(tpc);
-
-                                    addedEntry = true;
-                                    break;
-                                }
-                            }
-
-                            //Can exit after updating when any NetworkBehaviour is reconciling for the Transform.
-                            if (addedEntry)
-                                break;
-                        }
-                    }
-                }
-
                 if (PredictionSmoother != null)
                     PredictionSmoother.OnPreReconcile();
             }
@@ -537,47 +472,99 @@ namespace FishNet.Object
 
         private void PredictionManager_OnPostReconcile(uint clientReconcileTick, uint serverReconcileTick)
         {
-            foreach (NetworkBehaviour nbb in _predictionBehaviours)
-                nbb.IsReconcileRemote = false;
-
             using (_pm_OnPostReconcile.Auto())
             {
                 if (!IsClientInitialized)
                     return;
 
-                if (_localReconcileCorrectionType != RigidbodyLocalReconcileCorrectionType.Disabled)
+                /* Rigidbody correction. On a remote reconcile snapshot the server-authoritative rigidbody
+                 * state; on a local reconcile, when the object barely diverged from that snapshot, snap it
+                 * back to the snapshot. The snapshot lists are non-null only when using rigidbody prediction. */
+                if (_localReconcileCorrectionType != RigidbodyLocalReconcileCorrectionType.Disabled && _rigidbodyPauser != null)
                 {
-                    /* Check changes in transform for every transform
-                     * which utilizes prediction and a rigidbody, and
-                     * may have changed since preReconcile. */
-                    foreach (PreReconcilingTransformProperties prtp in _updatedPreReconcilingTransformProperties)
+                    bool canTakeSnapshot = LIsReconciling(remote: true);
+                    if (!canTakeSnapshot)
                     {
-                        /* If transform has not changed enough to matter
-                         * then reset values as they were before the reconcile. */
-                        if (!LHasTransformChanged())
-                            prtp.Properties.SetWorldProperties(prtp.Transform);
+                        if (_remoteRigidbodySnapshot != null && _remoteRigidbodySnapshot.Count == 0 || _remoteRigidbody2dSnapshot != null && _remoteRigidbody2dSnapshot.Count == 0)
+                            canTakeSnapshot = true;
+                    }
 
-                        bool LHasTransformChanged()
+                    if (canTakeSnapshot)
+                    {
+                        if (_remoteRigidbodySnapshot != null)
+                            _rigidbodyPauser.GetSnapshot(_remoteRigidbodySnapshot);
+                        else if (_remoteRigidbody2dSnapshot != null)
+                            _rigidbodyPauser.GetSnapshot(_remoteRigidbody2dSnapshot);
+                    }
+                    //A local reconcile: snap back to the last remote snapshot when the change is minor.
+                    else if (LIsReconciling(remote: false))
+                    {
+                        if (_remoteRigidbodySnapshot != null && _remoteRigidbodySnapshot.Count > 0 && LSnapshotIsMinorChange(_remoteRigidbodySnapshot))
+                            _rigidbodyPauser.ApplySnapshot(_remoteRigidbodySnapshot, restoreSimulationState: false);
+                        else if (_remoteRigidbody2dSnapshot != null && _remoteRigidbody2dSnapshot.Count > 0 && LSnapshot2dIsMinorChange(_remoteRigidbody2dSnapshot))
+                            _rigidbodyPauser.ApplySnapshot(_remoteRigidbody2dSnapshot, restoreSimulationState: false);
+                    }
+
+                    //Returns if any prediction behaviour reconciled with the specified data source.
+                    bool LIsReconciling(bool remote)
+                    {
+                        foreach (NetworkBehaviour nb in _predictionBehaviours)
                         {
-                            const float v3Distance = 0.000025f;
-                            const float angleDistance = 0.2f;
-
-                            bool hasChanged = (transform.position - prtp.Properties.Position).sqrMagnitude >= v3Distance;
-                            if (!hasChanged)
-                                hasChanged = transform.rotation.Angle(prtp.Properties.Rotation, precise: true) >= angleDistance;
-
-                            return hasChanged;
+                            if (nb.IsBehaviourReconciling && nb.IsReconcileRemote == remote)
+                                return true;
                         }
+
+                        return false;
+                    }
+
+                    //Returns true when every rigidbody is still within threshold of its snapshot.
+                    bool LSnapshotIsMinorChange(List<RigidbodyPauser.RigidbodyData> snapshot)
+                    {
+                        const float sqrDistance = 0.001f;
+                        const float angleDistance = 5f;
+
+                        for (int i = 0; i < snapshot.Count; i++)
+                        {
+                            Rigidbody rb = snapshot[i].Rigidbody;
+                            if (rb == null)
+                                continue;
+                            if ((rb.transform.position - snapshot[i].Position).sqrMagnitude > sqrDistance)
+                                return false;
+                            if (rb.transform.rotation.Angle(snapshot[i].Rotation, precise: true) > angleDistance)
+                                return false;
+                        }
+
+                        return true;
+                    }
+
+                    bool LSnapshot2dIsMinorChange(List<RigidbodyPauser.Rigidbody2DData> snapshot)
+                    {
+                        const float sqrDistance = 0.0001f;
+                        const float angleDistance = 4f;
+
+                        for (int i = 0; i < snapshot.Count; i++)
+                        {
+                            Rigidbody2D rb = snapshot[i].Rigidbody2d;
+                            if (rb == null)
+                                continue;
+                            if ((rb.position - snapshot[i].Position).sqrMagnitude > sqrDistance)
+                                return false;
+                            if (Mathf.Abs(Mathf.DeltaAngle(rb.rotation, snapshot[i].Rotation)) > angleDistance)
+                                return false;
+                        }
+
+                        return true;
                     }
                 }
 
-                //This is cleared before the reconcile as well, but no point to keep behaviours in memory if not needed.
-                /* Always call clear. It's cheap and will prevent possible issues
-                 * should users be toggling related settings during testing. */
-                _updatedPreReconcilingTransformProperties.Clear();
-
+                /* IsReconcileRemote and Reconcile_Client_End (which unsets IsBehaviourReconciling) are the
+                 * flags the corrections above read to tell a remote reconcile from a local one, so they
+                 * are cleared only after those corrections, not before. */
                 foreach (NetworkBehaviour networkBehaviour in _predictionBehaviours)
+                {
+                    networkBehaviour.IsReconcileRemote = false;
                     networkBehaviour.Reconcile_Client_End();
+                }
 
                 /* Unpause rigidbody pauser. It's okay to do that here rather
                  * than per NB, where the pausing occurs, because once here
@@ -616,31 +603,6 @@ namespace FishNet.Object
 
             _predictionBehaviours.Add(nb);
             return true;
-        }
-
-        /// <summary>
-        /// Registers a NetworkBehaviour's Transform if the behaviour uses prediction and has a rigidbody on it.
-        /// </summary>
-        /// <returns>True if behavior was just registered, or already registered.</returns>
-        private void RegisterPredictionRigidbodyTransform(NetworkBehaviour nb)
-        {
-            if (!nb.UsesPrediction)
-                return;
-
-            Transform t = nb.transform;
-
-            /* Check if the transform is already registered. This will prevent
-             * checking for rigidbodies multiple times on the same transform if more
-             * than one prediction script exist on the same transform. */
-            if (!_rigidbodyTransformsPreReconcileProperties.TryGetValueIL2CPP(t, out PreReconcilingTransformProperties prtp))
-            {
-                prtp = ResettableObjectCaches<PreReconcilingTransformProperties>.Retrieve();
-                _rigidbodyTransformsPreReconcileProperties[t] = prtp;
-            }
-
-            //Only transforms with rigidbodies need to be registered.
-            if (t.TryGetComponent(out Rigidbody _) || t.TryGetComponent(out Rigidbody2D _))
-                prtp.AddNetworkBehaviour(nb);
         }
 
         /// <summary>

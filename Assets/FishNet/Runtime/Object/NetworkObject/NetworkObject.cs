@@ -381,8 +381,6 @@ namespace FishNet.Object
         protected virtual void Awake()
         {
             _predictionBehaviours = CollectionCaches<NetworkBehaviour>.RetrieveHashSet();
-            _rigidbodyTransformsPreReconcileProperties = ResettableT2CollectionCaches<Transform, PreReconcilingTransformProperties>.RetrieveDictionary();
-            _updatedPreReconcilingTransformProperties = ResettableCollectionCaches<PreReconcilingTransformProperties>.RetrieveList();
 
             _isStatic = gameObject.isStatic;
 
@@ -394,6 +392,9 @@ namespace FishNet.Object
                 NetworkManager.LogError($"NetworkObject {this.ToString()} is expected to be initialized but was not. Exit play-mode, use the Fish-Networking menu > Utility > Reserialize NetworkObjects > and Reserialize Prefabs. Choose to Reserialize Scenes as well if this is a scene object.");
                 return;
             }
+
+            if (gameObject.scene.buildIndex == -1)
+                SceneId = 0;
 
             SetChildDespawnedState();
         }
@@ -422,8 +423,6 @@ namespace FishNet.Object
         private void OnDestroy()
         {
             CollectionCaches<NetworkBehaviour>.Store(_predictionBehaviours);
-            ResettableT2CollectionCaches<Transform, PreReconcilingTransformProperties>.Store(_rigidbodyTransformsPreReconcileProperties);
-            CollectionCaches<PreReconcilingTransformProperties>.Store(_updatedPreReconcilingTransformProperties);
             CollectionCaches<NetworkConnection, uint>.StoreAndDefault(ref ObserverLevelOfDetailDivisors);
 
             SetIsDestroying(DespawnType.Destroy);

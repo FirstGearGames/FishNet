@@ -36,7 +36,6 @@ namespace FishNet.Transporting.Yak.Server
         private ClientSocket _client;
         #endregion
 
-
         /// <summary>
         /// Starts the server.
         /// </summary>
@@ -44,7 +43,6 @@ namespace FishNet.Transporting.Yak.Server
         {
             return true;
         }
-
 
         /// <summary>
         /// Stops the local socket.
@@ -63,10 +61,7 @@ namespace FishNet.Transporting.Yak.Server
             return true;
         }
 
-
-
         #region Local client.
-
         #endregion
     }
 }

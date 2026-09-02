@@ -155,13 +155,19 @@ namespace FishNet.Observing
                 foreach (ObserverCondition item in _observerConditions)
                 {
                     item.Deinitialize(destroyed);
-
-                    /* Conditions are replaced with instantiated copies during Initialize.
-                     * Destroy the runtime copies when this observer is being destroyed.
-                     * Do not rely on InstanceID sign because InstanceID is obsolete in Unity 6.5+.
-                     */
+                    /* Conditions in this list are always Instantiate() clones once
+                     * _conditionsInitializedPreviously is set (see Initialize), so any item
+                     * here is a runtime copy and never a source asset.
+                     * Pre-6.5 the negative-InstanceID check confirms the object is a clone;
+                     * GetInstanceID() is obsolete on Unity 6000.5+, where the clone invariant
+                     * alone gates the destroy. */
+#if UNITY_6000_5_OR_NEWER
                     if (destroyed)
                         Destroy(item);
+#else
+                    if (destroyed && item.GetInstanceID() < 0)
+                        Destroy(item);
+#endif
                 }
 
                 // Clean up lists.
@@ -311,10 +317,10 @@ namespace FishNet.Observing
             if (!_initialized)
             {
                 string goName = gameObject == null ? "Empty" : gameObject.name;
-
+                
                 NetworkManager nm = _networkObject == null ? null : _networkObject.NetworkManager;
                 nm.LogError($"{GetType().Name} is not initialized on NetworkObject [{goName}]. RebuildObservers should not be called. If you are able to reproduce this error consistently please report this issue.");
-
+                
                 return ObserverStateChange.Unchanged;
             }
 

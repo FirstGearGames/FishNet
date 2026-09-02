@@ -295,23 +295,37 @@ namespace FishNet.Managing.Transporting
             if (!_networkManager.ServerManager.IsAnyServerStarted())
             {
                 _dirtyToClients.Clear();
+                _disconnectingClients.Clear();
+
                 return;
             }
 
             // Only one server is stopped, remove connections for that server.
             int index = obj.TransportIndex;
 
-            List<NetworkConnection> clientsForIndex = CollectionCaches<NetworkConnection>.RetrieveList();
-            foreach (NetworkConnection conn in _dirtyToClients)
+            //Remove any disconnecting clients for the stopped transport.
+            for (int i = 0; i < _disconnectingClients.Count; i++)
             {
-                if (conn.TransportIndex == index)
-                    clientsForIndex.Add(conn);
+                DisconnectingClient dc = _disconnectingClients[i];
+
+                if (dc.Connection == null || dc.Connection.TransportIndex == index)
+                {
+                    _disconnectingClients.RemoveAt(i);
+                    i--;
+                }
             }
 
-            foreach (NetworkConnection conn in clientsForIndex)
-                _dirtyToClients.Remove(conn);
+            //Remove any dirty connection indicators for the transport.
+            for (int i = 0; i < _dirtyToClients.Count; i++)
+            {
+                NetworkConnection connection = _dirtyToClients[i];
 
-            CollectionCaches<NetworkConnection>.Store(clientsForIndex);
+                if (connection == null || connection.TransportIndex == index)
+                {
+                    _dirtyToClients.RemoveAt(i);
+                    i--;
+                }
+            }
         }
 
         /// <summary>
@@ -407,7 +421,7 @@ namespace FishNet.Managing.Transporting
         public int GetLowestMTU(byte channel)
         {
             SetLowestMTUs();
-            
+
             return GetMTUWithReserve(_lowestMtus[channel]);
         }
 
@@ -610,7 +624,7 @@ namespace FishNet.Managing.Transporting
                 int chunkSize = Mathf.Min(segment.Count - startPosition, maximumSegmentLength);
                 ArraySegment<byte> splitSegment = new(segment.Array, segment.Offset + startPosition, chunkSize);
                 splitWriter.WriteArraySegment(splitSegment);
-                
+
                 // If connection is specified then it's going to a client.
                 if (conn != null)
                     conn.SendToClient(channelId, splitWriter.GetArraySegment());

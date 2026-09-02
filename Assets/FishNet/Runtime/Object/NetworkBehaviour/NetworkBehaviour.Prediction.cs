@@ -1427,7 +1427,6 @@ namespace FishNet.Object
                 replicatesHistory.RemoveRange(true, removeCount);
             }
 
-
             //Set on the networkObject that a reconcile can now occur.
             _networkObjectCache.IsObjectReconciling = true;
 

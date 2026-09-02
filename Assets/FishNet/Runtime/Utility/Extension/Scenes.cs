@@ -4,6 +4,11 @@ using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+#if UNITY_6000_5_OR_NEWER
+using SceneHandle = System.UInt64;
+#else
+using SceneHandle = System.Int32;
+#endif
 
 namespace FishNet.Utility.Extension
 {
@@ -85,6 +90,33 @@ namespace FishNet.Utility.Extension
                     return false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns the raw handle of a scene as a version-appropriate value.
+        /// Unity 6000.5 changed Scene.handle from an int to an EntityId struct exposing GetRawData(); earlier versions expose it directly as an int.
+        /// </summary>
+        /// <param name = "scene">Scene to return the handle of.</param>
+        public static SceneHandle GetRawHandle(this Scene scene)
+        {
+#if UNITY_6000_5_OR_NEWER
+            return scene.handle.GetRawData();
+#else
+            return scene.handle;
+#endif
+        }
+
+        /// <summary>
+        /// Converts a legacy 32-bit scene handle into a version-appropriate raw handle.
+        /// </summary>
+        /// <param name = "legacyHandle">Legacy 32-bit scene handle.</param>
+        public static SceneHandle ToRawHandle(int legacyHandle)
+        {
+#if UNITY_6000_5_OR_NEWER
+            return unchecked((uint)legacyHandle);
+#else
+            return legacyHandle;
+#endif
         }
     }
 }

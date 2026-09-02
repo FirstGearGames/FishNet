@@ -96,6 +96,33 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
+        /// Removes a client from the entered state, if present.
+        /// </summary>
+        /// <remarks>This may be used to force OnEnter to trigger again while previously ignored, such as if collisions were time restricted.</remarks>
+        public void RemoveEnteredCollider(Collider c)
+        {
+            List<uint> keysToRemove = CollectionCaches<uint>.RetrieveList();
+            
+            foreach (KeyValuePair<uint, HashSet<Collider>> kvp in _enteredColliders)
+            {
+                kvp.Value.Remove(c);
+                
+                if (kvp.Value.Count == 0)
+                    keysToRemove.Add(kvp.Key);
+            }
+            
+            foreach (uint tick in keysToRemove)
+            {
+                HashSet<Collider> colliders = _enteredColliders[tick];
+                CollectionCaches<Collider>.Store(colliders);
+
+                _enteredColliders.Remove(tick);
+            }
+
+            CollectionCaches<uint>.Store(keysToRemove);
+        }
+
+        /// <summary>
         /// Checks for any collider changes;
         /// </summary>
         protected override void CheckColliders(uint localTick)
@@ -138,6 +165,13 @@ namespace FishNet.Component.Prediction
                     if (hit == null || hit == col)
                         continue;
 
+                    /* An object may be hit through several of its own colliders; it should only be
+                     * reported once. The collider with the lowest instanceId represents the object,
+                     * a stable choice across ticks so a single object never causes duplicate
+                     * enter/exit callbacks. */
+                    // if (IsDuplicateObjectHit(hit, i, hits, col))
+                    //     continue;
+
                     current.Add(hit);
                 }
 
@@ -169,7 +203,7 @@ namespace FishNet.Component.Prediction
                     {
                         //Invoke OnEnter for every collider in current.
                         foreach (Collider c in current)
-                            OnEnter?.Invoke(c, localTick);
+                            InvokeOnEnter(c, localTick);
                     }
                     /* If the last collection is found then
                      * check to invoke Enter or Stay. */
@@ -180,7 +214,7 @@ namespace FishNet.Component.Prediction
                             if (lastEnteredColliders.Contains(c))
                                 OnStay?.Invoke(c, localTick);
                             else
-                                OnEnter?.Invoke(c, localTick);
+                                InvokeOnEnter(c, localTick);
                         }
                     }
                 }
@@ -207,13 +241,24 @@ namespace FishNet.Component.Prediction
                  * will never need to check them again. */
                 if (IsServerStarted)
                 {
-                    if (lastTick is not unsetLastTick && _enteredColliders.TryGetValueIL2CPP(localTick, out HashSet<Collider> lEnteredColliders))
+                    if (lastTick is not unsetLastTick && _enteredColliders.TryGetValueIL2CPP(lastTick, out HashSet<Collider> lEnteredColliders))
                     {
                         CollectionCaches<Collider>.Store(lEnteredColliders);
                         _enteredColliders.Remove(lastTick);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Invokes OnEnter, and OnStay if configured.
+        /// </summary>
+        private void InvokeOnEnter(Collider c, uint tick)
+        {
+            OnEnter?.Invoke(c, tick);
+
+            if (InvokeStayOnEnter)
+                OnStay?.Invoke(c, tick);
         }
 
         /// <summary>
@@ -248,6 +293,49 @@ namespace FishNet.Component.Prediction
             Vector3 additional = Vector3.one * AdditionalSize;
             halfExtents += additional;
             return gameObject.scene.GetPhysicsScene().OverlapBox(center, halfExtents, _hits, rotation, layerMask, QueryTriggerInteraction.UseGlobal);
+        }
+
+        /// <summary>
+        /// Returns true when another hit from the same check belongs to the same object as <paramref name = "hit"/> and represents that
+        /// object, meaning this hit is a duplicate and should be ignored. The collider with the lowest instanceId is the representative,
+        /// a stable choice across ticks so one object never registers through more than one of its colliders.
+        /// </summary>
+        /// <returns>True if this hit should be skipped as a duplicate of the same object.</returns>
+        private bool IsDuplicateObjectHit(Collider hit, int index, int hitCount, Collider self)
+        {
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (i == index)
+                    continue;
+
+                Collider other = _hits[i];
+                if (other == null || other == self || other == hit)
+                    continue;
+
+#if UNITY_6000_5_OR_NEWER
+                if (IsSameObject(hit, other) && other.GetEntityId() < hit.GetEntityId())
+#else
+                if (IsSameObject(hit, other) && other.GetInstanceID() < hit.GetInstanceID())
+#endif
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns whether two colliders belong to the same object, grouped by their attached rigidbody when either has one and
+        /// otherwise by their transform root.
+        /// </summary>
+        /// <returns>True if both colliders are on the same object.</returns>
+        private static bool IsSameObject(Collider a, Collider b)
+        {
+            Rigidbody aRigidbody = a.attachedRigidbody;
+            Rigidbody bRigidbody = b.attachedRigidbody;
+            if (aRigidbody != null || bRigidbody != null)
+                return aRigidbody == bRigidbody;
+
+            return a.transform.root == b.transform.root;
         }
 
         /// <summary>

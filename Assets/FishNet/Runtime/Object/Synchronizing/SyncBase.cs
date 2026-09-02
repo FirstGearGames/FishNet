@@ -418,7 +418,16 @@ namespace FishNet.Object.Synchronizing.Internal
         protected bool CanReset(bool asServer)
         {
             bool clientStarted = IsNetworkInitialized && NetworkManager.IsClientStarted;
-            return (asServer && !clientStarted) || (!asServer && NetworkBehaviour.IsDeinitializing);
+
+            if (asServer)
+                return !clientStarted;
+
+            // Skip client-side reset if the server's OnStopServer hasn't been called yet.
+            // The server-side Deinitialize will handle the reset after OnStopServer completes.
+            if (NetworkBehaviour.OnStartServerCalled)
+                return false;
+
+            return NetworkBehaviour.IsDeinitializing;
         }
 
         /// <summary>

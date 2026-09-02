@@ -619,8 +619,9 @@ namespace LiteNetLib
             if (!IsRunning)
                 return false;
 
-            NetPacket packet;
             int packetSize;
+            NetPacket packet;
+            
             if (_extraPacketLayer != null)
             {
                 int headerSize = NetPacket.GetHeaderSize(PacketProperty.Broadcast);

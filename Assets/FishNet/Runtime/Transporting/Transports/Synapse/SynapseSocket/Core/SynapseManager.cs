@@ -160,7 +160,7 @@ namespace SynapseSocket.Core
                 throw new ArgumentOutOfRangeException(nameof(config), "SegmentAssemblyTimeoutMilliseconds must not exceed 300000 (5 minutes).");
 
             ISignatureProvider signatureProvider = Config.Security.SignatureProvider ?? new DefaultSignatureProvider();
-            Security = new SecurityProvider(signatureProvider, Config.Security.MaximumPacketsPerSecond, Config.Security.MaximumBytesPerSecond, Config.MaximumPacketSize);
+            Security = new(signatureProvider, Config.Security.MaximumPacketsPerSecond, Config.Security.MaximumBytesPerSecond, Config.MaximumPacketSize);
             Connections = new();
             Telemetry = new(Config.EnableTelemetry);
             _latencySimulator = new(Config.LatencySimulator);

@@ -1301,12 +1301,16 @@ namespace FishNet.Serializing
         /// <summary>
         /// ZigZag decode an integer. Move the sign bit back to the left.
         /// </summary>
-        public ulong ZigZagDecode(ulong value)
+        /// <remarks>
+        /// Uses the canonical branchless form (value >> 1) ^ -(value &amp; 1) instead of the
+        /// sign-bit-shift + branch pattern.  The branch form is miscompiled by the IL2CPP
+        /// Windows StandaloneWindows64 backend: the sign-bit shift evaluates incorrectly
+        /// so the branch always wins, decoding every positive varint as negative (e.g. 10 → -6).
+        /// The canonical form produces a correct, branch-free result on all backends.
+        /// </remarks>
+        public long ZigZagDecode(ulong value)
         {
-            ulong sign = value << 63;
-            if (sign > 0)
-                return ~(value >> 1) | sign;
-            return value >> 1;
+            return (long)(value >> 1) ^ -((long)value & 1);
         }
 
         /// <summary>

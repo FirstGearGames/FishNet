@@ -14,7 +14,7 @@ namespace FishNet.Editing.NewNetworkBehaviourScript
     {
         private static CreateNewNetworkBehaviourConfigurations _settings;
         private static GUIContent _folderIcon;
-        private static readonly Regex SlashRegex = new(@"[\\// ]");
+        private static readonly Regex SlashRegex = new(@"[\\//]");
 
         [UnitySettingsProvider]
         private static UnitySettingsProvider Create()

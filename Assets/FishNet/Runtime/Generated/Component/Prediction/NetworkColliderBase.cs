@@ -37,6 +37,12 @@ namespace FishNet.Component.Prediction
         [SerializeField]
         protected LayerMask Layers = (LayerMask)0;
         /// <summary>
+        /// True to invoke OnStay when OnEnter fires.
+        /// </summary>
+        [Tooltip("True to invoke OnStay when OnEnter fires.")]
+        [SerializeField]
+        protected bool InvokeStayOnEnter;
+        /// <summary>
         /// True if colliders have been searched for at least once.
         /// We cannot check the null state on _colliders because Unity has a habit of initializing collections on it's own.
         /// </summary>

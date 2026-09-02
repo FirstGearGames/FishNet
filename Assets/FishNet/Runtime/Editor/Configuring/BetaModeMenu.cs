@@ -10,8 +10,26 @@ namespace FishNet.Editing.Beta
         private const string STABLE_RECURSIVE_DESPAWNS_DEFINE = "FISHNET_STABLE_RECURSIVE_DESPAWNS";
         private const string THREADED_TICKSMOOTHERS_DEFINE = "FISHNET_THREADED_TICKSMOOTHERS";
         private const string THREADED_COLLIDER_ROLLBACK_DEFINE = "FISHNET_THREADED_COLLIDER_ROLLBACK";
+        private const string ANIMATOR_CHANNEL_DEFINE = "FISHNET_ANIMATOR_CHANNEL";
         #endregion
 
+        
+        #region Channel Animator
+        #if FISHNET_ANIMATOR_CHANNEL
+        [MenuItem("Tools/Fish-Networking/Beta/Disable Animator Channel", false, -1102)]
+        private static void DisableAnimatorChannel() => SetAnimatorChannel(useStable: true);
+        #else
+        [MenuItem("Tools/Fish-Networking/Beta/Enable Animator Channel", false, -1102)]
+        private static void EnableAnimatorChannel() => SetAnimatorChannel(useStable: false);
+        #endif
+        private static void SetAnimatorChannel(bool useStable)
+        {
+            bool result = DeveloperMenu.RemoveOrAddDefine(ANIMATOR_CHANNEL_DEFINE, removeDefine: useStable);
+            if (result)
+                Debug.LogWarning($"Beta Animator Channel is now {GetBetaEnabledText(useStable)}.");
+        }
+        #endregion
+        
         #region Beta Recursive Despawns
         #if FISHNET_STABLE_RECURSIVE_DESPAWNS
         [MenuItem("Tools/Fish-Networking/Beta/Enable Recursive Despawns", false, -1101)]

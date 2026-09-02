@@ -3,11 +3,17 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
+using FishNet.Utility.Extension;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Jobs;
+#if UNITY_6000_5_OR_NEWER
+using SceneHandle = System.UInt64;
+#else
+using SceneHandle = System.Int32;
+#endif
 
 namespace FishNet.Component.ColliderRollback
 {
@@ -77,7 +83,7 @@ namespace FishNet.Component.ColliderRollback
 		/// <summary>
 		/// Per-colliderRollbacks scene handle to allow filtering in jobs without masks.
 		/// </summary>
-		private NativeList<int> _colliderRollbacksSceneHandles;
+		private NativeList<SceneHandle> _colliderRollbacksSceneHandles;
 		/// <summary>
 		/// Per-colliderRollbacks number of available history frames for lerp (clamped to MaxSnapshots).
 		/// </summary>
@@ -111,7 +117,7 @@ namespace FishNet.Component.ColliderRollback
 			if (!_colliderRollbacksSnapshots.IsCreated) _colliderRollbacksSnapshots = new NativeList<ColliderSnapshot>(64, Allocator.Persistent);
 			if (!_rollingCollidersSnapshots.IsCreated) _rollingCollidersSnapshots = new NativeList<ColliderSnapshot>(64, Allocator.Persistent);
 			if (!_colliderRollbacksRolledBackMask.IsCreated) _colliderRollbacksRolledBackMask = new NativeList<byte>(64, Allocator.Persistent);
-			if (!_colliderRollbacksSceneHandles.IsCreated) _colliderRollbacksSceneHandles = new NativeList<int>(64, Allocator.Persistent);
+			if (!_colliderRollbacksSceneHandles.IsCreated) _colliderRollbacksSceneHandles = new NativeList<SceneHandle>(64, Allocator.Persistent);
 			if (!_colliderRollbacksLerpFrames.IsCreated) _colliderRollbacksLerpFrames = new NativeList<int>(64, Allocator.Persistent);
 			if (!_colliderRollbacksBoundingBoxData.IsCreated) _colliderRollbacksBoundingBoxData = new NativeList<RollbackManager.BoundingBoxData>(64, Allocator.Persistent);
 			if (!_rollingColliderToColliderRollbacks.IsCreated) _rollingColliderToColliderRollbacks = new NativeList<int>(64, Allocator.Persistent);
@@ -204,7 +210,7 @@ namespace FishNet.Component.ColliderRollback
 			_colliderRollbacksTAA.Add(colliderRollback.transform);
 			_colliderRollbacksSnapshots.ResizeUninitialized(newColliderRollbacksCount);
 			_colliderRollbacksRolledBackMask.Add(0);
-			_colliderRollbacksSceneHandles.Add(colliderRollback.gameObject.scene.handle);
+			_colliderRollbacksSceneHandles.Add(colliderRollback.gameObject.scene.GetRawHandle());
 			_colliderRollbacksLerpFrames.Add(0);
 			_colliderRollbacksBoundingBoxData.Add(colliderRollback.GetBoundingBoxData());
 
@@ -489,7 +495,7 @@ namespace FishNet.Component.ColliderRollback
 		/// <summary>
 		/// Run rollback for ALL colliderRollbacks in parallel (jobified).
 		/// </summary>
-		internal void Rollback(int sceneHandle, float time, RollbackPhysicsType rollbackPhysicsType)
+		internal void Rollback(SceneHandle sceneHandle, float time, RollbackPhysicsType rollbackPhysicsType)
 		{
 			if (!_ready || _rollingCollidersTAA.length == 0)
 				return;

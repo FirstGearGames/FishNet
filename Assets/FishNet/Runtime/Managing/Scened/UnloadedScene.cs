@@ -1,29 +1,28 @@
-﻿using FishNet.Utility;
+﻿using FishNet.Utility.Extension;
 using UnityEngine.SceneManagement;
+#if UNITY_6000_5_OR_NEWER
+using SceneHandle = System.UInt64;
+#else
+using SceneHandle = System.Int32;
+#endif
 
 namespace FishNet.Managing.Scened
 {
     public struct UnloadedScene
     {
         public readonly string Name;
-        public readonly ulong Handle;
+        public readonly SceneHandle Handle;
 
         public UnloadedScene(Scene s)
         {
             Name = s.name;
-            Handle = UnityCompatibility.GetSceneHandleRaw(s);
+            Handle = s.GetRawHandle();
         }
 
         public UnloadedScene(string name, int handle)
         {
             Name = name;
-            Handle = unchecked((uint)handle);
-        }
-
-        public UnloadedScene(string name, ulong handle)
-        {
-            Name = name;
-            Handle = handle;
+            Handle = Scenes.ToRawHandle(handle);
         }
 
         /// <summary>
@@ -37,7 +36,7 @@ namespace FishNet.Managing.Scened
             for (int i = 0; i < loadedScenes; i++)
             {
                 Scene s = UnityEngine.SceneManagement.SceneManager.GetSceneAt(i);
-                if (s.IsValid() && UnityCompatibility.GetSceneHandleRaw(s) == Handle)
+                if (s.IsValid() && s.GetRawHandle() == Handle)
                     return s;
             }
 

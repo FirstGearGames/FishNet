@@ -6,6 +6,11 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Jobs;
+#if UNITY_6000_5_OR_NEWER
+using SceneHandle = System.UInt64;
+#else
+using SceneHandle = System.Int32;
+#endif
 
 namespace FishNet.Component.ColliderRollback
 {
@@ -54,14 +59,14 @@ namespace FishNet.Component.ColliderRollback
         /// </summary>
         public struct RollbackRequest
         {
-	        public int sceneHandle;
+	        public SceneHandle sceneHandle;
 	        public float3 origin;
 	        public float3 direction;
 	        public float distance;
 	        public float time;
 	        public RollbackPhysicsType rollbackPhysicsType;
 
-	        public RollbackRequest(int sceneHandle, float3 origin, float3 direction, float distance, float time, RollbackPhysicsType rollbackPhysicsType)
+	        public RollbackRequest(SceneHandle sceneHandle, float3 origin, float3 direction, float distance, float time, RollbackPhysicsType rollbackPhysicsType)
 	        {
 		        this.sceneHandle = sceneHandle;
 		        this.origin = origin;
@@ -72,6 +77,6 @@ namespace FishNet.Component.ColliderRollback
 	        }
         }
 
-    }
+        }
 }
 #endif

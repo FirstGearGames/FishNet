@@ -1116,20 +1116,27 @@ namespace FishNet.Serializing
 
         #region Packed writers.
         /// <summary>
-        /// ZigZag encode an integer. Move the sign bit to the right.
+        /// Encodes a signed 64-bit integer using ZigZag encoding, mapping the sign bit
+        /// to the least-significant bit so that small-magnitude values (positive or
+        /// negative) produce small unsigned results suitable for variable-length packing.
+        /// 
+        /// Mapping:   0 → 0,  -1 → 1,  1 → 2,  -2 → 3,  2 → 4,  …
         /// </summary>
-        public ulong ZigZagEncode(ulong value)
+        /// <param name="value">The signed 64-bit integer to encode.</param>
+        /// <returns>
+        /// A <see cref="ulong"/> whose value equals <c>(value &lt;&lt; 1) ^ (value &gt;&gt; 63)</c>,
+        /// interpreted as an unsigned 64-bit integer.
+        /// </returns>
+        public ulong ZigZagEncode(long value)
         {
-            if (value >> 63 > 0)
-                return ~(value << 1) | 1;
-            return value << 1;
+            return (ulong)((value << 1) ^ (value >> 63));
         }
 
         /// <summary>
         /// Writes a packed whole number.
         /// </summary>
         /// <param name = "value"></param>
-        public void WriteSignedPackedWhole(long value) => WriteUnsignedPackedWhole(ZigZagEncode((ulong)value));
+        public void WriteSignedPackedWhole(long value) => WriteUnsignedPackedWhole(ZigZagEncode(value));
 
         /// <summary>
         /// Writes a packed whole number.

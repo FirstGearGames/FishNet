@@ -544,9 +544,6 @@ namespace FishNet.Managing.Server
                 NetworkManager.LogError($"Specified networkObject is null.");
                 return;
             }
-
-            //Unset the sceneId on the instantiated copy.
-            networkObject.SceneId = 0;
             
             if (!NetworkManager.ServerManager.Started)
             {

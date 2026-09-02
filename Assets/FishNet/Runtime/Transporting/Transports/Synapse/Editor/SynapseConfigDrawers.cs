@@ -173,7 +173,7 @@ namespace FishNet.Transporting.Synapse.Editing
                 {
                     float fullConeHeight = EditorGUI.GetPropertyHeight(fullCone, true);
                     rect.height = fullConeHeight;
-                    EditorGUI.PropertyField(rect, fullCone, new GUIContent("Full Cone", "Settings for full-cone NAT traversal."), true);
+                    EditorGUI.PropertyField(rect, fullCone, new("Full Cone", "Settings for full-cone NAT traversal."), true);
                     rect.height = EditorGUIUtility.singleLineHeight;
                 }
 

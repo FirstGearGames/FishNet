@@ -13,34 +13,42 @@ namespace FishNet.Component.Prediction
     {
         #region Types.
         /// <summary>
-        /// Data for a rigidbody before being set kinematic.
+        /// Data for a rigidbody, including its transform and simulation state.
         /// </summary>
-        private struct RigidbodyData
+        public struct RigidbodyData
         {
             /// <summary>
             /// Rigidbody for data.
             /// </summary>
             public Rigidbody Rigidbody;
             /// <summary>
-            /// Cached velocity when being set kinematic.
+            /// Cached velocity.
             /// </summary>
             public Vector3 Velocity;
             /// <summary>
-            /// Cached velocity when being set kinematic.
+            /// Cached angular velocity.
             /// </summary>
             public Vector3 AngularVelocity;
             /// <summary>
-            /// True if the rigidbody was kinematic prior to being paused.
+            /// True if the rigidbody was kinematic.
             /// </summary>
             public bool IsKinematic;
             /// <summary>
-            /// True if the rigidbody was detecting collisions prior to being paused.
+            /// True if the rigidbody was detecting collisions.
             /// </summary>
             public bool DetectCollisions;
             /// <summary>
             /// Detection mode of the Rigidbody.
             /// </summary>
             public CollisionDetectionMode CollisionDetectionMode;
+            /// <summary>
+            /// World position of the rigidbody's transform.
+            /// </summary>
+            public Vector3 Position;
+            /// <summary>
+            /// World rotation of the rigidbody's transform.
+            /// </summary>
+            public Quaternion Rotation;
 
             public RigidbodyData(Rigidbody rb)
             {
@@ -50,6 +58,8 @@ namespace FishNet.Component.Prediction
                 IsKinematic = rb.isKinematic;
                 DetectCollisions = rb.detectCollisions;
                 CollisionDetectionMode = rb.collisionDetectionMode;
+                Position = rb.transform.position;
+                Rotation = rb.transform.rotation;
             }
 
             public void Update(Rigidbody rb)
@@ -63,38 +73,48 @@ namespace FishNet.Component.Prediction
                 IsKinematic = rb.isKinematic;
                 DetectCollisions = rb.detectCollisions;
                 CollisionDetectionMode = rb.collisionDetectionMode;
+                Position = rb.transform.position;
+                Rotation = rb.transform.rotation;
             }
         }
 
         /// <summary>
-        /// Data for a rigidbody2d before being set kinematic.
+        /// Data for a rigidbody2d, including its transform and simulation state.
         /// </summary>
-        private struct Rigidbody2DData
+        public struct Rigidbody2DData
         {
             /// <summary>
             /// Rigidbody for data.
             /// </summary>
             public Rigidbody2D Rigidbody2d;
             /// <summary>
-            /// Cached velocity when being set kinematic.
+            /// Cached velocity.
             /// </summary>
             public Vector2 Velocity;
             /// <summary>
-            /// Cached velocity when being set kinematic.
+            /// Cached angular velocity.
             /// </summary>
             public float AngularVelocity;
             /// <summary>
-            /// True if the rigidbody was kinematic prior to being paused.
+            /// True if the rigidbody was kinematic.
             /// </summary>
             public bool IsKinematic;
             /// <summary>
-            /// True if the rigidbody was simulated prior to being paused.
+            /// True if the rigidbody was simulated.
             /// </summary>
             public bool Simulated;
             /// <summary>
             /// Detection mode of the rigidbody.
             /// </summary>
             public CollisionDetectionMode2D CollisionDetectionMode;
+            /// <summary>
+            /// World position of the rigidbody's transform.
+            /// </summary>
+            public Vector2 Position;
+            /// <summary>
+            /// World rotation of the rigidbody's transform, in degrees.
+            /// </summary>
+            public float Rotation;
 
             public Rigidbody2DData(Rigidbody2D rb)
             {
@@ -108,6 +128,8 @@ namespace FishNet.Component.Prediction
                 IsKinematic = rb.isKinematic;
                 #endif
                 CollisionDetectionMode = rb.collisionDetectionMode;
+                Position = rb.position;
+                Rotation = rb.rotation;
             }
 
             public void Update(Rigidbody2D rb)
@@ -126,6 +148,8 @@ namespace FishNet.Component.Prediction
                 IsKinematic = rb.isKinematic;
                 #endif
                 CollisionDetectionMode = rb.collisionDetectionMode;
+                Position = rb.position;
+                Rotation = rb.rotation;
             }
         }
         #endregion
@@ -146,6 +170,14 @@ namespace FishNet.Component.Prediction
         /// Rigidbody2D datas for found rigidbodies;
         /// </summary>
         private List<Rigidbody2DData> _rigidbody2dDatas = new();
+        /// <summary>
+        /// Snapshot taken when pausing, applied when unpausing.
+        /// </summary>
+        private List<RigidbodyData> _pauseSnapshot = new();
+        /// <summary>
+        /// Snapshot taken when pausing 2D rigidbodies, applied when unpausing.
+        /// </summary>
+        private List<Rigidbody2DData> _pauseSnapshot2d = new();
         /// <summary>
         /// True to get rigidbodies in children of transform.
         /// </summary>
@@ -286,7 +318,136 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
-        /// Pauses rigidbodies preventing them from interacting.
+        /// Fills a list with a snapshot of the current transform and simulation state of every tracked rigidbody.
+        /// </summary>
+        /// <param name = "snapshot">List to populate; it is cleared first.</param>
+        public void GetSnapshot(List<RigidbodyData> snapshot)
+        {
+            snapshot.Clear();
+            for (int i = 0; i < _rigidbodyDatas.Count; i++)
+            {
+                Rigidbody rb = _rigidbodyDatas[i].Rigidbody;
+                if (rb == null)
+                    continue;
+
+                RigidbodyData data = new(rb);
+                data.Update(rb);
+                snapshot.Add(data);
+            }
+        }
+
+        /// <summary>
+        /// Fills a list with a snapshot of the current transform and simulation state of every tracked 2D rigidbody.
+        /// </summary>
+        /// <param name = "snapshot">List to populate; it is cleared first.</param>
+        public void GetSnapshot(List<Rigidbody2DData> snapshot)
+        {
+            snapshot.Clear();
+            for (int i = 0; i < _rigidbody2dDatas.Count; i++)
+            {
+                Rigidbody2D rb = _rigidbody2dDatas[i].Rigidbody2d;
+                if (rb == null)
+                    continue;
+
+                Rigidbody2DData data = new(rb);
+                data.Update(rb);
+                snapshot.Add(data);
+            }
+        }
+
+        /// <summary>
+        /// Applies a snapshot, setting each rigidbody's transform (and optionally its simulation state) back to the stored values.
+        /// </summary>
+        /// <param name = "snapshot">Snapshot to apply. Null is ignored.</param>
+        /// <param name = "restoreSimulationState">True to restore isKinematic, detectCollisions and collisionDetectionMode (used when unpausing).
+        /// False to leave those as they are and only restore transform and velocity — the kinematic state is owned by other systems and must not be forced by a reconcile correction.</param>
+        public void ApplySnapshot(List<RigidbodyData> snapshot, bool restoreSimulationState = true)
+        {
+            if (snapshot == null)
+                return;
+
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                RigidbodyData data = snapshot[i];
+                Rigidbody rb = data.Rigidbody;
+                if (rb == null)
+                    continue;
+
+                rb.position = data.Position;
+                rb.rotation = data.Rotation;
+
+                if (restoreSimulationState)
+                {
+                    rb.isKinematic = data.IsKinematic;
+                    rb.detectCollisions = data.DetectCollisions;
+                    rb.collisionDetectionMode = data.CollisionDetectionMode;
+                }
+
+                //Velocities cannot be set on a kinematic rigidbody; check the actual current state.
+                if (!rb.isKinematic)
+                {
+                    #if UNITY_6000_1_OR_NEWER
+                    rb.linearVelocity = data.Velocity;
+                    #else
+                    rb.velocity = data.Velocity;
+                    #endif
+                    rb.angularVelocity = data.AngularVelocity;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Applies a snapshot, setting each 2D rigidbody's transform (and optionally its simulation state) back to the stored values.
+        /// </summary>
+        /// <param name = "snapshot">Snapshot to apply. Null is ignored.</param>
+        /// <param name = "restoreSimulationState">True to restore bodyType, simulated and collisionDetectionMode (used when unpausing).
+        /// False to leave those as they are and only restore transform and velocity — the kinematic state is owned by other systems and must not be forced by a reconcile correction.</param>
+        public void ApplySnapshot(List<Rigidbody2DData> snapshot, bool restoreSimulationState = true)
+        {
+            if (snapshot == null)
+                return;
+
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                Rigidbody2DData data = snapshot[i];
+                Rigidbody2D rb = data.Rigidbody2d;
+                if (rb == null)
+                    continue;
+
+                rb.position = data.Position;
+                rb.rotation = data.Rotation;
+
+                if (restoreSimulationState)
+                {
+                    #if UNITY_6000_1_OR_NEWER
+                    rb.bodyType = data.IsKinematic ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic;
+                    #else
+                    rb.isKinematic = data.IsKinematic;
+                    #endif
+                    rb.simulated = data.Simulated;
+                    rb.collisionDetectionMode = data.CollisionDetectionMode;
+                }
+
+                //Velocities can only be set on a dynamic body; check the actual current state.
+                #if UNITY_6000_1_OR_NEWER
+                bool canSetVelocity = rb.bodyType == RigidbodyType2D.Dynamic;
+                #else
+                bool canSetVelocity = !rb.isKinematic;
+                #endif
+                if (canSetVelocity)
+                {
+                    #if UNITY_6000_1_OR_NEWER
+                    rb.linearVelocity = data.Velocity;
+                    #else
+                    rb.velocity = data.Velocity;
+                    #endif
+                    rb.angularVelocity = data.AngularVelocity;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Pauses rigidbodies preventing them from interacting. The pre-pause state is snapshotted so Unpause can restore it.
         /// </summary>
         public void Pause()
         {
@@ -294,80 +455,55 @@ namespace FishNet.Component.Prediction
                 return;
             Paused = true;
 
-
-            /* Iterate move after pausing.
-             * This ensures when the children RBs update values
-             * they are not updating from a new scene, where the root
-             * may have moved them */
-
             // 3D.
             if (_rigidbodyType == RigidbodyType.Rigidbody)
             {
+                //Snapshot the current state, then freeze every rigidbody.
+                GetSnapshot(_pauseSnapshot);
+
                 for (int i = 0; i < _rigidbodyDatas.Count; i++)
                 {
-                    if (!PauseRigidbody(i))
+                    Rigidbody rb = _rigidbodyDatas[i].Rigidbody;
+                    if (rb == null)
                     {
                         _rigidbodyDatas.RemoveAt(i);
                         i--;
+                        continue;
                     }
-                }
 
-                // Sets isKinematic status and returns if successful.
-                bool PauseRigidbody(int index)
-                {
-                    RigidbodyData rbData = _rigidbodyDatas[index];
-                    Rigidbody rb = rbData.Rigidbody;
-                    if (rb == null)
-                        return false;
-
-                    rbData.Update(rb);
-                    _rigidbodyDatas[index] = rbData;
                     rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
                     rb.isKinematic = true;
                     rb.detectCollisions = false;
-
-                    return true;
                 }
             }
             // 2D.
             else
             {
+                GetSnapshot(_pauseSnapshot2d);
+
                 for (int i = 0; i < _rigidbody2dDatas.Count; i++)
                 {
-                    if (!PauseRigidbody(i))
+                    Rigidbody2D rb = _rigidbody2dDatas[i].Rigidbody2d;
+                    if (rb == null)
                     {
                         _rigidbody2dDatas.RemoveAt(i);
                         i--;
+                        continue;
                     }
-                }
 
-                // Sets isKinematic status and returns if successful.
-                bool PauseRigidbody(int index)
-                {
-                    Rigidbody2DData rbData = _rigidbody2dDatas[index];
-                    Rigidbody2D rb = rbData.Rigidbody2d;
-                    if (rb == null)
-                        return false;
-
-                    rbData.Update(rb);
-                    _rigidbody2dDatas[index] = rbData;
                     rb.collisionDetectionMode = CollisionDetectionMode2D.Discrete;
-
                     #if UNITY_6000_1_OR_NEWER
                     rb.bodyType = RigidbodyType2D.Kinematic;
                     #else
                     rb.isKinematic = true;
                     #endif
-
                     rb.simulated = false;
-
-                    return true;
                 }
             }
         }
 
         /// <summary>
-        /// Unpauses rigidbodies allowing them to interact normally.
+        /// Unpauses rigidbodies allowing them to interact normally, restoring the state snapshotted during Pause.
         /// </summary>
         public void Unpause()
         {
@@ -375,98 +511,18 @@ namespace FishNet.Component.Prediction
                 return;
             Paused = false;
 
-            // 3D.
             if (_rigidbodyType == RigidbodyType.Rigidbody)
-            {
-                for (int i = 0; i < _rigidbodyDatas.Count; i++)
-                {
-                    if (!UnpauseRigidbody(i))
-                    {
-                        _rigidbodyDatas.RemoveAt(i);
-                        i--;
-                    }
-                }
-
-                // Sets isKinematic status and returns if successful.
-                bool UnpauseRigidbody(int index)
-                {
-                    RigidbodyData rbData = _rigidbodyDatas[index];
-                    Rigidbody rb = rbData.Rigidbody;
-                    if (rb == null)
-                        return false;
-
-                    /* If data has RB updated as kinematic then
-                     * do not unpause. This means either something else
-                     * is handling the kinematic state of the dev
-                     * made it kinematic. */
-                    //                    if (rbData.IsKinematic)
-                    //                        return true;
-
-                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                    rb.isKinematic = rbData.IsKinematic;
-                    rb.detectCollisions = rbData.DetectCollisions;
-                    rb.collisionDetectionMode = rbData.CollisionDetectionMode;
-                    if (!rb.isKinematic)
-                    {
-                        #if UNITY_6000_1_OR_NEWER
-                        rb.linearVelocity = rbData.Velocity;
-                        #else
-                        rb.velocity = rbData.Velocity;
-                        #endif
-                        rb.angularVelocity = rbData.AngularVelocity;
-                    }
-                    return true;
-                }
-            }
-            // 2D.
+                ApplySnapshot(_pauseSnapshot);
             else
-            {
-                for (int i = 0; i < _rigidbody2dDatas.Count; i++)
-                {
-                    if (!UnpauseRigidbody(i))
-                    {
-                        _rigidbody2dDatas.RemoveAt(i);
-                        i--;
-                    }
-                }
-
-                // Sets isKinematic status and returns if successful.
-                bool UnpauseRigidbody(int index)
-                {
-                    Rigidbody2DData rbData = _rigidbody2dDatas[index];
-                    Rigidbody2D rb = rbData.Rigidbody2d;
-                    if (rb == null)
-                        return false;
-
-                    //Same as RB, only unpause if data is stored in an unpaused state.
-                    if (rbData.IsKinematic || !rbData.Simulated)
-                        return true;
-
-                    #if UNITY_6000_1_OR_NEWER
-                    rb.bodyType = RigidbodyType2D.Dynamic;
-                    #else
-                    rb.isKinematic = false;
-                    #endif
-
-                    rb.simulated = true;
-                    rb.collisionDetectionMode = rbData.CollisionDetectionMode;
-
-                    #if UNITY_6000_1_OR_NEWER
-                    rb.linearVelocity = rbData.Velocity;
-                    #else
-                        rb.velocity = rbData.Velocity;
-                    #endif
-                    rb.angularVelocity = rbData.AngularVelocity;
-
-                    return true;
-                }
-            }
+                ApplySnapshot(_pauseSnapshot2d);
         }
 
         public void ResetState()
         {
             _rigidbodyDatas.Clear();
             _rigidbody2dDatas.Clear();
+            _pauseSnapshot.Clear();
+            _pauseSnapshot2d.Clear();
             _getInChildren = default;
             _transform = default;
             _rigidbodyType = default;

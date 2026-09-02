@@ -239,7 +239,7 @@ namespace FishNet.Managing
         /// <summary>
         /// Version of this release.
         /// </summary>
-        public const string FISHNET_VERSION = "4.7.2";
+        public const string FISHNET_VERSION = "4.7.3"; 
         /// <summary>
         /// Maximum framerate allowed.
         /// </summary>
@@ -325,7 +325,7 @@ namespace FishNet.Managing
             TimeManager = GetOrCreateComponent<TimeManager>();
             SceneManager = GetOrCreateComponent<SceneManager>();
             ObserverManager = GetOrCreateComponent<ObserverManager>();
-            #if THREADED_TICKSMOOTHERS
+            #if FISHNET_THREADED_TICKSMOOTHERS
             TickSmoothingManager = GetOrCreateComponent<TickSmoothingManager>();
             #endif
             RollbackManager = GetOrCreateComponent<RollbackManager>();
@@ -372,7 +372,7 @@ namespace FishNet.Managing
 
             SceneManager.InitializeOnce_Internal(this);
             ObserverManager.InitializeOnce_Internal(this);
-            #if THREADED_TICKSMOOTHERS
+            #if FISHNET_THREADED_TICKSMOOTHERS
             TickSmoothingManager.InitializeOnce_Internal(this);
             #endif
             RollbackManager.InitializeOnce_Internal(this);
