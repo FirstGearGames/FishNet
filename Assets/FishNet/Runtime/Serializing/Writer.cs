@@ -456,7 +456,7 @@ namespace FishNet.Serializing
         /// Writes a int64.
         /// </summary>
         /// <param name = "value"></param>
-        public void WriteInt64Unpacked(long value) => WriteUInt64((ulong)value);
+        public void WriteInt64Unpacked(long value) => WriteUInt64Unpacked((ulong)value);
 
         /// <summary>
         /// Writes an int64.
