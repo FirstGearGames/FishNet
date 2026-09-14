@@ -1242,6 +1242,12 @@ namespace FishNet.Managing.Timing
         #region UNITY_EDITOR
         private void OnValidate()
         {
+            /* Physics mode sets Physics.simulationMode and Time.fixedDeltaTime, which
+             * outside play mode are the project settings: they would be saved with the
+             * project and baked into player builds. */
+            if (!Application.isPlaying)
+                return;
+
             SetInitialValues();
         }
         #endregion
