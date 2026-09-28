@@ -48,6 +48,9 @@ namespace FishNet.Managing.Transporting
              * message could be. If the writer is not the minimum
              * of this length then resize it. */
             int estimatedBufferSize = expectedMessages * 1500;
+            //Never reserve more than a client is allowed to send; expectedMessages comes from the sender.
+            if (isSenderClient && estimatedBufferSize > maximumClientBytes)
+                estimatedBufferSize = (int)maximumClientBytes;
             if (_writer.Capacity < estimatedBufferSize)
                 _writer.EnsureBufferCapacity(estimatedBufferSize);
         }

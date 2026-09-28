@@ -641,6 +641,19 @@ namespace FishNet.Managing.Transporting
         }
 
         /// <summary>
+        /// Returns the most split messages a client may send for a single packet.
+        /// </summary>
+        internal int GetMaximumClientSplitMessageCount()
+        {
+            int maximumSegmentLength = _maximumSplitPacketSegmentLength;
+            if (maximumSegmentLength <= 0)
+                return 0;
+
+            //Clients will not send a split where messageCount * maximumSegmentLength exceeds _maximumClientPacketSize.
+            return (int)Math.Ceiling((double)_maximumClientPacketSize / maximumSegmentLength);
+        }
+
+        /// <summary>
         /// Processes data received by the socket.
         /// </summary>
         /// <param name = "asServer">True to read data from clients, false to read data from the server.
