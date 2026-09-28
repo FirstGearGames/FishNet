@@ -580,7 +580,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Gets the channelId to use, returning a fallback Id if the provided channelId is not supported.
         /// </summary>
-        private byte GetFallbackChannelIdAsNeeded(byte channelId) => channelId > _toServerBundles.Count ? (byte)Channel.Reliable : channelId;
+        private byte GetFallbackChannelIdAsNeeded(byte channelId) => channelId >= CHANNEL_COUNT ? (byte)Channel.Reliable : channelId;
 
         /// <summary>
         /// Splits data going to which is too large to fit within the transport MTU.
