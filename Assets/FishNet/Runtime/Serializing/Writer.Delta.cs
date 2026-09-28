@@ -185,19 +185,24 @@ namespace FishNet.Serializing
         /// </summary>
         private void WriteDeltaSingle(UDeltaPrecisionType dpt, float value, bool unsigned)
         {
+            /* Round rather than floor. Flooring the magnitude of a difference always moves the
+             * decoded value toward the previous one, so the error does not cancel out over a
+             * chain of deltas; rounding halves the worst case and removes the bias. The precision
+             * type is only chosen while the scaled value is below the type's maximum, so the
+             * rounded value still fits. The same applies to the double and decimal writers. */
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
                 if (unsigned)
-                    WriteUInt8Unpacked((byte)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteUInt8Unpacked((byte)Math.Round(value * DOUBLE_ACCURACY));
                 else
-                    WriteInt8Unpacked((sbyte)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteInt8Unpacked((sbyte)Math.Round(value * DOUBLE_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
             {
                 if (unsigned)
-                    WriteUInt16Unpacked((ushort)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteUInt16Unpacked((ushort)Math.Round(value * DOUBLE_ACCURACY));
                 else
-                    WriteInt16Unpacked((short)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteInt16Unpacked((short)Math.Round(value * DOUBLE_ACCURACY));
             }
             // Anything else is unpacked.
             else
@@ -294,23 +299,23 @@ namespace FishNet.Serializing
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
                 if (unsigned)
-                    WriteUInt8Unpacked((byte)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteUInt8Unpacked((byte)Math.Round(value * DOUBLE_ACCURACY));
                 else
-                    WriteInt8Unpacked((sbyte)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteInt8Unpacked((sbyte)Math.Round(value * DOUBLE_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
             {
                 if (unsigned)
-                    WriteUInt16Unpacked((ushort)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteUInt16Unpacked((ushort)Math.Round(value * DOUBLE_ACCURACY));
                 else
-                    WriteInt16Unpacked((short)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteInt16Unpacked((short)Math.Round(value * DOUBLE_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
             {
                 if (unsigned)
-                    WriteUInt32Unpacked((uint)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteUInt32Unpacked((uint)Math.Round(value * DOUBLE_ACCURACY));
                 else
-                    WriteInt32Unpacked((int)Math.Floor(value * DOUBLE_ACCURACY));
+                    WriteInt32Unpacked((int)Math.Round(value * DOUBLE_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.Unset))
             {
@@ -406,30 +411,30 @@ namespace FishNet.Serializing
             if (dpt.FastContains(UDeltaPrecisionType.UInt8))
             {
                 if (unsigned)
-                    WriteUInt8Unpacked((byte)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteUInt8Unpacked((byte)Math.Round(value * DECIMAL_ACCURACY));
                 else
-                    WriteInt8Unpacked((sbyte)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteInt8Unpacked((sbyte)Math.Round(value * DECIMAL_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt16))
             {
                 if (unsigned)
-                    WriteUInt16Unpacked((ushort)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteUInt16Unpacked((ushort)Math.Round(value * DECIMAL_ACCURACY));
                 else
-                    WriteInt16Unpacked((short)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteInt16Unpacked((short)Math.Round(value * DECIMAL_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt32))
             {
                 if (unsigned)
-                    WriteUInt32Unpacked((uint)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteUInt32Unpacked((uint)Math.Round(value * DECIMAL_ACCURACY));
                 else
-                    WriteInt32Unpacked((int)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteInt32Unpacked((int)Math.Round(value * DECIMAL_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.UInt64))
             {
                 if (unsigned)
-                    WriteUInt64Unpacked((ulong)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteUInt64Unpacked((ulong)Math.Round(value * DECIMAL_ACCURACY));
                 else
-                    WriteInt64Unpacked((long)Math.Floor(value * DECIMAL_ACCURACY));
+                    WriteInt64Unpacked((long)Math.Round(value * DECIMAL_ACCURACY));
             }
             else if (dpt.FastContains(UDeltaPrecisionType.Unset))
             {
