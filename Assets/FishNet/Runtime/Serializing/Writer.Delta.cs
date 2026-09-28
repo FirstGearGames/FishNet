@@ -563,7 +563,7 @@ namespace FishNet.Serializing
         [DefaultDeltaWriter]
         public bool WriteDeltaQuaternion(Quaternion valueA, Quaternion valueB, float precision = QUATERNION_PRECISION, DeltaSerializerOption option = DeltaSerializerOption.Unset)
         {
-            bool changed = option != DeltaSerializerOption.Unset || IsQuaternionChanged(valueA, valueB);
+            bool changed = option != DeltaSerializerOption.Unset || IsQuaternionChanged(valueA, valueB, precision);
 
             if (!changed)
                 return false;
@@ -574,11 +574,14 @@ namespace FishNet.Serializing
         }
 
         /// <summary>
-        /// Returns if quaternion values differ.
+        /// Returns if quaternion values differ by enough to be written at precision.
         /// </summary>
-        private bool IsQuaternionChanged(Quaternion valueA, Quaternion valueB)
+        private bool IsQuaternionChanged(Quaternion valueA, Quaternion valueB, float precision)
         {
-            const float minimumChange = 0.0025f;
+            /* Half of precision is the smallest difference which compresses to a non-zero value.
+             * A fixed threshold of 0.0025 ignored precision, discarding changes of up to 25
+             * times the default precision. */
+            float minimumChange = precision * 0.5f;
 
             if (Mathf.Abs(valueA.x - valueB.x) > minimumChange)
                 return true;
