@@ -9,6 +9,7 @@ using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
 using GameKit.Dependencies.Utilities;
+using GameKit.Dependencies.Utilities.Types;
 using UnityEngine;
 
 namespace FishNet.Serializing
@@ -767,44 +768,88 @@ namespace FishNet.Serializing
 
         #region Prediction.
         /// <summary>
-        /// Writes a delta reconcile.
+        /// Set in a delta reconcile header when the reconcile is written in full rather than as a delta.
         /// </summary>
-        internal void WriteDeltaReconcile<T>(T lastReconcile, T value, DeltaSerializerOption option = DeltaSerializerOption.Unset) => WriteDelta(lastReconcile, value, option);
+        internal const byte RECONCILE_FULL_FLAG = 1 << 7;
+        /// <summary>
+        /// Bits of a delta reconcile header which identify the full reconcile.
+        /// </summary>
+        internal const byte RECONCILE_ID_MASK = RECONCILE_FULL_FLAG - 1;
 
         /// <summary>
-        /// Writes a delta replicate using a list.
+        /// True if T has both a delta writer and a delta reader.
+        /// Prediction types without both are sent using their regular serializers, exactly as when delta prediction is disabled.
         /// </summary>
-        internal void WriteDeltaReplicate<T>(List<T> values, int offset, DeltaSerializerOption option = DeltaSerializerOption.Unset) where T : IReplicateData
+        internal static bool HasDeltaSerializers<T>() => GenericDeltaWriter<T>.Write != null && GenericDeltaReader<T>.Read != null;
+
+        /// <summary>
+        /// Writes a delta reconcile.
+        /// </summary>
+        /// <param name = "fullReconcile">Full reconcile which value is written as a delta against.</param>
+        /// <param name = "fullReconcileId">Identifies fullReconcile, or value when fullSerialize is true, so readers can tell if they hold it.</param>
+        /// <param name = "fullSerialize">True to write the reconcile so that it may be read without a baseline.</param>
+        /// <remarks>Delta serializers must not modify the value they are given as a baseline, as it is reused for every delta until the next full reconcile.</remarks>
+        internal void WriteDeltaReconcile<T>(T fullReconcile, T value, byte fullReconcileId, bool fullSerialize)
         {
+            if (!HasDeltaSerializers<T>())
+            {
+                WriteReconcile(value);
+                return;
+            }
+
+            byte header = (byte)(fullReconcileId & RECONCILE_ID_MASK);
+            if (fullSerialize)
+                header |= RECONCILE_FULL_FLAG;
+            WriteUInt8Unpacked(header);
+
+            /* A full reconcile uses the regular serializer. Delta serializers write differences,
+             * so even with FullSerialize their output cannot be read without the baseline. */
+            if (fullSerialize)
+                WriteReconcile(value);
+            else
+                WriteDelta(fullReconcile, value, DeltaSerializerOption.RootSerialize);
+        }
+
+        /// <summary>
+        /// Writes replicates using delta serializers.
+        /// </summary>
+        /// <remarks>
+        /// Each packet can be read on its own: the first entry is written in full and every following entry as a delta against the entry before it in the same packet.
+        /// Replicates are sent unreliably with past entries for redundancy; a delta against an entry from an earlier packet could not be read once that packet were lost.
+        /// </remarks>
+        internal void WriteDeltaReplicate<T>(RingBuffer<ReplicateDataContainer<T>> values, int offset) where T : IReplicateData, new()
+        {
+            if (!HasDeltaSerializers<T>())
+            {
+                WriteReplicate(values, offset);
+                return;
+            }
+
             int collectionCount = values.Count;
             // Replicate list will never be null, no need to write null check.
             // Number of entries being written.
             byte count = (byte)(collectionCount - offset);
             WriteUInt8Unpacked(count);
 
-            T prev;
-            // Set previous if not full and if enough room in the collection to go back.
-            if (option != DeltaSerializerOption.FullSerialize && collectionCount > count)
-                prev = values[offset - 1];
-            else
-                prev = default;
-
             for (int i = offset; i < collectionCount; i++)
             {
-                T v = values[i];
-                WriteDelta(prev, v, option);
-
-                prev = v;
-                // After the first loop the deltaOption can be set to root, if not already.
-                option = DeltaSerializerOption.RootSerialize;
+                bool isFirst = i == offset;
+                WriteDeltaReplicateDataContainer(isFirst ? default : values[i - 1], values[i], isFirst);
             }
         }
 
         /// <summary>
-        /// Writes a delta replicate using a BasicQueue.
+        /// Writes replicates using delta serializers.
         /// </summary>
-        internal void WriteDeltaReplicate<T>(BasicQueue<T> values, int redundancyCount, DeltaSerializerOption option = DeltaSerializerOption.Unset) where T : IReplicateData
+        /// <remarks>See the RingBuffer overload.</remarks>
+        internal void WriteDeltaReplicate<T>(BasicQueue<ReplicateDataContainer<T>> values, int redundancyCount) where T : IReplicateData, new()
         {
+            if (!HasDeltaSerializers<T>())
+            {
+                WriteReplicate(values, redundancyCount);
+                return;
+            }
+
             int collectionCount = values.Count;
             // Replicate list will never be null, no need to write null check.
             // Number of entries being written.
@@ -812,22 +857,24 @@ namespace FishNet.Serializing
             WriteUInt8Unpacked(count);
 
             int offset = collectionCount - redundancyCount;
-            T prev;
-            // Set previous if not full and if enough room in the collection to go back.
-            if (option != DeltaSerializerOption.FullSerialize && collectionCount > count)
-                prev = values[offset - 1];
-            else
-                prev = default;
-
             for (int i = offset; i < collectionCount; i++)
             {
-                T v = values[i];
-                WriteDelta(prev, v, option);
-
-                prev = v;
-                // After the first loop the deltaOption can be set to root, if not already.
-                option = DeltaSerializerOption.RootSerialize;
+                bool isFirst = i == offset;
+                WriteDeltaReplicateDataContainer(isFirst ? default : values[i - 1], values[i], isFirst);
             }
+        }
+
+        /// <summary>
+        /// Writes a replicate entry in full or as a delta against the previous entry, followed by its channel.
+        /// </summary>
+        private void WriteDeltaReplicateDataContainer<T>(ReplicateDataContainer<T> previous, ReplicateDataContainer<T> value, bool fullSerialize) where T : IReplicateData, new()
+        {
+            if (fullSerialize)
+                Write<T>(value.Data);
+            else
+                WriteDelta(previous.Data, value.Data, DeltaSerializerOption.RootSerialize);
+
+            WriteChannel(value.Channel);
         }
         #endregion
 
