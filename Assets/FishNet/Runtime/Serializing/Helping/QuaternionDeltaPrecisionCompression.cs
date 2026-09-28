@@ -49,24 +49,24 @@ namespace FishNet.Serializing.Helping
             writer.Skip(1);
 
             QuaternionDeltaPrecisionFlag flags = QuaternionDeltaPrecisionFlag.Unset;
-            long largestUValue = -1;
+            float largestAbsValue = -1f;
 
-            /* This becomes true if the largest difference is negative on valueB.
+            /* This becomes true if the largest component is negative on valueB.
              * EG: if Y is the largest and value.Y is < 0f then largestIsNegative becomes true. */
             bool largestIsNegative = false;
 
             /* Set next is larger values, and output differneces. */
             bool xIsLarger = GetNextIsLarger(valueA.x, valueB.x, multiplier, out uint xDifference);
-            UpdateLargestValues(xDifference, valueB.x, QuaternionDeltaPrecisionFlag.LargestIsX);
+            UpdateLargestValues(valueB.x, QuaternionDeltaPrecisionFlag.LargestIsX);
 
             bool yIsLarger = GetNextIsLarger(valueA.y, valueB.y, multiplier, out uint yDifference);
-            UpdateLargestValues(yDifference, valueB.y, QuaternionDeltaPrecisionFlag.LargestIsY);
+            UpdateLargestValues(valueB.y, QuaternionDeltaPrecisionFlag.LargestIsY);
 
             bool zIsLarger = GetNextIsLarger(valueA.z, valueB.z, multiplier, out uint zDifference);
-            UpdateLargestValues(zDifference, valueB.z, QuaternionDeltaPrecisionFlag.LargestIsZ);
+            UpdateLargestValues(valueB.z, QuaternionDeltaPrecisionFlag.LargestIsZ);
 
             bool wIsLarger = GetNextIsLarger(valueA.w, valueB.w, multiplier, out uint wDifference);
-            UpdateLargestValues(wDifference, valueB.w, QuaternionDeltaPrecisionFlag.LargestIsW);
+            UpdateLargestValues(valueB.w, QuaternionDeltaPrecisionFlag.LargestIsW);
 
             // If flags are unset something went wrong. This should never be possible.
             if (flags == QuaternionDeltaPrecisionFlag.Unset)
@@ -77,12 +77,18 @@ namespace FishNet.Serializing.Helping
                 return;
             }
 
-            // Updates largest values and flags.
-            void UpdateLargestValues(uint checkedValue, float fValue, QuaternionDeltaPrecisionFlag newFlag)
+            /* Updates largest values and flags.
+             * The omitted component is rebuilt from the other three with a square root, which
+             * is only accurate when the component is large; the largest component of a unit
+             * quaternion is at least 0.5. Omitting the component which changed the most instead
+             * could omit a component near zero, and a small rotation from identity then read back
+             * as no rotation. */
+            void UpdateLargestValues(float fValue, QuaternionDeltaPrecisionFlag newFlag)
             {
-                if (checkedValue > largestUValue)
+                float absValue = Math.Abs(fValue);
+                if (absValue > largestAbsValue)
                 {
-                    largestUValue = checkedValue;
+                    largestAbsValue = absValue;
                     flags = newFlag;
                     largestIsNegative = fValue < 0f;
                 }
