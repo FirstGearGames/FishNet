@@ -528,6 +528,10 @@ namespace FishNet.Serializing
         /// </summary>
         public bool WriteDeltaTransformProperties(TransformProperties valueA, TransformProperties valueB, DeltaSerializerOption option = DeltaSerializerOption.Unset)
         {
+            /* Skip grows Length, which only ever grows, so rewinding when nothing is written must
+             * restore Length as well as Position. Otherwise the skipped byte remains within
+             * GetArraySegment when this is the last value written. */
+            int startLength = Length;
             int startPosition = Position;
             Skip(1);
 
@@ -548,6 +552,7 @@ namespace FishNet.Serializing
             else
             {
                 Position = startPosition;
+                Length = startLength;
                 return false;
             }
         }
@@ -596,6 +601,8 @@ namespace FishNet.Serializing
             // TODO Fit as many flags into a byte as possible for pack levels of each axis rather than 1 per axis.
             byte allFlags = 0;
 
+            // See WriteDeltaTransformProperties for why Length is restored.
+            int startLength = Length;
             int startPosition = Position;
             Skip(1);
 
@@ -611,6 +618,7 @@ namespace FishNet.Serializing
             }
 
             Position = startPosition;
+            Length = startLength;
             return false;
         }
 
@@ -619,6 +627,8 @@ namespace FishNet.Serializing
         {
             byte allFlags = 0;
 
+            // See WriteDeltaTransformProperties for why Length is restored.
+            int startLength = Length;
             int startPosition = Position;
             Skip(1);
 
@@ -636,6 +646,7 @@ namespace FishNet.Serializing
             }
 
             Position = startPosition;
+            Length = startLength;
             return false;
         }
 
