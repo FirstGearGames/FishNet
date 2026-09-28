@@ -21,7 +21,10 @@ namespace FishNet.Serializing
         [DefaultDeltaReader]
         public bool ReadDeltaBoolean(bool valueA)
         {
-            return !valueA;
+            /* WriteDeltaBoolean writes the new value whenever it returns true, including
+             * when the value is unchanged and a serialize option forced the write. The byte
+             * must be consumed to keep the reader aligned, and it is the value to return. */
+            return ReadBoolean();
         }
         #endregion
 
