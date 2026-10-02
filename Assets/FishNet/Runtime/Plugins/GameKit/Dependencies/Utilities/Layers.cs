@@ -12,6 +12,10 @@ namespace GameKit.Dependencies.Utilities
         /// Lookup of interactable layers for each layer.
         /// </summary>
         private static Dictionary<int, int> _interactablesLayers;
+        /// <summary>
+        /// Lookup of interactable layers for each layer using the 2D collision matrix.
+        /// </summary>
+        private static Dictionary<int, int> _interactablesLayers2D;
 
         /// <summary>
         /// Tries to initializes InteractableLayers.
@@ -38,12 +42,45 @@ namespace GameKit.Dependencies.Utilities
         }
 
         /// <summary>
+        /// Tries to initializes InteractableLayers2D.
+        /// </summary>
+        private static void TryInitializeInteractableLayers2D()
+        {
+            if (_interactablesLayers2D != null)
+                return;
+
+            _interactablesLayers2D = new();
+            for (int i = 0; i < 32; i++)
+            {
+                int mask = 0;
+                for (int j = 0; j < 32; j++)
+                {
+                    if (!Physics2D.GetIgnoreLayerCollision(i, j))
+                    {
+                        mask |= 1 << j;
+                    }
+                }
+                // Setting without add check is quicker.
+                _interactablesLayers2D[i] = mask;
+            }
+        }
+
+        /// <summary>
         /// Returns interactable layers value for layer.
         /// </summary>
         public static int GetInteractableLayersValue(int layer)
         {
             TryInitializeInteractableLayers();
             return _interactablesLayers[layer];
+        }
+
+        /// <summary>
+        /// Returns interactable layers value for layer using the 2D collision matrix.
+        /// </summary>
+        public static int GetInteractableLayersValue2D(int layer)
+        {
+            TryInitializeInteractableLayers2D();
+            return _interactablesLayers2D[layer];
         }
 
         /// <summary>

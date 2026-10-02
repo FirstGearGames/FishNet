@@ -60,6 +60,11 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
+        /// Returns the layers which interact with layer in the 2D collision matrix. Used when Layers is nothing.
+        /// </summary>
+        protected override int GetInteractableLayersValue(int layer) => GameKit.Dependencies.Utilities.Layers.GetInteractableLayersValue2D(layer);
+
+        /// <summary>
         /// Called by the PredictionManager immediately before a reconcile begins.
         /// </summary>
         protected override void PredictionManager_OnPostPhysicsTransformSync(uint clientTick, uint serverTick)
