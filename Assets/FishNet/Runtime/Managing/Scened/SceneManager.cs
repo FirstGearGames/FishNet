@@ -419,6 +419,9 @@ namespace FishNet.Managing.Scened
         private void Awake()
         {
             UnitySceneManager.sceneUnloaded += SceneManager_SceneUnloaded;
+            // Prefer a processor already on this object, such as one for addressables, over adding the default.
+            if (_sceneProcessor == null)
+                _sceneProcessor = GetComponent<SceneProcessorBase>();
             if (_sceneProcessor == null)
                 _sceneProcessor = gameObject.AddComponent<DefaultSceneProcessor>();
             _sceneProcessor.Initialize(this);
