@@ -342,6 +342,11 @@ namespace FishNet.Managing.Transporting
         /// </summary>
         private void InitializeToServerBundles()
         {
+            // Replace any existing bundles so they use the current MTU reserve.
+            foreach (PacketBundle pb in _toServerBundles)
+                pb.Dispose();
+            _toServerBundles.Clear();
+
             /* For ease of use FishNet will always have
              * only two channels, reliable and unreliable.
              * Even if the transport only supports reliable
@@ -380,7 +385,7 @@ namespace FishNet.Managing.Transporting
         /// <param name = "value">Value to use.</param>
         public void SetMTUReserve(int value)
         {
-            if ((_networkManager != null && _networkManager.IsClientStarted) || _networkManager.IsServerStarted)
+            if (_networkManager != null && (_networkManager.IsClientStarted || _networkManager.IsServerStarted))
             {
                 _networkManager.LogError($"A custom MTU reserve cannot be set after the server or client have been started or connected.");
                 return;
@@ -393,7 +398,9 @@ namespace FishNet.Managing.Transporting
             }
 
             _customMtuReserve = value;
-            InitializeToServerBundles();
+            // Before initialization the bundles do not exist yet; InitializeOnce_Internal creates them with this value.
+            if (_networkManager != null)
+                InitializeToServerBundles();
         }
 
         /// <summary>
