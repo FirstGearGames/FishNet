@@ -260,7 +260,7 @@ namespace FishNet.Object
             //Like with clear, remove before calling ObserversActiveChange.
             RemoveObserverLevelOfDetail(connection);
             
-            if (removed && startCount == 0)
+            if (removed && startCount == 1)
                 ObserversActiveChanged();
 
             return removed;
