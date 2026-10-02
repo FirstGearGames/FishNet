@@ -425,6 +425,11 @@ namespace FishNet.Component.Transforming
         public bool GetSendToOwner() => _sendToOwner;
 
         /// <summary>
+        /// True if the owner discards transform updates from the server. ObserversUpdateClientAuthoritativeTransform returns early for the owner in exactly these cases, so the server does not send updates to the owner.
+        /// </summary>
+        internal override bool ExcludeOwnerFromUnbufferedObserversRpcs => _clientAuthoritative || !_sendToOwner;
+
+        /// <summary>
         /// Sets SendToOwner. Only the server may call this method.
         /// </summary>
         /// <param name = "value">New value.</param>
