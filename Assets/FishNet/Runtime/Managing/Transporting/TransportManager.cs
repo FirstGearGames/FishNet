@@ -255,7 +255,8 @@ namespace FishNet.Managing.Transporting
                 }
 
                 _lowestMtus[i] = channelLowest;
-                _lowestMtu = Mathf.Min(allLowest, channelLowest);
+                allLowest = Mathf.Min(allLowest, channelLowest);
+                _lowestMtu = allLowest;
             }
         }
 
