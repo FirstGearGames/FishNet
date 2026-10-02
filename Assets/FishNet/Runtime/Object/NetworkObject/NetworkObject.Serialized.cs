@@ -56,6 +56,7 @@ namespace FishNet.Object
         /// </summary>
         [field: SerializeField]
         [field: HideInInspector]
+        [UnityEngine.Serialization.FormerlySerializedAs("<SceneId>k__BackingField")]
         internal ulong SceneId;
         /// <summary>
         /// Local properties of the transform during serialization.
