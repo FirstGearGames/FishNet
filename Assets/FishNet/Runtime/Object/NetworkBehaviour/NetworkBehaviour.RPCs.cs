@@ -8,6 +8,7 @@ using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Managing.Transporting;
 using FishNet.Object.Delegating;
+using FishNet.Observing;
 using FishNet.Serializing;
 using FishNet.Transporting;
 using GameKit.Dependencies.Utilities;
@@ -81,6 +82,11 @@ namespace FishNet.Object
         /// Connections to exclude from RPCs, such as ExcludeOwner or ExcludeServer.
         /// </summary>
         private readonly HashSet<NetworkConnection> _networkConnectionCache = new();
+        /// <summary>
+        /// True if the next unbuffered unreliable ObserversRpc must go to every observer, without consulting the ObserverSendFilter.
+        /// This is true until an unbuffered ObserversRpc is sent unreliably, and becomes true again after one is sent reliably.
+        /// </summary>
+        private bool _observersRpcSettled = true;
         /// <summary>
         /// Used for debug output.
         /// </summary>
@@ -369,6 +375,8 @@ namespace FishNet.Object
             PooledWriter writer = lCreateRpc(channel);
             SetNetworkConnectionCache(excludeServer, excludeOwner);
 
+            if (!bufferLast)
+                AddFilteredObserversToNetworkConnectionCache(channel);
             _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, orderType);
 
             /* If buffered then dispose of any already buffered
@@ -483,6 +491,38 @@ namespace FishNet.Object
                 _networkConnectionCache.Add(LocalConnection);
             if (addOwner && Owner.IsValid)
                 _networkConnectionCache.Add(Owner);
+        }
+
+        /// <summary>
+        /// Adds observers declined by the ObserverSendFilter to ExcludedRpcConnections for an unbuffered ObserversRpc.
+        /// </summary>
+        private void AddFilteredObserversToNetworkConnectionCache(Channel channel)
+        {
+            /* Only unreliable sends are filtered. Reliable sends are
+             * typically settles or teleports, which every observer needs. */
+            if (channel != Channel.Unreliable)
+            {
+                _observersRpcSettled = true;
+                return;
+            }
+
+            /* Receivers such as NetworkTransform treat the first message
+             * after a reliable one as a single interval of change. If that
+             * message were skipped for an observer, the next one it receives
+             * would carry several intervals of change at once. Send the first
+             * unreliable message after a reliable one to every observer. */
+            bool settled = _observersRpcSettled;
+            _observersRpcSettled = false;
+
+            IObserverSendFilter filter = _networkObjectCache.ObserverSendFilter;
+            if (filter == null || settled)
+                return;
+
+            foreach (NetworkConnection conn in _networkObjectCache.Observers)
+            {
+                if (!_networkConnectionCache.Contains(conn) && !filter.ShouldSend(_networkObjectCache, conn, channel))
+                    _networkConnectionCache.Add(conn);
+            }
         }
 
         /// <summary>
