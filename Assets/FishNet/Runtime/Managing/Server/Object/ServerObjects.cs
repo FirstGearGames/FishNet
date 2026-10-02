@@ -578,6 +578,14 @@ namespace FishNet.Managing.Server
                 return;
             }
 
+            /* An instantiated copy of a scene object keeps the original's SceneId. The
+             * original is registered under that SceneId when its scene is set up, so a
+             * different object registered under it means this one is a copy, which must
+             * spawn as a regular object. Scene objects themselves keep their SceneId,
+             * including those that were inactive until now. */
+            if (networkObject.SceneId != NetworkObject.UNSET_SCENEID_VALUE && SceneObjects_Internal.TryGetValueIL2CPP(networkObject.SceneId, out NetworkObject registeredSceneObject) && registeredSceneObject != networkObject)
+                networkObject.SceneId = NetworkObject.UNSET_SCENEID_VALUE;
+
             if (ownerConnection != null && ownerConnection.IsActive && !ownerConnection.LoadedStartScenes(!predictedSpawn))
             {
                 NetworkManager.LogWarning($"{networkObject.name} was spawned but it's recommended to not spawn objects for connections until they have loaded start scenes. You can be notified when a connection loads start scenes by using connection.OnLoadedStartScenes on the connection, or SceneManager.OnClientLoadStartScenes.");
