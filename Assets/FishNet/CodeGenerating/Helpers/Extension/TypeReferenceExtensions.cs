@@ -66,7 +66,7 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static bool IsMultidimensionalArray(this TypeReference typeRef)
         {
-            if (typeRef is ArrayType && typeRef.Name.Contains("[][]"))
+            if (typeRef is ArrayType at && !at.IsVector)
                 return true;
 
             return false;
@@ -128,4 +128,4 @@ namespace FishNet.CodeGenerating.Helping.Extension
             }
         }
     }
-}
+}
