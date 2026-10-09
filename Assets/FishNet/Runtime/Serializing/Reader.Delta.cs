@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using FishNet.CodeGenerating;
 using System.Runtime.CompilerServices;
 using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Object.Prediction;
 using FishNet.Serializing.Helping;
+using FishNet.Transporting;
+using GameKit.Dependencies.Utilities;
 using UnityEngine;
 
 namespace FishNet.Serializing
@@ -21,7 +24,10 @@ namespace FishNet.Serializing
         [DefaultDeltaReader]
         public bool ReadDeltaBoolean(bool valueA)
         {
-            return !valueA;
+            /* WriteDeltaBoolean writes the new value whenever it returns true, including
+             * when the value is unchanged and a serialize option forced the write. The byte
+             * must be consumed to keep the reader aligned, and it is the value to return. */
+            return ReadBoolean();
         }
         #endregion
 
@@ -388,60 +394,61 @@ namespace FishNet.Serializing
 
         #region Prediction.
         /// <summary>
-        /// Reads a reconcile.
+        /// Reads a reconcile written by WriteDeltaReconcile.
         /// </summary>
-        internal T ReadDeltaReconcile<T>(T lastReconcile) => ReadDelta(lastReconcile);
+        /// <param name = "fullReconcile">Full reconcile a delta is applied to.</param>
+        /// <param name = "isFull">True if the reconcile was written so that it could be read without a baseline.</param>
+        /// <param name = "fullReconcileId">Identifies the full reconcile a delta was written against, or this reconcile when isFull is true.</param>
+        internal T ReadDeltaReconcile<T>(T fullReconcile, out bool isFull, out byte fullReconcileId)
+        {
+            if (!Writer.HasDeltaSerializers<T>())
+            {
+                isFull = true;
+                fullReconcileId = 0;
+                return ReadReconcile<T>();
+            }
+
+            byte header = ReadUInt8Unpacked();
+            isFull = (header & Writer.RECONCILE_FULL_FLAG) != 0;
+            fullReconcileId = (byte)(header & Writer.RECONCILE_ID_MASK);
+
+            return isFull ? ReadReconcile<T>() : ReadDelta(fullReconcile);
+        }
 
         /// <summary>
-        /// Reads a replicate.
+        /// Reads replicates written by WriteDeltaReplicate.
         /// </summary>
-        internal int ReadDeltaReplicate<T>(T lastReadReplicate, ref T[] collection, uint tick) where T : IReplicateData
+        internal List<ReplicateDataContainer<T>> ReadDeltaReplicate<T>(uint tick) where T : IReplicateData, new()
         {
-            int startRemaining = Remaining;
+            if (!Writer.HasDeltaSerializers<T>())
+                return ReadReplicate<T>(tick);
+
+            List<ReplicateDataContainer<T>> collection = CollectionCaches<ReplicateDataContainer<T>>.RetrieveList();
 
             // Number of entries written.
             int count = (int)ReadUInt8Unpacked();
-            if (collection == null || collection.Length < count)
-                collection = new T[count];
-
-            /* Subtract count total minus 1
-             * from starting tick. This sets the tick to what the first entry would be.
-             * EG packet came in as tick 100, so that was passed as tick.
-             * if there are 3 replicates then 2 would be subtracted (count - 1).
-             * The new tick would be 98.
-             * Ticks would be assigned to read values from oldest to
-             * newest as 98, 99, 100. Which is the correct result. In order for this to
-             * work properly past replicates cannot skip ticks. This will be ensured
-             * in another part of the code. */
+            if (count <= 0)
+            {
+                NetworkManager.Log($"Replicate count cannot be 0 or less.");
+                // Purge remaining and return default.
+                Position += Remaining;
+                return collection;
+            }
+            // Ticks are assigned from oldest to newest, as in ReadReplicate.
             tick -= (uint)(count - 1);
 
-            uint lastReadTick = lastReadReplicate.GetTick();
-
-            T prev = lastReadReplicate;
+            T previous = default;
             for (int i = 0; i < count; i++)
             {
-                // Tick read is for.
-                uint readTick = tick + (uint)i;
-                /* If readTick is equal or lesser than lastReadReplicate
-                 * then there is no reason to process the data other than getting
-                 * it out of the reader. */
-                if (readTick <= lastReadTick)
-                {
-                    ReadDelta(prev);
-                }
-                else
-                {
-                    T value = ReadDelta(prev);
-                    // Apply tick.
-                    value.SetTick(readTick);
-                    // Assign to collection.
-                    collection[i] = value;
-                    // Update previous.
-                    prev = value;
-                }
+                // The first entry is written in full, the rest as a delta against the entry before them.
+                T data = i == 0 ? Read<T>() : ReadDelta(previous);
+                Channel c = ReadChannel();
+                collection.Add(new(data, c, tick + (uint)i, isCreated: true));
+
+                previous = data;
             }
 
-            return count;
+            return collection;
         }
         #endregion
 
