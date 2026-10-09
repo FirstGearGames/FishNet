@@ -14,6 +14,10 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _componentConfiguration;
         private SerializedProperty _synchronizeParent;
         private SerializedProperty _packing;
+        #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+        private SerializedProperty _positionPackingBits;
+        private SerializedProperty _positionCompressionScale;
+        #endif
         private SerializedProperty _useScaledTime;
         private SerializedProperty _interpolation;
         private SerializedProperty _extrapolation;
@@ -36,6 +40,10 @@ namespace FishNet.Component.Transforming.Editing
             _componentConfiguration = serializedObject.FindProperty(nameof(_componentConfiguration));
             _synchronizeParent = serializedObject.FindProperty(nameof(_synchronizeParent));
             _packing = serializedObject.FindProperty(nameof(_packing));
+            #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            _positionPackingBits = serializedObject.FindProperty(nameof(_positionPackingBits));
+            _positionCompressionScale = serializedObject.FindProperty(nameof(_positionCompressionScale));
+            #endif
             _useScaledTime = serializedObject.FindProperty(nameof(_useScaledTime));
             _interpolation = serializedObject.FindProperty(nameof(_interpolation));
             _extrapolation = serializedObject.FindProperty(nameof(_extrapolation));
@@ -72,6 +80,10 @@ namespace FishNet.Component.Transforming.Editing
             EditorGUILayout.PropertyField(_componentConfiguration);
             EditorGUILayout.PropertyField(_synchronizeParent, new GUIContent("Synchronize Parent"));
             EditorGUILayout.PropertyField(_packing);
+            #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            EditorGUILayout.PropertyField(_positionPackingBits);
+            EditorGUILayout.PropertyField(_positionCompressionScale);
+            #endif
             EditorGUI.indentLevel--;
             EditorGUILayout.Space();
 
