@@ -233,6 +233,16 @@ namespace FishNet.Object
             if (Application.isPlaying)
                 return _addedNetworkObject;
 
+            /* Serialized references are only valid when they are on this object or a parent of it.
+             * Copying component values between objects, such as with Paste Component Values or
+             * EditorUtility.CopySerialized, copies these references as they are, leaving them
+             * pointing at a NetworkObject in another object or prefab. Discard such references so
+             * the correct NetworkObject is found below; the cache is set again at runtime initialization. */
+            if (_addedNetworkObject != null && !IsSelfOrParent(_addedNetworkObject.transform))
+                _addedNetworkObject = null;
+            if (_networkObjectCache != null && !IsSelfOrParent(_networkObjectCache.transform))
+                _networkObjectCache = null;
+
             if (_addedNetworkObject != null)
             {
                 AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
@@ -266,6 +276,18 @@ namespace FishNet.Object
 
             AlertToDuplicateNetworkObjects(_addedNetworkObject.transform);
             return _addedNetworkObject;
+
+            // Returns true if t is this transform or one of its parents.
+            bool IsSelfOrParent(Transform t)
+            {
+                for (Transform current = transform; current != null; current = current.parent)
+                {
+                    if (current == t)
+                        return true;
+                }
+
+                return false;
+            }
 
             // Removes duplicate network objects from t.
             void AlertToDuplicateNetworkObjects(Transform t)
