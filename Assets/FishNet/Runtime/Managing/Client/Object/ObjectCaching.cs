@@ -282,7 +282,11 @@ namespace FishNet.Managing.Client
                     {
                         if (cnob.IsSceneObject)
                         {
-                            cnob.NetworkObject = _clientObjects.GetSceneNetworkObject(cnob.SceneId, cnob.SceneName, cnob.ObjectName);
+                            if (_networkManager.IsServerStarted && _networkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(cnob.ObjectId, out NetworkObject serverNob))
+                                cnob.NetworkObject = serverNob;
+                            else
+                                cnob.NetworkObject = _clientObjects.GetSceneNetworkObject(cnob.SceneId, cnob.SceneName, cnob.ObjectName);
+
                             if (cnob.NetworkObject != null)
                                 SetParentAndTransformProperties(cnob);
                         }
@@ -574,7 +578,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Cached NetworkObject.
         /// </summary>
-        #pragma warning disable 0649
+#pragma warning disable 0649
         public NetworkObject NetworkObject;
         /// <summary>
         /// Reader containing payload for the NetworkObject behaviours.
@@ -588,7 +592,7 @@ namespace FishNet.Managing.Client
         /// Reader containing sync values for the NetworkObject.
         /// </summary>
         public PooledReader SyncTypesReader;
-        #pragma warning restore 0649
+#pragma warning restore 0649
 
         public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, int initializeOrder, int ownerId, SpawnType objectSpawnType, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncTypes)
         {
