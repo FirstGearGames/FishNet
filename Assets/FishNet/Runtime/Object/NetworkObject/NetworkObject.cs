@@ -393,9 +393,6 @@ namespace FishNet.Object
                 return;
             }
 
-            if (gameObject.scene.buildIndex == -1)
-                SceneId = 0;
-
             SetChildDespawnedState();
         }
 
