@@ -337,7 +337,7 @@ namespace FishNet.CodeGenerating.Helping
             List<Instruction> instructions = new();
 
             if (checkIsNetworked)
-                instructions.AddRange(CreateIsNetworkedCheck(methodDef, OpCodes.Brtrue, conditionPassedInst));
+                instructions.AddRange(CreateIsNetworkedCheck(methodDef, OpCodes.Brfalse, conditionFailedInst));
 
             // Checking against the NetworkObject.
             if (!useStatic)
