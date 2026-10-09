@@ -706,7 +706,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference CreateArrayReaderMethodReference(TypeReference objectTr)
         {
             ReaderImports ri = GetClass<ReaderImports>();
-            TypeReference valueTr = objectTr.GetElementType();
+            TypeReference valueTr = ((ArrayType)objectTr).ElementType;
 
             // Write not found.
             if (GetOrCreateReadMethodReference(valueTr, TypeReferenceTraceText(objectTr)) == null)
@@ -1035,4 +1035,4 @@ namespace FishNet.CodeGenerating.Helping
             return readerMethodDef;
         }
     }
-}
+}

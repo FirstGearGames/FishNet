@@ -960,7 +960,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference CreateArrayWriterMethodReference(TypeReference objectTr)
         {
             WriterImports wi = GetClass<WriterImports>();
-            TypeReference valueTr = objectTr.GetElementType();
+            TypeReference valueTr = ((ArrayType)objectTr).ElementType;
 
             //Write not found.
             if (GetOrCreateWriteMethodReference(valueTr, TypeReferenceTraceText(objectTr)) == null)
@@ -1058,4 +1058,4 @@ namespace FishNet.CodeGenerating.Helping
         }
         #endregion
     }
-}
+}
