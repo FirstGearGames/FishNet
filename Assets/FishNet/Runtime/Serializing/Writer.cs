@@ -967,6 +967,17 @@ namespace FishNet.Serializing
                     return;
                 }
 
+                /* NetworkManager is assigned when a NetworkObject initializes
+                 * and is never cleared by ResetState, so if it is set this object
+                 * was previously spawned and is now despawning/despawned (or pooled).
+                 * Send a null reference rather than falling back to PrefabId, which
+                 * the reader would resolve to the prefab template instead of null. */
+                if (nob.NetworkManager != null)
+                {
+                    WriteNullReferenceId();
+                    return;
+                }
+
                 WriteNetworkObjectId(nob.PrefabId);
             }
             else
