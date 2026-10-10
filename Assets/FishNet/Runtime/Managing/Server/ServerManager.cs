@@ -766,6 +766,17 @@ namespace FishNet.Managing.Server
                 
                 int expectedMessages = reader.ReadInt32();
                 
+                /* The split count is read before the connection is authenticated and is used to
+                 * size the split buffer, so it must be within what a client can legitimately send. */
+                if (expectedMessages < 1 || expectedMessages > NetworkManager.TransportManager.GetMaximumClientSplitMessageCount())
+                {
+                    //Intentionally a normal log rather than error to prevent spam from client attacks.
+                    NetworkManager.Log($"Connection [{connection.ToString()}] sent a split message with an invalid message count of [{expectedMessages}].");
+                    connection.Kick(KickReason.UnusualActivity);
+                    
+                    return;
+                }
+                
                 if (!connection.TryGetSplitReader(expectedMessages, out SplitReader splitReader))
                 {
                     //Intentionally a normal log rather than error to prevent spam from client attacks.
