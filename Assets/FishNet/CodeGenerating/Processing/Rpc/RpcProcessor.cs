@@ -257,6 +257,20 @@ namespace FishNet.CodeGenerating.Processing.Rpc
         {
             intentionallyNull = false;
 
+            // PROSTART
+            if (CodeStripping.StripBuild)
+            {
+                /* Clients don't need writers for client rpcs,
+                 * just as server doesnt need writers for server rpcs. */
+                bool isServerRpc = cr.RpcType == RpcType.Server;
+                if ((isServerRpc && CodeStripping.ReleasingForServer) || (!isServerRpc && CodeStripping.ReleasingForClient))
+                {
+                    intentionallyNull = true;
+                    return null;
+                }
+            }
+            // PROEND
+
             string methodName = $"{WRITER_PREFIX}{GetRpcMethodName(cr)}";
             /* If method already exist then clear it. This
              * can occur when a method needs to be rebuilt due to
@@ -363,7 +377,10 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             /* Creates basic ServerRpc and ClientRpc
              * conditions such as if requireOwnership ect..
              * or if (!base.isClient) */
-            CreateClientRpcConditionsForServer(writerMd, cr.Attribute);
+            // PROSTART
+            if (!CodeStripping.StripBuild)
+                // PROEND
+                CreateClientRpcConditionsForServer(writerMd, cr.Attribute);
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             /* Create a local PooledWriter variable. */
@@ -420,7 +437,10 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             /* Creates basic ServerRpc
              * conditions such as if requireOwnership ect..
              * or if (!base.isClient) */
-            CreateServerRpcConditionsForClient(writerMd, cr.Attribute);
+            // PROSTART
+            if (!CodeStripping.StripBuild)
+                // PROEND
+                CreateServerRpcConditionsForClient(writerMd, cr.Attribute);
 
             VariableDefinition channelVariableDef = CreateAndPopulateChannelVariable(writerMd, channelParameterDef);
             // Create a local PooledWriter variable.
@@ -483,6 +503,20 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             bool runLocally = cr.RunLocally;
             MethodDefinition logicMd = cr.LogicMethodDef;
             CustomAttribute rpcAttribute = cr.Attribute;
+
+            // PROSTART
+            if (CodeStripping.StripBuild)
+            {
+                /* Server doesnt need readers for client rpcs,
+                 * just as clients dont need reader for server rpcs. */
+                bool isServerRpc = cr.RpcType == RpcType.Server;
+                if ((isServerRpc && CodeStripping.ReleasingForClient) || (!isServerRpc && CodeStripping.ReleasingForServer))
+                {
+                    intentionallyNull = true;
+                    return null;
+                }
+            }
+            // PROEND
 
             string methodName = $"{READER_PREFIX}{GetRpcMethodName(cr)}";
             /* If method already exist then just return it. This
@@ -854,6 +888,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
             TypeDefinition typeDef = cr.TypeDef;
             MethodDefinition originalMd = cr.OriginalMethodDef;
 
+            
+
             //Methodname for logic methods do not use prefixes because there can be only one.
             string methodName = $"{LOGIC_PREFIX}{GetMethodNameAsParameters(originalMd)}";
 
@@ -965,6 +1001,8 @@ namespace FishNet.CodeGenerating.Processing.Rpc
              * share the same originalMd so it's fine to take the first
              * entry. */
             MethodDefinition originalMd = createdRpcs[0].OriginalMethodDef;
+
+            
 
             ILProcessor processor = originalMd.Body.GetILProcessor();
             originalMd.Body.Instructions.Clear();

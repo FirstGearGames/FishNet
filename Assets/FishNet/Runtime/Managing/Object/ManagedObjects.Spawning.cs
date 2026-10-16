@@ -67,7 +67,13 @@ namespace FishNet.Managing.Object
             // Write type of spawn.
             SpawnType st = SpawnType.Unset;
             if (sceneObject)
+            {
                 st |= SpawnType.Scene;
+                /* Clients cannot tell a scene object which had its parent removed
+                 * at runtime from one which is still where the scene placed it. */
+                if (nob.transform.parent == null)
+                    st |= SpawnType.SceneRoot;
+            }
             else
                 st |= nob.IsGlobal ? SpawnType.InstantiatedGlobal : SpawnType.Instantiated;
 
@@ -219,7 +225,11 @@ namespace FishNet.Managing.Object
             Transform t = nob.transform.parent;
             if (t != null)
             {
-                parentNb = nob.CurrentParentNetworkBehaviour;
+                /* A scene object already sits where the scene placed it on clients,
+                 * so only a parent set at runtime is sent. Sending the initialized
+                 * parent would move the object directly under the parent NetworkObject,
+                 * skipping any transforms between them. */
+                parentNb = nob.IsSceneObject ? nob.RuntimeParentNetworkBehaviour : nob.CurrentParentNetworkBehaviour;
                 /* Check for a NetworkObject if there is no NetworkBehaviour.
                  * There is a small chance the parent object will only contain
                  * a NetworkObject. */

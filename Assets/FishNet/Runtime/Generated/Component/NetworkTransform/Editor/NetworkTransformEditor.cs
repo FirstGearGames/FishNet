@@ -21,6 +21,7 @@ namespace FishNet.Component.Transforming.Editing
         private SerializedProperty _teleportThreshold;
         private SerializedProperty _clientAuthoritative;
         private SerializedProperty _sendToOwner;
+        private SerializedProperty _useLevelOfDetail;
         private SerializedProperty _interval;
         private SerializedProperty _synchronizePosition;
         private SerializedProperty _positionSensitivity;
@@ -43,6 +44,7 @@ namespace FishNet.Component.Transforming.Editing
             _teleportThreshold = serializedObject.FindProperty(nameof(_teleportThreshold));
             _clientAuthoritative = serializedObject.FindProperty(nameof(_clientAuthoritative));
             _sendToOwner = serializedObject.FindProperty(nameof(_sendToOwner));
+            _useLevelOfDetail = serializedObject.FindProperty(nameof(_useLevelOfDetail));
             _interval = serializedObject.FindProperty(nameof(_interval));
             _synchronizePosition = serializedObject.FindProperty(nameof(_synchronizePosition));
             _positionSensitivity = serializedObject.FindProperty(nameof(_positionSensitivity));
@@ -61,6 +63,7 @@ namespace FishNet.Component.Transforming.Editing
             LayoutTools.AddObjectField("Script:", MonoScript.FromMonoBehaviour((NetworkTransform)target), typeof(NetworkTransform), false, EditorLayoutEnableType.Disabled);
 
             bool isPro = false;
+            
             if (isPro)
                 EditorGUILayout.HelpBox(EditingConstants.PRO_ASSETS_UNLOCKED_TEXT, MessageType.None);
             else
@@ -109,8 +112,12 @@ namespace FishNet.Component.Transforming.Editing
             //Synchronizing.
             EditorGUILayout.LabelField("Synchronizing.", EditorStyles.boldLabel);
             EditorGUI.indentLevel++;
-            //Interval.
+            //Level of detail.
+            EditorGUILayout.PropertyField(_useLevelOfDetail, new GUIContent("* Use Level of Detail"));
+            //Interval. Level of detail decides when to send while enabled.
+            EditorGUI.BeginDisabledGroup(isPro && _useLevelOfDetail.boolValue);
             EditorGUILayout.PropertyField(_interval, new GUIContent("Send Interval"));
+            EditorGUI.EndDisabledGroup();
             //Position.
             EditorGUILayout.PropertyField(_synchronizePosition);
             if (_synchronizePosition.boolValue)

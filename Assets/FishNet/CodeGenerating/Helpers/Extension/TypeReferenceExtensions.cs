@@ -66,7 +66,8 @@ namespace FishNet.CodeGenerating.Helping.Extension
         /// <returns></returns>
         public static bool IsMultidimensionalArray(this TypeReference typeRef)
         {
-            if (typeRef is ArrayType at && !at.IsVector)
+            // Rank above one. A jagged array is an array of arrays and is written like any other array.
+            if (typeRef is ArrayType arrayType && !arrayType.IsVector)
                 return true;
 
             return false;
@@ -128,4 +129,4 @@ namespace FishNet.CodeGenerating.Helping.Extension
             }
         }
     }
-}
+}

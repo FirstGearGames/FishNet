@@ -294,8 +294,11 @@ namespace FishNet.Object
             {
                 /* Just remove from observers since connection isn't active
                  * and return unchanged because nothing should process
-                 * given the connection isnt active. */
-                RemoveObserver(connection);
+                 * given the connection isnt active. Despawn callbacks
+                 * still run, since the disconnect will no longer find
+                 * this connection among observers. */
+                if (RemoveObserver(connection))
+                    InvokeOnServerDespawn(connection);
                 return ObserverStateChange.Unchanged;
             }
 

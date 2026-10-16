@@ -140,6 +140,19 @@ namespace FishNet.Managing.Timing
         /// </summary>
         public bool FrameTicked { get; private set; }
         /// <summary>
+        /// Seconds to move per-frame work by this frame, used in place of Time.deltaTime so movement covers the same distance every tick.
+        /// This only works for movement done in the OnUpdate callback of this TimeManager, and follows its update order.
+        /// </summary>
+        /// <remarks>
+        /// With the update order BeforeTick, the default, OnUpdate movement is read by the same frame's tick, and every tick covers exactly one tick of movement.
+        /// With AfterTick, OnUpdate movement is only read at the next frame's tick, so whether the next frame ticks is predicted by assuming it lasts as long as this one.
+        /// When that prediction misses, the difference moves into the following tick.
+        /// MonoBehaviour Update is not tied to the update order and gains nothing over Time.deltaTime.
+        /// No time is lost: time held back on one frame is made up on a later one, so movement speed is unchanged. A frame which runs several ticks moves for all of them before the first tick reads it.
+        /// The value may be zero on a frame where movement has already reached the next tick. It is scaled by Time.timeScale, as Time.deltaTime is.
+        /// </remarks>
+        public float NormalizedDeltaTime { get; private set; }
+        /// <summary>
         /// How long the local server has been connected.
         /// </summary>
         public float ServerUptime { get; private set; }
@@ -241,6 +254,10 @@ namespace FishNet.Managing.Timing
         /// Accumulating frame time to determine when to increase tick.
         /// </summary>
         private double _elapsedTickTime;
+        /// <summary>
+        /// Unscaled seconds movement using NormalizedDeltaTime is behind the time of the ticks run so far.
+        /// </summary>
+        private double _normalizedDeltaLag;
         /// <summary>
         /// Internal deltaTime for clients. Controlled by the server.
         /// </summary>
@@ -371,6 +388,9 @@ namespace FishNet.Managing.Timing
                 ServerUptime += Time.deltaTime;
             if (NetworkManager.IsClientStarted)
                 ClientUptime += Time.deltaTime;
+
+            //Set before OnUpdate so it is ready regardless of update order.
+            UpdateNormalizedDeltaTime();
 
             bool beforeTick = _updateOrder == UpdateOrder.BeforeTick;
             if (beforeTick)
@@ -681,6 +701,53 @@ namespace FishNet.Managing.Timing
             writer.Store();
         }
         #endregion
+
+        /// <summary>
+        /// Sets NormalizedDeltaTime for this frame, working out this frame's ticks with the same test IncreaseTick uses.
+        /// </summary>
+        private void UpdateNormalizedDeltaTime()
+        {
+            double timePerSimulation = NetworkManager.IsServerStarted ? TickDelta : _adjustedTickDelta;
+            double frameDelta = Time.unscaledDeltaTime;
+            if (timePerSimulation <= 0d)
+            {
+                NormalizedDeltaTime = (float)frameDelta * Time.timeScale;
+                return;
+            }
+
+            //Ticks this frame will run, and the time left over after them.
+            double elapsed = _elapsedTickTime + frameDelta;
+            int ticks = (int)Math.Floor(elapsed / timePerSimulation);
+            if (_allowTickDropping && ticks > _maximumFrameTicks)
+            {
+                ticks = _maximumFrameTicks;
+                elapsed = timePerSimulation * _maximumFrameTicks;
+            }
+
+            _normalizedDeltaLag += ticks * timePerSimulation;
+            double untilNextTick = _normalizedDeltaLag + timePerSimulation;
+            double delta;
+            /* Before tick: movement this frame is read by this frame's ticks, so a ticking frame reaches
+             * the time of its last tick exactly, and other frames never pass the next tick's time. */
+            if (_updateOrder == UpdateOrder.BeforeTick)
+            {
+                delta = ticks > 0 ? _normalizedDeltaLag : Math.Min(frameDelta, untilNextTick);
+            }
+            /* After tick: movement this frame is read at the next frame's tick, so it reaches that tick's
+             * time exactly when the next frame ticks, and never passes it otherwise. Whether the next
+             * frame ticks is unknown, so it is assumed to last as long as this one. */
+            else
+            {
+                double remainder = elapsed - ticks * timePerSimulation;
+                bool nextFrameTicks = remainder + frameDelta >= timePerSimulation;
+                delta = nextFrameTicks ? untilNextTick : Math.Min(frameDelta, untilNextTick);
+            }
+            if (delta < 0d)
+                delta = 0d;
+            _normalizedDeltaLag -= delta;
+
+            NormalizedDeltaTime = (float)(delta * Time.timeScale);
+        }
 
         /// <summary>
         /// Increases the tick based on simulation rate.
@@ -1242,9 +1309,9 @@ namespace FishNet.Managing.Timing
         #region UNITY_EDITOR
         private void OnValidate()
         {
-            /* Physics mode sets Physics.simulationMode and Time.fixedDeltaTime, which
-             * outside play mode are the project settings: they would be saved with the
-             * project and baked into player builds. */
+            /* Physics mode sets Physics.simulationMode and Time.fixedDeltaTime, which outside play mode are the
+             * project settings: they were saved with the project, applied to every scene, and baked into builds.
+             * At runtime the same values are applied on initialization, and Unity reverts them when play mode exits. */
             if (!Application.isPlaying)
                 return;
 

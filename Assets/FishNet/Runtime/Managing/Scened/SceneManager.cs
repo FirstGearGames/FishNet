@@ -349,6 +349,10 @@ namespace FishNet.Managing.Scened
         /// </summary>
         private SceneLoadData _globalSceneLoadData = new();
         /// <summary>
+        /// ReplaceOption late-joining clients use when loading global scenes. Additive global loads do not change it.
+        /// </summary>
+        private ReplaceOption _globalReplaceScenes = ReplaceOption.None;
+        /// <summary>
         /// Scenes to load or unload, in order.
         /// </summary>
         private List<object> _queuedOperations = new();
@@ -447,6 +451,7 @@ namespace FishNet.Managing.Scened
             SceneConnections.Clear();
             _globalScenes = new string[0];
             _globalSceneLoadData = new();
+            _globalReplaceScenes = ReplaceOption.None;
             _queuedOperations.Clear();
             _manualUnloadScenes.Clear();
             _sceneQueueStartInvoked = false;
@@ -571,7 +576,7 @@ namespace FishNet.Managing.Scened
             SceneLoadData sld = new(sceneLookupData.ToArray());
             sld.Params = _globalSceneLoadData.Params;
             sld.Options = _globalSceneLoadData.Options;
-            sld.ReplaceScenes = _globalSceneLoadData.ReplaceScenes;
+            sld.ReplaceScenes = _globalReplaceScenes;
             sld.PreferredActiveScene = _globalSceneLoadData.PreferredActiveScene;
 
             LoadQueueData qd = new(SceneScopeType.Global, Array.Empty<NetworkConnection>(), sld, _globalScenes, false);
@@ -1040,6 +1045,11 @@ namespace FishNet.Managing.Scened
                 else if (asServer && data.ScopeType == SceneScopeType.Global)
                 {
                     _globalSceneLoadData = sceneLoadData;
+                    /* An additive load only adds to the current global scenes, so it must not change
+                     * how late-joining clients load them. Only a replacing load, or the first load
+                     * into an empty global set, decides that. */
+                    if (replaceScenes != ReplaceOption.None || _globalScenes.Length == 0)
+                        _globalReplaceScenes = replaceScenes;
                     string[] names = sceneLoadData.SceneLookupDatas.GetFulLNamesOnly();
                     // Add to server global scenes which are currently loading.
                     foreach (string item in names)

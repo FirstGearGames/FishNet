@@ -2,6 +2,7 @@
 using FishNet.Documenting;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 namespace FishNet.Upgrading.Mirror.Editing
@@ -24,7 +25,11 @@ namespace FishNet.Upgrading.Mirror.Editing
         private static void ReplaceComponents()
         {
 #if MIRROR
+            #if UNITY_2022_2_OR_NEWER
+            MirrorUpgrade result = GameObject.FindAnyObjectByType<MirrorUpgrade>();
+            #else
             MirrorUpgrade result = GameObject.FindObjectOfType<MirrorUpgrade>();
+            #endif
             if (result != null)
             {
                 Debug.LogError("MirrorUpgrade already exist in the scene. This suggests an operation is currently running.");
@@ -41,7 +46,12 @@ namespace FishNet.Upgrading.Mirror.Editing
         [MenuItem("Tools/Fish-Networking/Utility/Upgrading/From Mirror/Remove Defines", false, 2)]
         private static void RemoveDefines()
         {
+            #if UNITY_6000_1_OR_NEWER
+            NamedBuildTarget activeTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            string currentDefines = PlayerSettings.GetScriptingDefineSymbols(activeTarget);
+            #else
             string currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            #endif
             /* Convert current defines into a hashset. This is so we can
              * determine if any of our defines were added. Only save playersettings
              * when a define is added. */
@@ -63,7 +73,11 @@ namespace FishNet.Upgrading.Mirror.Editing
             {
                 Debug.Log("Removed Mirror defines to player settings.");
                 string changedDefines = string.Join(";", definesHs);
+                #if UNITY_6000_1_OR_NEWER
+                PlayerSettings.SetScriptingDefineSymbols(activeTarget, changedDefines);
+                #else
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, changedDefines);
+                #endif
             }
         }
     }

@@ -62,6 +62,11 @@ namespace FishNet.CodeGenerating.ILCore
             if (!session.Initialize(assemblyDef.MainModule))
                 return null;
 
+            // PROSTART
+            if (CodeStripping.StripBuild)
+                session.LogWarning($"Fish-Networking Code stripping enabled on assembly {assemblyDef.MainModule.Name}");
+            // PROEND
+
             bool modified = false;
 
             bool fnAssembly = IsFishNetAssembly(compiledAssembly);
@@ -320,6 +325,9 @@ namespace FishNet.CodeGenerating.ILCore
             bool modified = false;
 
             bool codeStripping = false;
+            // PROSTART
+            codeStripping = CodeStripping.StripBuild;
+            // PROEND
             List<TypeDefinition> allTypeDefs = session.Module.Types.ToList();
 
             /* First pass, potentially only pass.
@@ -332,6 +340,20 @@ namespace FishNet.CodeGenerating.ILCore
 
                 modified |= session.GetClass<QolAttributeProcessor>().Process(td, codeStripping);
             }
+
+            // PROSTART
+            /* If stripping then remove the remainder content */
+            if (codeStripping)
+            {
+                foreach (TypeDefinition td in allTypeDefs)
+                {
+                    if (session.GetClass<GeneralHelper>().HasExcludeSerializationAttribute(td))
+                        continue;
+
+                    modified |= session.GetClass<QolAttributeProcessor>().Process(td, false);
+                }
+            }
+            // PROEND
 
             return modified;
         }

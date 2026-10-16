@@ -25,7 +25,11 @@ namespace FishNet.Managing.Object
         /// <summary>
         /// Indicates the receiver is the predicted spawner.
         /// </summary>
-        IsPredictedSpawner = 16
+        IsPredictedSpawner = 16,
+        /// <summary>
+        /// Is a scene object at the root of its scene, such as after its parent was removed at runtime.
+        /// </summary>
+        SceneRoot = 32
     }
 
     [APIExclude]

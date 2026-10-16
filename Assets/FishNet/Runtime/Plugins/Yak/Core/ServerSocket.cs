@@ -36,19 +36,37 @@ namespace FishNet.Transporting.Yak.Server
         private ClientSocket _client;
         #endregion
 
+        // PROSTART
+        /// <summary>
+        /// Initializes this for use.
+        /// </summary>
+        internal override void Initialize(Transport t, CommonSocket socket)
+        {
+            base.Initialize(t, socket);
+            _client = (ClientSocket)socket;
+        }
+        // PROEND
+
         /// <summary>
         /// Starts the server.
         /// </summary>
         internal bool StartConnection()
         {
+            // PROSTART
+            SetLocalConnectionState(LocalConnectionState.Starting, true);
+            SetLocalConnectionState(LocalConnectionState.Started, true);
+            //PROEND
             return true;
         }
+
+        
 
         /// <summary>
         /// Stops the local socket.
         /// </summary>
         internal bool StopConnection()
         {
+            
             return true;
         }
 
@@ -58,10 +76,18 @@ namespace FishNet.Transporting.Yak.Server
         /// <param name = "connectionId">ConnectionId of the client to disconnect.</param>
         internal bool StopConnection(int connectionId)
         {
+            
             return true;
         }
 
+        
+
+        
+
         #region Local client.
+        
+
+        
         #endregion
     }
 }

@@ -97,8 +97,15 @@ namespace FishNet.Editing.PrefabCollectionGenerator
 
         internal static string[] GetProjectFiles(string startingPath, string fileExtension, List<string> excludedPaths, bool recursive)
         {
+            /* Excluded paths may use either separator, a trailing separator, or different
+             * casing, such as when the config was saved on another platform. Normalize them
+             * so they match the paths Directory.GetDirectories returns. */
+            HashSet<string> excluded = new(StringComparer.OrdinalIgnoreCase);
+            foreach (string path in excludedPaths)
+                excluded.Add(GetNormalizedFolderPath(path));
+
             // starting path is excluded.
-            if (excludedPaths.Contains(startingPath))
+            if (excluded.Contains(GetNormalizedFolderPath(startingPath)))
                 return new string[0];
 
             // Folders remaining to be iterated.
@@ -114,7 +121,7 @@ namespace FishNet.Editing.PrefabCollectionGenerator
                     {
                         string current = allFolders[z];
                         // Not excluded.
-                        if (!excludedPaths.Contains(current))
+                        if (!excluded.Contains(GetNormalizedFolderPath(current)))
                             enumeratedCollection.Add(current);
                     }
                 }
@@ -487,6 +494,17 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             path = path.Replace(@"\"[0], Path.DirectorySeparatorChar);
             path = path.Replace(@"/"[0], Path.DirectorySeparatorChar);
             return path;
+        }
+
+        /// <summary>
+        /// Returns a folder path using platform separators and without a trailing separator.
+        /// </summary>
+        private static string GetNormalizedFolderPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            return GetPlatformPath(path).TrimEnd(Path.DirectorySeparatorChar);
         }
 
         /// <summary>

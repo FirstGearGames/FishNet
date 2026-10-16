@@ -765,7 +765,14 @@ namespace FishNet.Managing.Server
                 reader.ReadPacketId();
                 
                 int expectedMessages = reader.ReadInt32();
-                
+
+                //Checked before the split reader allocates for the claimed count.
+                if (!NetworkManager.TransportManager.IsClientSplitMessageCountAllowed(expectedMessages))
+                {
+                    connection.Kick(KickReason.ExploitAttempt, LoggingType.Common, $"ConnectionId {connection.ClientId} sent a split packet of {expectedMessages} messages, which exceeds the maximum client packet size. Connection will be kicked immediately.");
+                    return;
+                }
+
                 if (!connection.TryGetSplitReader(expectedMessages, out SplitReader splitReader))
                 {
                     //Intentionally a normal log rather than error to prevent spam from client attacks.

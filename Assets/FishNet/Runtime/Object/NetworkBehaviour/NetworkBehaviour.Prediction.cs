@@ -435,6 +435,7 @@ namespace FishNet.Object
             // State forwarding, send to all.
             else
             {
+                
                 {
                     #if !UNITY_SERVER
                     observersWrittenTo = Observers.Count;
@@ -780,6 +781,7 @@ namespace FishNet.Object
         [MakePublic]
         private void Replicate_Replay_NonAuthoritative<T>(uint replayTick, ReplicateUserLogicDelegate<T> del, RingBuffer<ReplicateDataContainer<T>> replicatesHistory) where T : IReplicateData, new()
         {
+                         
             ReplicateDataContainer<T> dataContainer;
             ReplicateState state;
             bool isAppendedOrder = _networkObjectCache.PredictionManager.IsAppendedStateOrder;
@@ -1426,6 +1428,8 @@ namespace FishNet.Object
                     replicatesHistory[i].Dispose();
                 replicatesHistory.RemoveRange(true, removeCount);
             }
+
+            
 
             //Set on the networkObject that a reconcile can now occur.
             _networkObjectCache.IsObjectReconciling = true;

@@ -715,6 +715,7 @@ namespace FishNet.Managing.Client
             if (!networkManager.IsHostStarted)
             {
                 Transform parentTransform = null;
+                NetworkBehaviour parentNb = null;
                 //Set parentTransform if there's a parent object.
                 if (cnob.HasParent)
                 {
@@ -728,11 +729,12 @@ namespace FishNet.Managing.Client
                     }
                     else
                     {
-                        byte componentIndex = cnob.ComponentId.Value;
-                        NetworkBehaviour nb = nob.GetNetworkBehaviour(componentIndex, false);
-                        if (nb != null)
+                        //ComponentId is this object's own index; the parent behaviour is ParentComponentId.
+                        byte componentIndex = cnob.ParentComponentId.Value;
+                        parentNb = nob.GetNetworkBehaviour(componentIndex, false);
+                        if (parentNb != null)
                         {
-                            parentTransform = nb.transform;
+                            parentTransform = parentNb.transform;
                         }
                         else
                         {
@@ -748,6 +750,13 @@ namespace FishNet.Managing.Client
                 //Only need to set IsGlobal also if not host.
                 bool isGlobal = cnob.SpawnType.FastContains(SpawnType.InstantiatedGlobal);
                 result.SetIsGlobal(isGlobal);
+
+                /* The pool already placed the transform under the parent. Record the parent
+                 * on the NetworkObject as well, as the server did; otherwise RuntimeParentNetworkBehaviour
+                 * stays null on clients. This must run after SetIsGlobal since SetParent validates
+                 * global parenting. */
+                if (parentNb != null)
+                    result.SetParent(parentNb);
             }
             //If host then find server instantiated object.
             else

@@ -94,6 +94,9 @@ namespace FishNet.Example
         }
 
 #if ENABLE_INPUT_SYSTEM
+        /// <summary>
+        /// World corners of the image being drawn over, reused each call.
+        /// </summary>
         private readonly Vector3[] _corners = new Vector3[4];
 
         /// <summary>
@@ -101,9 +104,24 @@ namespace FishNet.Example
         /// </summary>
         private bool InvisibleButton(Image img)
         {
-            // Overlay canvas, so world corners are screen pixels. IMGUI y is top-down.
             img.rectTransform.GetWorldCorners(_corners);
-            Rect r = new(_corners[0].x, Screen.height - _corners[1].y, _corners[2].x - _corners[0].x, _corners[1].y - _corners[0].y);
+
+            // An overlay canvas has no camera; Screen Space Camera and World Space canvases render through one.
+            Canvas canvas = img.canvas.rootCanvas;
+            Camera canvasCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
+
+            // Bounding box of the corners in screen space, so any canvas mode, scale or rotation gets the right area.
+            Vector2 min = new(float.MaxValue, float.MaxValue);
+            Vector2 max = new(float.MinValue, float.MinValue);
+            for (int i = 0; i < _corners.Length; i++)
+            {
+                Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(canvasCamera, _corners[i]);
+                min = Vector2.Min(min, screenPoint);
+                max = Vector2.Max(max, screenPoint);
+            }
+
+            // IMGUI's y axis runs top down.
+            Rect r = new(min.x, Screen.height - max.y, max.x - min.x, max.y - min.y);
 
             // Mimic the canvas Button's color tint, since it gets no pointer events without an input module.
             Button button = img.GetComponentInChildren<Button>();
@@ -123,7 +141,11 @@ namespace FishNet.Example
         {
 #if !ENABLE_INPUT_SYSTEM
             SetEventSystem();
+            #if UNITY_2022_2_OR_NEWER
+            BaseInputModule inputModule = FindAnyObjectByType<BaseInputModule>();
+            #else
             BaseInputModule inputModule = FindObjectOfType<BaseInputModule>();
+            #endif
             if (inputModule == null)
                 gameObject.AddComponent<StandaloneInputModule>();
 #else
@@ -131,7 +153,11 @@ namespace FishNet.Example
                 _serverIndicator.gameObject.SetActive(false);
 #endif
 
+            #if UNITY_2022_2_OR_NEWER
+            _networkManager = FindAnyObjectByType<NetworkManager>();
+            #else
             _networkManager = FindObjectOfType<NetworkManager>();
+            #endif
             if (_networkManager == null)
             {
                 Debug.LogError("NetworkManager not found, HUD will not function.");
@@ -221,7 +247,11 @@ namespace FishNet.Example
 #if !ENABLE_INPUT_SYSTEM
             if (_eventSystem != null)
                 return;
+            #if UNITY_2022_2_OR_NEWER
+            _eventSystem = FindAnyObjectByType<EventSystem>();
+            #else
             _eventSystem = FindObjectOfType<EventSystem>();
+            #endif
             if (_eventSystem == null)
                 _eventSystem = gameObject.AddComponent<EventSystem>();
 #endif

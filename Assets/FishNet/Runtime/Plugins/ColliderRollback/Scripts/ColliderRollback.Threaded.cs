@@ -50,6 +50,83 @@ namespace FishNet.Component.ColliderRollback
 #pragma warning restore CS0414
         #endregion
 
+        // PROSTART
+
+        #region Private.
+        /// <summary>
+        /// Rollback data about ColliderParents.
+        /// </summary>
+        private List<Transform> _rollingColliders;
+        #endregion
+
+        #region Internal.
+        /// <summary>
+        /// Rollback data about ColliderParents.
+        /// </summary>
+        internal IReadOnlyList<Transform> GetRollingColliders() => _rollingColliders;
+        /// <summary>
+        /// BoundingBoxData.
+        /// </summary>
+        internal RollbackManager.BoundingBoxData GetBoundingBoxData() => new(
+            _physicsType, _boundingBox, _boundingBoxSize / 2, _boundingBoxCenter, _boundingBoxLocalRotation);
+        #endregion
+
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+            InitializeRollingColliders();
+            ChangeEventSubscriptions(true);
         }
+
+        public override void OnStopServer()
+        {
+            base.OnStopServer();
+            ChangeEventSubscriptions(false);
+            DeinitializeRollingColliders();
+        }
+        
+        /// <summary>
+        /// Subscribes or unsubscribes to events needed for rolling back.
+        /// </summary>
+        /// <param name = "subscribe"></param>
+        private void ChangeEventSubscriptions(bool subscribe)
+        {
+            RollbackManager rm = RollbackManager;
+            if (rm == null)
+                return;
+
+            if (subscribe)
+                rm.RegisterColliderRollback(this);
+            else
+                rm.UnregisterColliderRollback(this);
+        }
+
+        /// <summary>
+        /// Initializes class for use.
+        /// </summary>
+        private void InitializeRollingColliders()
+        {
+            _rollingColliders = CollectionCaches<Transform>.RetrieveList();
+
+            /* Generate a rolling collider for each
+             * collider parent. */
+            foreach (GameObject colliderParent in _colliderParents)
+            {
+                if (colliderParent.gameObject == null)
+                    continue;
+                
+                _rollingColliders.Add(colliderParent.transform);
+            }
+        }
+
+        /// <summary>
+        /// Resets class state pooling objects.
+        /// </summary>
+        private void DeinitializeRollingColliders()
+        {
+            CollectionCaches<Transform>.StoreAndDefault(ref _rollingColliders);
+        }
+        // PROEND
+    }
 }
 #endif

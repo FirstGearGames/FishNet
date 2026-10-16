@@ -60,7 +60,13 @@ namespace FishNet.Demo.AdditiveScenes
             if (!IsServerStarted)
                 return false;
             
+            #if UNITY_6000_5_OR_NEWER
+            _wayPoints = FindObjectsByType<Waypoint>().ToList();
+            #elif UNITY_2022_2_OR_NEWER
+            _wayPoints = FindObjectsByType<Waypoint>(FindObjectsSortMode.None).ToList();
+            #else
             _wayPoints = FindObjectsOfType<Waypoint>().ToList();
+            #endif
             /* There are expected 4 waypoints in this test -- if only
              * one is found then the other scenes did not load yet. */
             if (_wayPoints.Count != 4)

@@ -399,7 +399,8 @@ namespace FishNet.Object
 
         private void InvokeStopCallbacks_Prediction(bool asServer)
         {
-            if (!asServer)
+            // Only the client subscribes in InvokeStartCallbacks_Prediction.
+            if (asServer)
                 return;
 
             if (TimeManager != null)

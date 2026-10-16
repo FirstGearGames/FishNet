@@ -36,6 +36,39 @@ namespace FishNet.Serializing
         }
         #endregion
 
+        // NOTESSTART
+        /*
+        Splitting large flags as needed without packed whole.
+        [System.Flags]
+        public enum MyValues : int
+        {
+            A = (1 << 0),
+            B = (1 << 2),
+            C = (1 << 2),
+            OverA = (1 << 8),
+            OverB = (1 << 9),
+            OverC = (1 << 10),
+        }
+        private void Test()
+        {
+            MyValues mV = (MyValues.A | MyValues.C | MyValues.OverB | MyValues.OverC);
+            int values = (int)mV;
+
+            Debug.Log($"All values {values}. enum {mV}.");
+
+
+            int firstByte = (values & 0xff);
+            Debug.Log($"First byte {firstByte}. enum {(MyValues)firstByte}.");
+            int secondByte = (values >> 8);
+            Debug.Log($"Second byte {secondByte}. enum {(MyValues)secondByte}.");
+            secondByte = (secondByte << 8);
+            Debug.Log($"Second byte shifted out {secondByte}. enum won't be true.");
+
+            int combined = (firstByte | secondByte);
+            Debug.Log($"Combined {combined}. enum {(MyValues)combined}");
+        }
+        */
+        // NOTESEND
         /// <summary>
         /// Used to insert length for delta flags.
         /// </summary>

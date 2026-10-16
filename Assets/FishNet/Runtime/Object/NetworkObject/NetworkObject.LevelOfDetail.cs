@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using FishNet.Component.Transforming;
 using FishNet.Connection;
 using GameKit.Dependencies.Utilities;
 using UnityEngine;
@@ -28,10 +29,10 @@ namespace FishNet.Object
         [SerializeField]
         private LocalReconcileLODCalculationType _localLevelOfDetailCalculationType = LocalReconcileLODCalculationType.CloseObjectsOnly;
         /// <summary>
-        /// True if to enable level of detail for this object. Level of detail supports prediction objects. This feature must be enabled on the ObserverManager to function.
+        /// True if to enable level of detail for this object. Level of detail supports prediction objects and server authoritative NetworkTransforms. This feature must be enabled on the ObserverManager to function.
         /// </summary>
         internal bool UseLevelOfDetail => _useLevelOfDetail;
-        [Tooltip("True if to enable level of detail for this object. Level of detail supports prediction objects. This feature must be enabled on the ObserverManager to function.")]
+        [Tooltip("True if to enable level of detail for this object. Level of detail supports prediction objects and server authoritative NetworkTransforms. This feature must be enabled on the ObserverManager to function.")]
         [SerializeField]
         private bool _useLevelOfDetail = false;
         /// <summary>
@@ -50,21 +51,38 @@ namespace FishNet.Object
         /// </summary>
         private void SetLevelOfDetailUsage()
         {
+            
+        }
+
+        /// <summary>
+        /// Returns if any NetworkTransform on this object uses level of detail.
+        /// </summary>
+        private bool HasLevelOfDetailNetworkTransform()
+        {
+            foreach (NetworkBehaviour nb in NetworkBehaviours)
+            {
+                if (nb is NetworkTransform { UseLevelOfDetail: true })
+                    return true;
             }
+
+            return false;
+        }
 
         /// <summary>
         /// Called ObserversActive has changed.
         /// </summary>
         private void ObserversActiveChanged_LevelOfDetail()
         {
-            }
+            
+        }
 
         /// <summary>
         /// Clears observers for level of detail.
         /// </summary>
         private void ClearObserverLevelOfDetail()
         {
-            }
+            
+        }
 
         /// <summary>
         /// Adds an observer to level of detail if needed.
@@ -72,13 +90,15 @@ namespace FishNet.Object
         /// <remarks>A connection is only added if this object supports level of detail.</remarks>
         private void AddObserverLevelOfDetail(NetworkConnection connection)
         {
-            }
+            
+        }
 
         /// <summary>
         /// Removes an observer from level of detail if needed.
         /// </summary>
         private void RemoveObserverLevelOfDetail(NetworkConnection connection)
         {
-            }
+            
+        }
     }
 }

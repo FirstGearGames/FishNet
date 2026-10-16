@@ -282,6 +282,8 @@ namespace FishNet.Managing.Client
                     {
                         if (cnob.IsSceneObject)
                         {
+                            /* As clientHost use the server's instance, as instantiated spawns do. A SceneId is shared by every
+                             * copy of a scene loaded more than once, so the scene lookup could return another copy's object. */
                             if (_networkManager.IsServerStarted && _networkManager.ServerManager.Objects.Spawned.TryGetValueIL2CPP(cnob.ObjectId, out NetworkObject serverNob))
                                 cnob.NetworkObject = serverNob;
                             else
@@ -477,6 +479,11 @@ namespace FishNet.Managing.Client
 
                     //cnob.NetworkObject.transform.SetLocalPositionRotationAndScale(cnob.Position, cnob.Rotation, cnob.Scale);
                 }
+                //Parent was removed at runtime on the server.
+                else if (cnob.SpawnType.FastContains(SpawnType.SceneRoot) && cnob.NetworkObject.transform.parent != null)
+                {
+                    cnob.NetworkObject.UnsetParent();
+                }
 
                 // else
                 // {
@@ -578,7 +585,7 @@ namespace FishNet.Managing.Client
         /// <summary>
         /// Cached NetworkObject.
         /// </summary>
-#pragma warning disable 0649
+        #pragma warning disable 0649
         public NetworkObject NetworkObject;
         /// <summary>
         /// Reader containing payload for the NetworkObject behaviours.
@@ -592,7 +599,7 @@ namespace FishNet.Managing.Client
         /// Reader containing sync values for the NetworkObject.
         /// </summary>
         public PooledReader SyncTypesReader;
-#pragma warning restore 0649
+        #pragma warning restore 0649
 
         public void InitializeSpawn(NetworkManager manager, ushort collectionId, int objectId, int initializeOrder, int ownerId, SpawnType objectSpawnType, byte? nobComponentId, int? parentObjectId, byte? parentComponentId, int? prefabId, Vector3? position, Quaternion? rotation, Vector3? scale, ulong sceneId, string sceneName, string objectName, ArraySegment<byte> payload, ArraySegment<byte> rpcLinks, ArraySegment<byte> syncTypes)
         {

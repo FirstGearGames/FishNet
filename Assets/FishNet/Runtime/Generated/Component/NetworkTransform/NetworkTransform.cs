@@ -1,10 +1,11 @@
-﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 #define DEVELOPMENT
 #endif
 using FishNet.Connection;
 using FishNet.Documenting;
 using FishNet.Managing;
 using FishNet.Managing.Logging;
+using FishNet.Managing.Observing;
 using FishNet.Managing.Server;
 using FishNet.Object;
 using FishNet.Serializing;
@@ -25,6 +26,8 @@ namespace FishNet.Component.Transforming
     public sealed class NetworkTransform : NetworkBehaviour
     {
         #region Types.
+        
+
         [Serializable]
         public enum ComponentConfigurationType
         {
@@ -436,6 +439,13 @@ namespace FishNet.Component.Transforming
         }
 
         /// <summary>
+        /// True to send using the level of detail of the NetworkObject. While enabled the send interval is not used. Level of detail must also be enabled on the NetworkObject and ObserverManager.
+        /// </summary>
+        internal bool UseLevelOfDetail => _useLevelOfDetail;
+        [Tooltip("True to send using the level of detail of the NetworkObject. While enabled the send interval is not used. Level of detail must also be enabled on the NetworkObject and ObserverManager.")]
+        [SerializeField]
+        private bool _useLevelOfDetail;
+        /// <summary>
         /// How often in ticks to synchronize. This is default to 1 but can be set longer to send less often. This value may also be changed at runtime. Enabling Network level of detail for this NetworkTransform disables manual control of this feature as it will be handled internally.
         /// </summary>
         [Tooltip("How often in ticks to synchronize. This is default to 1 but can be set longer to send less often. This value may also be changed at runtime. Enabling Network level of detail for this NetworkTransform disables manual control of this feature as it will be handled internally.")]
@@ -625,6 +635,7 @@ namespace FishNet.Component.Transforming
         /// Writers for changed data.
         /// </summary>
         private PooledWriter _toClientChangedWriter;
+        
         /// <summary>
         /// If not unset a force send will occur on or after this tick.
         /// </summary>
@@ -668,6 +679,7 @@ namespace FishNet.Component.Transforming
         private void Awake()
         {
             _interval = Math.Max(_interval, (byte)1);
+            
         }
 
         private void OnDestroy()
@@ -1102,6 +1114,8 @@ namespace FishNet.Component.Transforming
             if (!canSet)
                 return;
 
+            
+
             if (IsServerInitialized)
                 ObserversSetInterval(value);
             else
@@ -1114,6 +1128,8 @@ namespace FishNet.Component.Transforming
         /// <param name = "value"></param>
         private void SetIntervalInternal(byte value)
         {
+            
+
             value = (byte)Mathf.Max(value, 1);
             _interval = value;
         }
@@ -1193,7 +1209,7 @@ namespace FishNet.Component.Transforming
         /// <summary>
         /// Serializes only changed data into writer.
         /// </summary>
-        private void SerializeChanged(ChangedDelta changed, PooledWriter writer, TransformData dataToUpdate = null)
+        private void SerializeChanged(ChangedDelta changed, PooledWriter writer, TransformData dataToUpdate = null, byte levelOfDetailIndex = 0)
         {
             bool canUpdateData = dataToUpdate != null;
             if (canUpdateData && changed != ChangedDelta.Unset)
@@ -1206,6 +1222,7 @@ namespace FishNet.Component.Transforming
              * not be accurate enough. */
             TransformPackingData packing = ChangedContains(changed, ChangedDelta.Nested) ? _unpacked : _packing;
 
+            
             int startIndexA = writer.Position;
             writer.Skip(1);
             //Original axis value.
@@ -1420,6 +1437,7 @@ namespace FishNet.Component.Transforming
         private void DeserializePacket(ArraySegment<byte> data, TransformData prevTransformData, TransformData nextTransformData, ref ChangedFull changedFull)
         {
             PooledReader reader = ReaderPool.Retrieve(data, NetworkManager);
+            
             UpdateFlagA flagsA = (UpdateFlagA)reader.ReadUInt8Unpacked();
 
             int readerRemaining;
@@ -1703,7 +1721,8 @@ namespace FishNet.Component.Transforming
                     //No more in buffer, see if can extrapolate.
                     else
                     {
-                        /* If everything matches up then end queue.
+                        
+                            /* If everything matches up then end queue.
                              * Otherwise let it play out until stuff
                              * aligns. Generally the time remaining is enough
                              * but every once in awhile something goes funky
@@ -1711,7 +1730,8 @@ namespace FishNet.Component.Transforming
                             if (!HasChanged(td))
                                 _currentGoalData = null;
                             OnInterpolationComplete?.Invoke();
-                            }
+                            
+                    }
                 }
             }
         }
@@ -1769,66 +1789,84 @@ namespace FishNet.Component.Transforming
                          * to send reliably. */
                         uint maxPassedTicks = (uint)(1 + _interpolation + _extrapolation);
                         uint localTick = _timeManager.LocalTick;
+                        /* Otherwise not enough time to send reliably, and
+                         * HasData remains false so nothing is relayed. */
                         if (localTick - _authoritativeClientData.LocalTick > maxPassedTicks)
                             _authoritativeClientData.SendReliably();
-                        //Not enough time to send reliably, just don't need update.
-                        else
-                            return;
                     }
 
-                    if (_authoritativeClientData.HasData)
+                    bool hasData = _authoritativeClientData.HasData;
+                    if (hasData)
                     {
                         _changedSinceStart = true;
-                        //Resend data from clients.
-                        ObserversUpdateClientAuthoritativeTransform(_authoritativeClientData.Writer.GetArraySegment(), _authoritativeClientData.Channel);
                         //Now being sent data can unset.
                         _authoritativeClientData.HasData = false;
                     }
+
+                    
+
+                    //Resend data from clients.
+                    if (hasData)
+                        ObserversUpdateClientAuthoritativeTransform(_authoritativeClientData.Writer.GetArraySegment(), _authoritativeClientData.Channel);
                 }
                 //Sending server transform state.
                 else
                 {
-                    PooledWriter writer = _toClientChangedWriter;
+                    
+                    bool hasPacket = TryWriteServerChanged(_lastSentTransformData, ref _serverChangedSinceReliable, _toClientChangedWriter, levelOfDetailIndex: 0, out channel);
 
-                    TransformData lastSentData = _lastSentTransformData;
-                    ChangedDelta changed = GetChanged(lastSentData);
-
-                    //If no change.
-                    if (changed == ChangedDelta.Unset)
-                    {
-                        //No changes since last reliable; transform is up to date.
-                        if (_serverChangedSinceReliable == ChangedDelta.Unset)
-                            return;
-
-                        _serverChangedSinceReliable = ChangedDelta.Unset;
-                        writer = _toClientChangedWriter;
-                        /* If here then current is unset but last was not.
-                         * Send last as reliable so clients have the latest sent through. */
-                        channel = Channel.Reliable;
-                    }
-                    //There is change.
-                    else
-                    {
-                        //Since this is writing new data, reset the writer.
-                        writer.Clear();
-
-                        _serverChangedSinceReliable |= changed;
-
-                        _changedSinceStart = true;
-
-                        /* If here a send for transform values will occur. Update last values.
-                         * Tick doesn't need to be set for whoever controls transform. */
-                        //Transform t = _cachedTransform;
-                        //lastSentData.Update(0, t.localPosition, t.localRotation, t.localScale, t.localPosition, ParentBehaviour);
-                        lastSentData.Tick = 0;
-
-                        SerializeChanged(changed, writer, lastSentData);
-                    }
-
-                    ObserversUpdateClientAuthoritativeTransform(writer.GetArraySegment(), channel);
+                    
+                    if (hasPacket)
+                        ObserversUpdateClientAuthoritativeTransform(_toClientChangedWriter.GetArraySegment(), channel);
                 }
             }
         }
+
+        /// <summary>
+        /// Writes server transform changes since lastSent into writer.
+        /// </summary>
+        /// <param name = "lastSent">Values last sent on this stream. These are updated to the written values.</param>
+        /// <param name = "changedSinceReliable">Values changed on this stream since its last reliable send.</param>
+        /// <param name = "writer">Writer for this stream. When settling, its previous contents are sent again reliably.</param>
+        /// <param name = "levelOfDetailIndex">Level of detail index written ahead of the header flags.</param>
+        /// <param name = "channel">Channel to send writer on.</param>
+        /// <returns>True if writer holds a packet to send.</returns>
+        private bool TryWriteServerChanged(TransformData lastSent, ref ChangedDelta changedSinceReliable, PooledWriter writer, byte levelOfDetailIndex, out Channel channel)
+        {
+            channel = Channel.Unreliable;
+            ChangedDelta changed = GetChanged(lastSent);
+
+            //If no change.
+            if (changed == ChangedDelta.Unset)
+            {
+                //No changes since last reliable; transform is up to date.
+                if (changedSinceReliable == ChangedDelta.Unset)
+                    return false;
+
+                changedSinceReliable = ChangedDelta.Unset;
+                /* If here then current is unset but last was not.
+                 * Send last as reliable so clients have the latest sent through. */
+                channel = Channel.Reliable;
+                return true;
+            }
+
+            //Since this is writing new data, reset the writer.
+            writer.Clear();
+
+            changedSinceReliable |= changed;
+
+            _changedSinceStart = true;
+
+            /* If here a send for transform values will occur. Update last values.
+             * Tick doesn't need to be set for whoever controls transform. */
+            lastSent.Tick = 0;
+
+            SerializeChanged(changed, writer, lastSent, levelOfDetailIndex);
+
+            return true;
+        }
+
+        
 
         /// <summary>
         /// Sends transform data to server if needed.
@@ -2109,8 +2147,10 @@ namespace FishNet.Component.Transforming
                 //If distance teleports assume rest do.
                 if (_enableTeleport)
                 {
+                    float teleportThreshold = _teleportThreshold;
+                    
                     //Over threshold.
-                    if (distance >= _teleportThreshold)
+                    if (distance >= teleportThreshold)
                     {
                         SetInstantRates(rd, tickDifference, timePassed);
                         return;
@@ -2246,7 +2286,11 @@ namespace FishNet.Component.Transforming
              * was either not set or reliable, in which case the tick
              * difference should be considered 1. */
             if (lastTick == 0)
-                lastTick = nextTd.Tick - _interval;
+            {
+                uint interval = _interval;
+                
+                lastTick = nextTd.Tick - interval;
+            }
 
             long tickDifference = nextTd.Tick - lastTick;
             if (tickDifference < minimum)
@@ -2265,7 +2309,8 @@ namespace FishNet.Component.Transforming
             //Default value.
             next.ExtrapolationState = TransformData.ExtrapolateState.Disabled;
 
-            }
+            
+        }
 
         /// <summary>
         /// Updates a client with transform data.
@@ -2283,7 +2328,13 @@ namespace FishNet.Component.Transforming
              * be resolved properly. */
             if (data.Count == 0)
                 return;
+            /* Older data. Level of detail sends arrive here alongside observer updates.
+             * Same tick is allowed since the spawn update may share a tick with an observer update. */
+            uint lastPacketTick = _timeManager.LastPacketTick.LastRemoteTick;
+            if (lastPacketTick < _lastObserversRpcTick)
+                return;
 
+            _lastObserversRpcTick = lastPacketTick;
             DataReceived(data, channel, false);
         }
 
@@ -2346,6 +2397,7 @@ namespace FishNet.Component.Transforming
             GoalData nextGd = ResettableObjectCaches<GoalData>.Retrieve();
             TransformData nextTd = nextGd.Transforms;
             UpdateTransformData(data, prevTd, nextTd, ref changedFull);
+            
 
             OnDataReceived?.Invoke(prevTd, nextTd);
             SetExtrapolatedData(prevTd, nextTd, channel);
@@ -2572,6 +2624,7 @@ namespace FishNet.Component.Transforming
             _authoritativeClientData.ResetState();
 
             WriterPool.StoreAndDefault(ref _toClientChangedWriter);
+            
 
             ObjectCaches<bool>.StoreAndDefault(ref _authoritativeClientData.HasData);
             ObjectCaches<ChangedDelta>.StoreAndDefault(ref _serverChangedSinceReliable);

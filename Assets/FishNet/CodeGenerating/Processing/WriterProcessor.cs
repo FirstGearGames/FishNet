@@ -960,6 +960,7 @@ namespace FishNet.CodeGenerating.Helping
         private MethodReference CreateArrayWriterMethodReference(TypeReference objectTr)
         {
             WriterImports wi = GetClass<WriterImports>();
+            // The array's own element type: GetElementType strips every specification, so it returned int for int[][] and Nullable`1 for int?[].
             TypeReference valueTr = ((ArrayType)objectTr).ElementType;
 
             //Write not found.
@@ -1058,4 +1059,4 @@ namespace FishNet.CodeGenerating.Helping
         }
         #endregion
     }
-}
+}
