@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Utility.Extension;
 using GameKit.Dependencies.Utilities;
 using System.Collections.Generic;
+using System.Reflection;
 using FishNet.Configuring.EditorCloning;
 using UnityEditor;
 using UnityEditor.Build;
@@ -85,6 +86,61 @@ namespace FishNet.Editing
                 PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, changedDefines);
                 #endif
             }
+
+            return modified;
+        }
+
+        /// <summary>
+        /// Adds or removes a define for every build target rather than only the selected one.
+        /// </summary>
+        /// <remarks>Use this for defines which change what is sent over the network, so builds for different targets, such as a dedicated server and its clients, cannot disagree.</remarks>
+        internal static bool RemoveOrAddDefineForAllBuildTargets(string define, bool removeDefine)
+        {
+            HashSet<string> visitedTargets = new();
+            bool modified = false;
+
+            /* Fields are iterated rather than values because an obsolete alias shares its
+             * value with a current group, and the value's name could be either. */
+            foreach (FieldInfo field in typeof(BuildTargetGroup).GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (field.IsDefined(typeof(System.ObsoleteAttribute), inherit: false))
+                    continue;
+                BuildTargetGroup group = (BuildTargetGroup)field.GetValue(null);
+                if (group == BuildTargetGroup.Unknown)
+                    continue;
+
+                NamedBuildTarget target;
+                try
+                {
+                    target = NamedBuildTarget.FromBuildTargetGroup(group);
+                }
+                catch (System.ArgumentException)
+                {
+                    continue;
+                }
+
+                if (visitedTargets.Add(target.TargetName))
+                    modified |= RemoveOrAddDefine(target, define, removeDefine);
+            }
+
+            // Dedicated server builds have their own defines, which no BuildTargetGroup maps to.
+            if (visitedTargets.Add(NamedBuildTarget.Server.TargetName))
+                modified |= RemoveOrAddDefine(NamedBuildTarget.Server, define, removeDefine);
+
+            return modified;
+        }
+
+        /// <summary>
+        /// Adds or removes a define for a build target.
+        /// </summary>
+        private static bool RemoveOrAddDefine(NamedBuildTarget target, string define, bool removeDefine)
+        {
+            string currentDefines = PlayerSettings.GetScriptingDefineSymbols(target);
+            HashSet<string> definesHs = new(currentDefines.Split(new[] { ';' }, System.StringSplitOptions.RemoveEmptyEntries));
+
+            bool modified = removeDefine ? definesHs.Remove(define) : definesHs.Add(define);
+            if (modified)
+                PlayerSettings.SetScriptingDefineSymbols(target, string.Join(";", definesHs));
 
             return modified;
         }
