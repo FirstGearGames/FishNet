@@ -226,6 +226,34 @@ namespace FishNet.Object
         /// </summary>
         /// <remarks>This is only used by prediction.</remarks>
         private TransformProperties _lastCheckedTransformProperties;
+        /// <summary>
+        /// Tick the last full reconcile was written on. Used by delta prediction.
+        /// </summary>
+        private uint _lastFullReconcileWriteTick = TimeManager.UNSET_TICK;
+        /// <summary>
+        /// Identifies the last full reconcile written. Used by delta prediction.
+        /// </summary>
+        private byte _fullReconcileWriteId;
+        /// <summary>
+        /// Last full reconcile read, which delta reconciles are applied to. Null when there is none. Used by delta prediction.
+        /// </summary>
+        /// <remarks>This is an object because the reconcile type is not known to NetworkBehaviour; it is only set on full reconciles.</remarks>
+        private object _fullReconcileRead;
+        /// <summary>
+        /// Identifies the last full reconcile read. Used by delta prediction.
+        /// </summary>
+        private byte _fullReconcileReadId;
+        /// <summary>
+        /// Server tick the last full reconcile was read for. Used by delta prediction.
+        /// </summary>
+        private uint _fullReconcileReadServerTick;
+        #endregion
+
+        #region Const.
+        /// <summary>
+        /// Most ticks between full reconciles. Used by delta prediction.
+        /// </summary>
+        private const uint MAXIMUM_FULL_RECONCILE_INTERVAL = 60;
         #endregion
 
         /// <summary>
@@ -364,6 +392,10 @@ namespace FishNet.Object
             replicatesHistory.Clear();
 
             ClearReconcileHistory(reconcilesHistory, uint.MaxValue);
+
+            // Delta reconciles cannot continue from reconciles written or read before the cache was cleared.
+            _lastFullReconcileWriteTick = TimeManager.UNSET_TICK;
+            _fullReconcileRead = null;
         }
 
         /// <summary>
@@ -406,12 +438,12 @@ namespace FishNet.Object
              *
              * The exception is for the owner, which we send the last replicate
              * tick so the owner knows which to roll back to. */
-            #if DO_NOT_USE
-            methodWriter.WriteDeltaReconcile(lastReconcileData, reconcileData, GetDeltaSerializeOption());
+            #if FISHNET_DELTA_PREDICTION
+            Reconcile_WriteDelta(methodWriter, ref lastReconcileData, reconcileData);
             #else
             methodWriter.WriteReconcile<T>(reconcileData);
-            #endif
             lastReconcileData = reconcileData;
+            #endif
 
             PooledWriter writer;
             #if DEVELOPMENT
@@ -456,6 +488,45 @@ namespace FishNet.Object
 
             methodWriter.Store();
             writer.Store();
+        }
+
+        /// <summary>
+        /// Writes a reconcile using delta prediction.
+        /// </summary>
+        /// <param name = "lastReconcileData">Last full reconcile written, as readers decoded it. Deltas are written against this value.</param>
+        private void Reconcile_WriteDelta<T>(PooledWriter methodWriter, ref T lastReconcileData, T reconcileData) where T : IReconcileData
+        {
+            /* Deltas are written against the last full reconcile rather than the previous
+             * reconcile. Reconciles are sent unreliably and may also be dropped unread, such as
+             * when reconciles are reduced with framerate. Against the previous reconcile, every
+             * loss would leave readers unable to use any delta until the next full reconcile;
+             * against the last full reconcile, a lost delta costs only itself. */
+            bool fullSerialize = GetDeltaSerializeOption() == DeltaSerializerOption.FullSerialize;
+            if (fullSerialize)
+            {
+                _lastFullReconcileWriteTick = _networkObjectCache.TimeManager.LocalTick;
+                _fullReconcileWriteId++;
+            }
+
+            int startPosition = methodWriter.Position;
+            methodWriter.WriteDeltaReconcile(lastReconcileData, reconcileData, _fullReconcileWriteId, fullSerialize);
+
+            if (!Writer.HasDeltaSerializers<T>())
+            {
+                lastReconcileData = reconcileData;
+                return;
+            }
+            if (!fullSerialize)
+                return;
+
+            /* Readers apply deltas to the value they decoded from the full reconcile, which
+             * differs from reconcileData if the serializer is lossy. Decode what was written
+             * and write deltas against that. */
+            ArraySegment<byte> written = methodWriter.GetArraySegment();
+            written = new(written.Array, written.Offset + startPosition, written.Count - startPosition);
+            PooledReader reader = ReaderPool.Retrieve(written, _networkObjectCache.NetworkManager, Reader.DataSource.Server);
+            lastReconcileData = reader.ReadDeltaReconcile(lastReconcileData, out _, out _);
+            ReaderPool.Store(reader);
         }
 
         /// <summary>
@@ -844,32 +915,30 @@ namespace FishNet.Object
         }
 
         /// <summary>
-        /// Returns the DeltaSerializeOption to use for the tick.
+        /// Returns the DeltaSerializeOption to use for the next reconcile written.
         /// </summary>
-        /// <param name = "resendsEnded"></param>
         /// <returns></returns>
         private DeltaSerializerOption GetDeltaSerializeOption()
         {
-            //Everything below this is not yet used.
-            return DeltaSerializerOption.FullSerialize;
-            //
-            // uint localTick = _networkObjectCache.TimeManager.LocalTick;
-            // ushort tickRate = _networkObjectCache.TimeManager.TickRate;
-            // /* New observers so send a full serialize next replicate.
-            //  * This could go out to only the newly added observers, but it
-            //  * would generate a lot more complexity to save presumably
-            //  * a small amount of occasional bandwidth. */
-            // if (_networkObjectCache.ObserverAddedTick == localTick)
-            //     return DeltaSerializerOption.FullSerialize;
-            // //Send full every half a second.
-            // if (localTick % tickRate == 0 || localTick % (tickRate / 2) == 0)
-            //     return DeltaSerializerOption.FullSerialize;
-            // //Send full every second.
-            // if (localTick % tickRate == 0)
-            //     return DeltaSerializerOption.FullSerialize;
-            // //Otherwise return rootSerialize, the default for sending the child most data.
-            //
-            // return DeltaSerializerOption.RootSerialize;
+            uint localTick = _networkObjectCache.TimeManager.LocalTick;
+            ushort tickRate = _networkObjectCache.TimeManager.TickRate;
+            /* Send full when none has been written, and then every second so a reader
+             * which lost one recovers. Also at most MAXIMUM_FULL_RECONCILE_INTERVAL apart
+             * so readers can tell full reconciles apart; see Reconcile_ReadDelta. */
+            uint fullInterval = Math.Min((uint)tickRate, MAXIMUM_FULL_RECONCILE_INTERVAL);
+            if (_lastFullReconcileWriteTick == TimeManager.UNSET_TICK || localTick - _lastFullReconcileWriteTick >= fullInterval)
+                return DeltaSerializerOption.FullSerialize;
+            /* New observers so send a full serialize next reconcile.
+             * This could go out to only the newly added observers, but it
+             * would generate a lot more complexity to save presumably
+             * a small amount of occasional bandwidth.
+             *
+             * Compared against the last full write rather than the current tick so
+             * an observer added on a tick nothing was written still receives one. */
+            if (_networkObjectCache.ObserverAddedTick >= _lastFullReconcileWriteTick)
+                return DeltaSerializerOption.FullSerialize;
+            //Otherwise return rootSerialize, the default for sending the child most data.
+            return DeltaSerializerOption.RootSerialize;
         }
 
         /// <summary>
@@ -904,8 +973,8 @@ namespace FishNet.Object
              * write the queueTick. */
             if (!toServer)
                 methodWriter.WriteTickUnpacked(queuedTick);
-            #if DO_NOT_USE
-            methodWriter.WriteDeltaReplicate(replicatesHistory, offset, deltaOption);
+            #if FISHNET_DELTA_PREDICTION
+            methodWriter.WriteDeltaReplicate(replicatesHistory, offset);
             #else
             methodWriter.WriteReplicate<T>(replicatesHistory, offset);
             #endif
@@ -987,8 +1056,8 @@ namespace FishNet.Object
             else
                 tick = tm.LastPacketTick.LastRemoteTick;
 
-            #if DO_NOT_USE
-            receivedReplicatesCount = reader.ReadDeltaReplicate(lastReadReplicate, ref arrBuffer, tick);
+            #if FISHNET_DELTA_PREDICTION
+            List<ReplicateDataContainer<T>> readReplicates = reader.ReadDeltaReplicate<T>(tick);
             #else
             List<ReplicateDataContainer<T>> readReplicates = reader.ReadReplicate<T>(tick);
             #endif
@@ -1077,8 +1146,8 @@ namespace FishNet.Object
             methodWriter.WriteTickUnpacked(runTickOflastEntry);
             //Write the replicates.
             int redundancyCount = (int)Mathf.Min(_networkObjectCache.PredictionManager.RedundancyCount, queueCount);
-            #if DO_NOT_USE
-            methodWriter.WriteDeltaReplicate(replicatesQueue, redundancyCount, GetDeltaSerializeOption());
+            #if FISHNET_DELTA_PREDICTION
+            methodWriter.WriteDeltaReplicate(replicatesQueue, redundancyCount);
             #else
             methodWriter.WriteReplicate<T>(replicatesQueue, redundancyCount);
             #endif
@@ -1465,8 +1534,9 @@ namespace FishNet.Object
         public void Reconcile_Reader_Remote<T>(PooledReader reader, ref T lastReconcileData) where T : IReconcileData
         {
             uint tick = IsOwner ? PredictionManager.ClientStateTick : PredictionManager.ServerStateTick;
-            #if DO_NOT_USE
-            T newData = reader.ReadDeltaReconcile(lastReconciledata);
+            #if FISHNET_DELTA_PREDICTION
+            if (!Reconcile_ReadDelta(reader, out T newData))
+                return;
             #else
             T newData = reader.ReadReconcile<T>();
             #endif
@@ -1485,6 +1555,37 @@ namespace FishNet.Object
 
             _networkObjectCache.IsObjectReconciling = true;
             _lastReadReconcileRemoteTick = tick;
+        }
+
+        /// <summary>
+        /// Reads a reconcile written by Reconcile_WriteDelta.
+        /// </summary>
+        /// <returns>False if the reconcile is a delta against a full reconcile this reader does not hold, in which case it must not be used.</returns>
+        private bool Reconcile_ReadDelta<T>(PooledReader reader, out T newData) where T : IReconcileData
+        {
+            T fullReconcile = _fullReconcileRead is T value ? value : default;
+            newData = reader.ReadDeltaReconcile(fullReconcile, out bool isFull, out byte fullReconcileId);
+
+            //Types without delta serializers are always read in full.
+            if (!Writer.HasDeltaSerializers<T>())
+                return true;
+
+            uint serverTick = PredictionManager.ServerStateTick;
+            if (isFull)
+            {
+                _fullReconcileRead = newData;
+                _fullReconcileReadId = fullReconcileId;
+                _fullReconcileReadServerTick = serverTick;
+                return true;
+            }
+
+            /* A delta can only be used with the full reconcile it was written against; until
+             * a newer full reconcile arrives, deltas against one which was lost are discarded
+             * as if they had been lost too. The id wraps, so the tick check keeps a full
+             * reconcile from matching one written a whole id range later: at most one reconcile
+             * is written per tick, and full reconciles are written at most
+             * MAXIMUM_FULL_RECONCILE_INTERVAL apart, doubled here for send timing. */
+            return _fullReconcileRead != null && fullReconcileId == _fullReconcileReadId && serverTick - _fullReconcileReadServerTick <= MAXIMUM_FULL_RECONCILE_INTERVAL * 2;
         }
 
         /// <summary>

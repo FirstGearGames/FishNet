@@ -31,7 +31,7 @@ namespace FishNet.Serializing
             bool isGenerated = value.Method.Name.StartsWith(UtilityConstants.GeneratedReaderPrefix);
 
             //If not generated then unset any generated delta serializer.
-            if (!isGenerated && GenericDeltaReader<T>.HasCustomSerializer)
+            if (!isGenerated && !GenericDeltaReader<T>.HasCustomSerializer)
                 GenericDeltaReader<T>.Read = null;
 
             //Set has custom serializer if value being used is not a generated method.

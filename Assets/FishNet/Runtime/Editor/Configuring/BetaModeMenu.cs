@@ -11,6 +11,7 @@ namespace FishNet.Editing.Beta
         private const string THREADED_TICKSMOOTHERS_DEFINE = "FISHNET_THREADED_TICKSMOOTHERS";
         private const string THREADED_COLLIDER_ROLLBACK_DEFINE = "FISHNET_THREADED_COLLIDER_ROLLBACK";
         private const string ANIMATOR_CHANNEL_DEFINE = "FISHNET_ANIMATOR_CHANNEL";
+        private const string DELTA_PREDICTION_DEFINE = "FISHNET_DELTA_PREDICTION";
         #endregion
 
         
@@ -30,6 +31,25 @@ namespace FishNet.Editing.Beta
         }
         #endregion
         
+        #region Beta Delta Prediction
+        /* Content: Delta Prediction
+         *      Replicates and reconciles are written as deltas for types which have delta serializers registered.
+         *      This changes what is sent over the network, so the define is set for every build target: a server and its clients must be built with the same setting. */
+        #if FISHNET_DELTA_PREDICTION
+        [MenuItem("Tools/Fish-Networking/Beta/Disable Delta Prediction", false, -1101)]
+        private static void DisableBetaDeltaPrediction() => SetBetaDeltaPrediction(useStable: true);
+        #else
+        [MenuItem("Tools/Fish-Networking/Beta/Enable Delta Prediction", false, -1101)]
+        private static void EnableBetaDeltaPrediction() => SetBetaDeltaPrediction(useStable: false);
+        #endif
+        private static void SetBetaDeltaPrediction(bool useStable)
+        {
+            bool result = DeveloperMenu.RemoveOrAddDefineForAllBuildTargets(DELTA_PREDICTION_DEFINE, removeDefine: useStable);
+            if (result)
+                Debug.LogWarning($"Beta Delta Prediction is now {GetBetaEnabledText(useStable)} for all build targets. Servers and clients must be built with the same setting.");
+        }
+        #endregion
+
         #region Beta Recursive Despawns
         #if FISHNET_STABLE_RECURSIVE_DESPAWNS
         [MenuItem("Tools/Fish-Networking/Beta/Enable Recursive Despawns", false, -1101)]
