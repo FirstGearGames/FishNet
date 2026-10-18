@@ -172,78 +172,78 @@ namespace FishNet.Component.Prediction
 
                     current.Add(hit);
                 }
+            }
 
-                /* If the colliders already exist then the tick is being
-                 * run again, which would indicate this is being run during a reconcile.
-                 *
-                 * Since this key will have its data replaced with current, store the prior collection.*/
-                if (_enteredColliders.TryGetValueIL2CPP(localTick, out HashSet<Collider2D> enteredColliders))
+            /* If the colliders already exist then the tick is being
+             * run again, which would indicate this is being run during a reconcile.
+             *
+             * Since this key will have its data replaced with current, store the prior collection.*/
+            if (_enteredColliders.TryGetValueIL2CPP(localTick, out HashSet<Collider2D> enteredColliders))
+            {
+                CollectionCaches<Collider2D>.Store(enteredColliders);
+                _enteredColliders.Remove(localTick);
+            }
+
+            const uint unsetLastTick = uint.MaxValue;
+            uint lastTick = localTick > 1 ? localTick - 1 : unsetLastTick;
+
+            _enteredColliders.TryGetValueIL2CPP(lastTick, out HashSet<Collider2D> lastEnteredColliders);
+
+            /* If there are entered colliders then
+             * update enteredColliders for the tick. */
+            if (current.Count > 0)
+            {
+                _enteredColliders[localTick] = current;
+
+                /* If there were no colliders last tick
+                 * then without a doubt enter should be called since
+                 * the collider could not possibly be present already. */
+                if (lastEnteredColliders == null)
                 {
-                    CollectionCaches<Collider2D>.Store(enteredColliders);
-                    _enteredColliders.Remove(localTick);
+                    //Invoke OnEnter for every collider in current.
+                    foreach (Collider2D c in current)
+                        InvokeOnEnter(c, localTick);
                 }
-
-                const uint unsetLastTick = uint.MaxValue;
-                uint lastTick = localTick > 1 ? localTick - 1 : unsetLastTick;
-
-                _enteredColliders.TryGetValueIL2CPP(lastTick, out HashSet<Collider2D> lastEnteredColliders);
-
-                /* If there are entered colliders then
-                 * update enteredColliders for the tick. */
-                if (current.Count > 0)
-                {
-                    _enteredColliders[localTick] = current;
-
-                    /* If there were no colliders last tick
-                     * then without a doubt enter should be called since
-                     * the collider could not possibly be present already. */
-                    if (lastEnteredColliders == null)
-                    {
-                        //Invoke OnEnter for every collider in current.
-                        foreach (Collider2D c in current)
-                            InvokeOnEnter(c, localTick);
-                    }
-                    /* If the last collection is found then
-                     * check to invoke Enter or Stay. */
-                    else
-                    {
-                        foreach (Collider2D c in current)
-                        {
-                            if (lastEnteredColliders.Contains(c))
-                                OnStay?.Invoke(c, localTick);
-                            else
-                                InvokeOnEnter(c, localTick);
-                        }
-                    }
-                }
-                //If current is empty the collection can be stored.
+                /* If the last collection is found then
+                 * check to invoke Enter or Stay. */
                 else
                 {
-                    CollectionCaches<Collider2D>.Store(current);
-                }
-
-                /* Check to invoke OnExit. */
-                if (lastEnteredColliders != null)
-                {
-                    /* If current does not have the colliders from
-                     * the last tick, then an exit has occurred. */
-                    foreach (Collider2D c in lastEnteredColliders)
+                    foreach (Collider2D c in current)
                     {
-                        if (!current.Contains(c))
-                            OnExit?.Invoke(c, localTick);
+                        if (lastEnteredColliders.Contains(c))
+                            OnStay?.Invoke(c, localTick);
+                        else
+                            InvokeOnEnter(c, localTick);
                     }
                 }
+            }
+            //If current is empty the collection can be stored.
+            else
+            {
+                CollectionCaches<Collider2D>.Store(current);
+            }
 
-                /* If the server is started the lastEnteredColliders can
-                 * be discarded since the server will never reconcile, and
-                 * will never need to check them again. */
-                if (IsServerStarted)
+            /* Check to invoke OnExit. */
+            if (lastEnteredColliders != null)
+            {
+                /* If current does not have the colliders from
+                 * the last tick, then an exit has occurred. */
+                foreach (Collider2D c in lastEnteredColliders)
                 {
-                    if (lastTick is not unsetLastTick && _enteredColliders.TryGetValueIL2CPP(lastTick, out HashSet<Collider2D> lEnteredColliders))
-                    {
-                        CollectionCaches<Collider2D>.Store(lEnteredColliders);
-                        _enteredColliders.Remove(lastTick);
-                    }
+                    if (!current.Contains(c))
+                        OnExit?.Invoke(c, localTick);
+                }
+            }
+
+            /* If the server is started the lastEnteredColliders can
+             * be discarded since the server will never reconcile, and
+             * will never need to check them again. */
+            if (IsServerStarted)
+            {
+                if (lastTick is not unsetLastTick && _enteredColliders.TryGetValueIL2CPP(lastTick, out HashSet<Collider2D> lEnteredColliders))
+                {
+                    CollectionCaches<Collider2D>.Store(lEnteredColliders);
+                    _enteredColliders.Remove(lastTick);
                 }
             }
         }
