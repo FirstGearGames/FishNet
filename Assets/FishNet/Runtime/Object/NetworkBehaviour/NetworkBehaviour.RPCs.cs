@@ -368,6 +368,9 @@ namespace FishNet.Object
 
             PooledWriter writer = lCreateRpc(channel);
             SetNetworkConnectionCache(excludeServer, excludeOwner);
+            //Do not send to an owner which would discard the RPC. Buffered RPCs are not affected.
+            if (!bufferLast && !excludeOwner && Owner.IsValid && ExcludeOwnerFromUnbufferedObserversRpcs)
+                _networkConnectionCache.Add(Owner);
 
             _networkObjectCache.NetworkManager.TransportManager.SendToClients((byte)channel, writer.GetArraySegment(), _networkObjectCache.Observers, _networkConnectionCache, orderType);
 
@@ -472,6 +475,11 @@ namespace FishNet.Object
             
             writer.Store();
         }
+
+        /// <summary>
+        /// True if the owner discards every unbuffered ObserversRpc this behaviour sends, so they are not sent to the owner.
+        /// </summary>
+        internal virtual bool ExcludeOwnerFromUnbufferedObserversRpcs => false;
 
         /// <summary>
         /// Adds excluded connections to ExcludedRpcConnections.
