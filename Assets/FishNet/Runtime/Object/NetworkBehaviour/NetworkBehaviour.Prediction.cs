@@ -1174,7 +1174,7 @@ namespace FishNet.Object
              * to do this since clients implement the queue delay
              * by holding reconcile x ticks rather than not running received
              * x ticks. */
-            if (_replicateCurrentStartTick != TimeManager.UNSET_TICK && (isServer || isAppendedOrder) && startQueueCount == 0 && replicatesQueue.Count > 0)
+            if ((isServer || isAppendedOrder) && startQueueCount == 0 && replicatesQueue.Count > 0)
                 _replicateCurrentStartTick = _networkObjectCache.TimeManager.LocalTick + pm.StateInterpolation;
         }
 
