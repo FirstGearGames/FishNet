@@ -147,12 +147,17 @@ namespace FishNet.Component.Prediction
                 if (_lastGameObjectLayer != currentLayer)
                 {
                     _lastGameObjectLayer = currentLayer;
-                    InteractableLayers = GameKit.Dependencies.Utilities.Layers.GetInteractableLayersValue(currentLayer);
+                    InteractableLayers = GetInteractableLayersValue(currentLayer);
                 }
             }
 
             return true;
         }
+
+        /// <summary>
+        /// Returns the layers which interact with layer in the collision matrix. Used when Layers is nothing.
+        /// </summary>
+        protected virtual int GetInteractableLayersValue(int layer) => GameKit.Dependencies.Utilities.Layers.GetInteractableLayersValue(layer);
 
         /// <summary>
         /// Implement collider checking logic within this method.
