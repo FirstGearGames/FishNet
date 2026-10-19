@@ -582,7 +582,7 @@ namespace FishNet.Managing.Transporting
         /// <summary>
         /// Gets the channelId to use, returning a fallback Id if the provided channelId is not supported.
         /// </summary>
-        private byte GetFallbackChannelIdAsNeeded(byte channelId) => channelId > _toServerBundles.Count ? (byte)Channel.Reliable : channelId;
+        private byte GetFallbackChannelIdAsNeeded(byte channelId) => channelId >= CHANNEL_COUNT ? (byte)Channel.Reliable : channelId;
 
         /// <summary>
         /// Returns if a client is allowed to send a split message made of this many pieces.
