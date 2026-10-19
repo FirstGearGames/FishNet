@@ -113,7 +113,8 @@ namespace FishNet.Managing.Scened
             Handle = scene.GetRawHandle();
 
             string fullPath = SceneUtility.GetScenePathByBuildIndex(scene.buildIndex);
-            FullName = Path.GetFileNameWithoutExtension(fullPath);
+            // Scenes not in Build Settings, such as Addressables, have no build path.
+            FullName = string.IsNullOrEmpty(fullPath) ? scene.name : Path.GetFileNameWithoutExtension(fullPath);
         }
 
         /// <summary>
