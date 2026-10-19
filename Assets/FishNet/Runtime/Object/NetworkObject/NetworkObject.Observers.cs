@@ -39,6 +39,12 @@ namespace FishNet.Object
         /// </summary>
         [HideInInspector]
         public HashSet<NetworkConnection> Observers = new();
+        /// <summary>
+        /// Optional filter which may skip individual observers for unreliable ObserversRpcs sent by this object. Null sends to every observer.
+        /// </summary>
+        /// <remarks>This is only used on the server. See IObserverSendFilter for which RPCs are filtered.</remarks>
+        [NonSerialized]
+        public IObserverSendFilter ObserverSendFilter;
         #endregion
 
         #region Internal.

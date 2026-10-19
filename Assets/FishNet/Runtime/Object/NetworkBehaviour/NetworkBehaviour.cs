@@ -222,6 +222,7 @@ namespace FishNet.Object
             ResetState_Prediction(asServer);
             ClearReplicateCache();
             ClearBuffedRpcs();
+            _observersRpcSettled = true;
         }
 
         /// <summary>
