@@ -252,9 +252,12 @@ namespace FishNet.Editing.PrefabCollectionGenerator
             _lastUpdatedNamePaths = changedNobPaths;
             _lastUpdatedLengths = assetsLength;
 
-            EditorUtility.SetDirty(prefabCollection);
-            if (dirtied && settings.SaveChanges)
-                AssetDatabase.SaveAssets();
+            if (dirtied)
+            {
+                EditorUtility.SetDirty(prefabCollection);
+                if (settings.SaveChanges)
+                    AssetDatabase.SaveAssets();
+            }
         }
 
         /// <summary>
@@ -594,6 +597,9 @@ namespace FishNet.Editing.PrefabCollectionGenerator
         {
             if (!_retryRefreshDefaultPrefabs)
                 return;
+            // Retry once the build has finished.
+            if (BuildPipeline.isBuildingPlayer)
+                return;
 
             GenerateFull();
             _retryRefreshDefaultPrefabs = false;
@@ -616,6 +622,10 @@ namespace FishNet.Editing.PrefabCollectionGenerator
              * due to the prefabs being generated during an update, which causes the update
              * to start over, which causes the generator to run again, which... you get the idea. */
             if (EditorApplication.isCompiling)
+                return;
+            /* Assets imported while a player is building, such as by build callbacks, must not
+             * change the collection the build is already using. */
+            if (BuildPipeline.isBuildingPlayer)
                 return;
 
             DefaultPrefabObjects prefabCollection = GetDefaultPrefabObjects();
