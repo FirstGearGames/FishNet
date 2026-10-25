@@ -96,7 +96,8 @@ namespace FishNet.Managing.Object
         /// </summary>
         protected void RemoveFromSpawnedCollectionAndInvoke(NetworkObject nob)
         {
-            if (_spawned.Remove(nob.ObjectId))
+            // A late OnDestroy of an old instance must not unregister a newer instance that reused the ObjectId.
+            if (_spawned.TryGetValue(nob.ObjectId, out NetworkObject current) && current == nob && _spawned.Remove(nob.ObjectId))
                 OnSpawnedRemove?.Invoke(nob.ObjectId, nob);
         }
 
