@@ -121,10 +121,7 @@ namespace FishNet.Component.Animating
             /// </summary>
             public ClientAuthoritativeUpdate()
             {
-                // Start buffers off at 8 bytes nad grow them as needed.
-                for (int i = 0; i < MAXIMUM_BUFFER_COUNT; i++)
-                    _buffers.Add(new byte[MAXIMUM_DATA_SIZE]);
-
+                // Buffers are allocated as needed in AddToBuffer.
                 _bufferLengths = new int[MAXIMUM_BUFFER_COUNT];
             }
 
@@ -156,9 +153,11 @@ namespace FishNet.Component.Animating
             /// </summary>
             private const int MAXIMUM_DATA_SIZE = 1000;
             /// <summary>
-            /// Maximum number of allowed buffers.
+            /// Maximum number of allowed buffers. Clients send at most one update per tick, so this
+            /// only needs to cover updates arriving bunched together after a stall or jitter.
+            /// Exceeding it falls back to ForceAll, which drops relayed triggers and state changes.
             /// </summary>
-            public const int MAXIMUM_BUFFER_COUNT = 2;
+            public const int MAXIMUM_BUFFER_COUNT = 16;
             #endregion
 
             public void AddToBuffer(ref ArraySegment<byte> data)
@@ -178,6 +177,8 @@ namespace FishNet.Component.Animating
                 }
 
                 /* If here, can write to buffer. */
+                if (BufferCount == _buffers.Count)
+                    _buffers.Add(new byte[MAXIMUM_DATA_SIZE]);
                 byte[] buffer = _buffers[BufferCount];
                 Buffer.BlockCopy(data.Array, data.Offset, buffer, 0, dataCount);
                 _bufferLengths[BufferCount] = dataCount;
@@ -1996,10 +1997,7 @@ namespace FishNet.Component.Animating
             /// </summary>
             public ClientAuthoritativeUpdate()
             {
-                // Start buffers off at 8 bytes nad grow them as needed.
-                for (int i = 0; i < MAXIMUM_BUFFER_COUNT; i++)
-                    _buffers.Add(new byte[MAXIMUM_DATA_SIZE]);
-
+                // Buffers are allocated as needed in AddToBuffer.
                 _bufferLengths = new int[MAXIMUM_BUFFER_COUNT];
             }
 
@@ -2031,9 +2029,11 @@ namespace FishNet.Component.Animating
             /// </summary>
             private const int MAXIMUM_DATA_SIZE = 1000;
             /// <summary>
-            /// Maximum number of allowed buffers.
+            /// Maximum number of allowed buffers. Clients send at most one update per tick, so this
+            /// only needs to cover updates arriving bunched together after a stall or jitter.
+            /// Exceeding it falls back to ForceAll, which drops relayed triggers and state changes.
             /// </summary>
-            public const int MAXIMUM_BUFFER_COUNT = 2;
+            public const int MAXIMUM_BUFFER_COUNT = 16;
             #endregion
 
             public void AddToBuffer(ref ArraySegment<byte> data)
@@ -2053,6 +2053,8 @@ namespace FishNet.Component.Animating
                 }
 
                 /* If here, can write to buffer. */
+                if (BufferCount == _buffers.Count)
+                    _buffers.Add(new byte[MAXIMUM_DATA_SIZE]);
                 byte[] buffer = _buffers[BufferCount];
                 Buffer.BlockCopy(data.Array, data.Offset, buffer, 0, dataCount);
                 _bufferLengths[BufferCount] = dataCount;
