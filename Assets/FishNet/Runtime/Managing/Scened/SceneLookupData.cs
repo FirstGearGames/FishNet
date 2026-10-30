@@ -417,8 +417,9 @@ namespace FishNet.Managing.Scened
 
             Scene result = default;
 
-            // Lookup my handle.
-            if (Handle != 0)
+            // Lookup my handle, only in the process that runs the server. A pure client is sent the server's handles,
+            // which number another process's scenes and can match an unrelated local scene, so it looks up by name.
+            if (Handle != 0 && InstanceFinder.IsServerStarted)
             {
                 result = SceneManager.GetScene(Handle);
                 if (result.GetRawHandle() != 0)
