@@ -207,9 +207,11 @@ namespace FishNet.CodeGenerating.ILCore
         }
 
         /// <summary>
-        /// True when the nearest virtual method md overrides (same name and parameter count) is public.
-        /// Walks only bases in this assembly or FishNet.Runtime — MakePublic happens nowhere else, and UnityEngine etc.
-        /// never need to be resolved.
+        /// True when the nearest virtual method md overrides (same name and parameter count) is or WILL BE public at runtime.
+        /// Other assemblies are processed against FishNet.Runtime as it was BEFORE post-processing, where SyncBase.WriteDelta
+        /// is still protected internal — so a base counts as public when it is public, carries [MakePublic], or is itself
+        /// an override of such a method (e.g. SyncList.Read, widened by this pass inside FishNet.Runtime).
+        /// Walks only bases in this assembly or FishNet.Runtime — UnityEngine etc. never need to be resolved.
         /// </summary>
         private static bool IsBaseMethodPublic(TypeDefinition td, MethodDefinition md)
         {
@@ -223,13 +225,25 @@ namespace FishNet.CodeGenerating.ILCore
                 foreach (MethodDefinition baseMd in baseTd.Methods)
                 {
                     if (baseMd.IsVirtual && baseMd.Name == md.Name && baseMd.Parameters.Count == md.Parameters.Count)
-                        return baseMd.IsPublic;
+                        return WillBePublic(baseTd, baseMd);
                 }
 
                 baseReference = baseTd.BaseType;
             }
 
             return false;
+        }
+
+        private static bool WillBePublic(TypeDefinition td, MethodDefinition md)
+        {
+            if (md.IsPublic)
+                return true;
+
+            string makePublicTypeFullName = typeof(MakePublicAttribute).FullName;
+            if (md.CustomAttributes.Any(ca => ca.AttributeType.FullName == makePublicTypeFullName))
+                return true;
+
+            return !md.IsNewSlot && IsBaseMethodPublic(td, md);
         }
 
         private static bool IsProcessedScope(IMetadataScope scope) =>
