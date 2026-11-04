@@ -133,6 +133,11 @@ namespace FishNet.CodeGenerating.ILCore
         private bool ModifyMakePublicMethods(CodegenSession session)
         {
             string makePublicTypeFullName = typeof(MakePublicAttribute).FullName;
+            /* [BIG patch — CoreCLR] Virtual methods made public here must have their overrides made public too.
+             * Otherwise e.g. SyncBase.Read becomes public while SyncVar<T>.Read stays protected internal, and
+             * CoreCLR (Unity 7) refuses to load the type: "Derived method 'Read' ... cannot reduce access".
+             * Mono tolerated it. */
+            HashSet<string> publicVirtuals = new();
             foreach (TypeDefinition td in session.Module.Types)
             {
                 foreach (CustomAttribute tdCustomAttribute in td.CustomAttributes)
@@ -149,15 +154,65 @@ namespace FishNet.CodeGenerating.ILCore
                     {
                         if (ca.AttributeType.FullName == makePublicTypeFullName)
                         {
-                            md.Attributes &= ~MethodAttributes.Assembly;
-                            md.Attributes |= MethodAttributes.Public;
+                            SetPublic(md);
+                            if (md.IsVirtual)
+                                publicVirtuals.Add(GetOverrideKey(md));
                         }
+                    }
+                }
+            }
+
+            if (publicVirtuals.Count > 0)
+            {
+                foreach (TypeDefinition td in GetAllTypes(session.Module.Types))
+                {
+                    foreach (MethodDefinition md in td.Methods)
+                    {
+                        if (md.IsVirtual && !md.IsNewSlot && !md.IsPublic && OverridesAny(td, md, publicVirtuals))
+                            SetPublic(md);
                     }
                 }
             }
 
             // There is always at least one modified.
             return true;
+        }
+
+        private static void SetPublic(MethodDefinition md) => md.Attributes = (md.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public;
+
+        private static string GetOverrideKey(MethodDefinition md) => $"{md.DeclaringType.FullName}::{md.Name}/{md.Parameters.Count}";
+
+        private static IEnumerable<TypeDefinition> GetAllTypes(IEnumerable<TypeDefinition> types)
+        {
+            foreach (TypeDefinition td in types)
+            {
+                yield return td;
+                if (td.HasNestedTypes)
+                {
+                    foreach (TypeDefinition nested in GetAllTypes(td.NestedTypes))
+                        yield return nested;
+                }
+            }
+        }
+
+        /// <summary> True when md overrides a virtual made public by MakePublic anywhere up the base chain. </summary>
+        private static bool OverridesAny(TypeDefinition td, MethodDefinition md, HashSet<string> publicVirtuals)
+        {
+            TypeReference baseReference = td.BaseType;
+            // MakePublic targets live in this assembly — stop at the first external base (no need to resolve UnityEngine etc.).
+            while (baseReference != null && !(baseReference.Scope is AssemblyNameReference))
+            {
+                TypeDefinition baseTd = baseReference.Resolve();
+                if (baseTd == null)
+                    return false;
+
+                if (publicVirtuals.Contains($"{baseTd.FullName}::{md.Name}/{md.Parameters.Count}"))
+                    return true;
+
+                baseReference = baseTd.BaseType;
+            }
+
+            return false;
         }
 
         /// <summary>
