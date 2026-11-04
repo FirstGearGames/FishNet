@@ -67,6 +67,7 @@ namespace FishNet.CodeGenerating.ILCore
             bool fnAssembly = IsFishNetAssembly(compiledAssembly);
             if (fnAssembly)
                 modified |= ModifyMakePublicMethods(session);
+            modified |= MatchOverridesToPublicBase(session);
             /* If one or more scripts use RPCs but don't inherit NetworkBehaviours
              * then don't bother processing the rest. */
             if (session.GetClass<NetworkBehaviourProcessor>().NonNetworkBehaviourHasInvalidAttributes(session.Module.Types))
@@ -133,11 +134,6 @@ namespace FishNet.CodeGenerating.ILCore
         private bool ModifyMakePublicMethods(CodegenSession session)
         {
             string makePublicTypeFullName = typeof(MakePublicAttribute).FullName;
-            /* [BIG patch — CoreCLR] Virtual methods made public here must have their overrides made public too.
-             * Otherwise e.g. SyncBase.Read becomes public while SyncVar<T>.Read stays protected internal, and
-             * CoreCLR (Unity 7) refuses to load the type: "Derived method 'Read' ... cannot reduce access".
-             * Mono tolerated it. */
-            HashSet<string> publicVirtuals = new();
             foreach (TypeDefinition td in session.Module.Types)
             {
                 foreach (CustomAttribute tdCustomAttribute in td.CustomAttributes)
@@ -153,22 +149,6 @@ namespace FishNet.CodeGenerating.ILCore
                     foreach (CustomAttribute ca in md.CustomAttributes)
                     {
                         if (ca.AttributeType.FullName == makePublicTypeFullName)
-                        {
-                            SetPublic(md);
-                            if (md.IsVirtual)
-                                publicVirtuals.Add(GetOverrideKey(md));
-                        }
-                    }
-                }
-            }
-
-            if (publicVirtuals.Count > 0)
-            {
-                foreach (TypeDefinition td in GetAllTypes(session.Module.Types))
-                {
-                    foreach (MethodDefinition md in td.Methods)
-                    {
-                        if (md.IsVirtual && !md.IsNewSlot && !md.IsPublic && OverridesAny(td, md, publicVirtuals))
                             SetPublic(md);
                     }
                 }
@@ -178,9 +158,40 @@ namespace FishNet.CodeGenerating.ILCore
             return true;
         }
 
-        private static void SetPublic(MethodDefinition md) => md.Attributes = (md.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public;
+        /// <summary>
+        /// [CoreCLR] MakePublic widens virtual methods (e.g. SyncBase.Read) after C# compilation, so their overrides
+        /// end up narrower than the base: SyncVar.Read stays protected internal, a user's custom SyncBase keeps its
+        /// protected override. Mono tolerates that; CoreCLR (Unity 7) refuses to load the type with
+        /// "Derived method ... cannot reduce access". Every override whose nearest base method is public becomes public.
+        /// Runs for FishNet.Runtime and for every assembly referencing it.
+        /// </summary>
+        private bool MatchOverridesToPublicBase(CodegenSession session)
+        {
+            bool modified = false;
+            bool changed;
+            // Repeat until stable: in a chain B : C : SyncBase within one assembly, C must be widened before B sees it.
+            do
+            {
+                changed = false;
+                foreach (TypeDefinition td in GetAllTypes(session.Module.Types))
+                {
+                    foreach (MethodDefinition md in td.Methods)
+                    {
+                        if (md.IsVirtual && !md.IsNewSlot && !md.IsPublic && IsBaseMethodPublic(td, md))
+                        {
+                            SetPublic(md);
+                            changed = true;
+                        }
+                    }
+                }
 
-        private static string GetOverrideKey(MethodDefinition md) => $"{md.DeclaringType.FullName}::{md.Name}/{md.Parameters.Count}";
+                modified |= changed;
+            } while (changed);
+
+            return modified;
+        }
+
+        private static void SetPublic(MethodDefinition md) => md.Attributes = (md.Attributes & ~MethodAttributes.MemberAccessMask) | MethodAttributes.Public;
 
         private static IEnumerable<TypeDefinition> GetAllTypes(IEnumerable<TypeDefinition> types)
         {
@@ -195,25 +206,34 @@ namespace FishNet.CodeGenerating.ILCore
             }
         }
 
-        /// <summary> True when md overrides a virtual made public by MakePublic anywhere up the base chain. </summary>
-        private static bool OverridesAny(TypeDefinition td, MethodDefinition md, HashSet<string> publicVirtuals)
+        /// <summary>
+        /// True when the nearest virtual method md overrides (same name and parameter count) is public.
+        /// Walks only bases in this assembly or FishNet.Runtime — MakePublic happens nowhere else, and UnityEngine etc.
+        /// never need to be resolved.
+        /// </summary>
+        private static bool IsBaseMethodPublic(TypeDefinition td, MethodDefinition md)
         {
             TypeReference baseReference = td.BaseType;
-            // MakePublic targets live in this assembly — stop at the first external base (no need to resolve UnityEngine etc.).
-            while (baseReference != null && !(baseReference.Scope is AssemblyNameReference))
+            while (baseReference != null && IsProcessedScope(baseReference.Scope))
             {
                 TypeDefinition baseTd = baseReference.Resolve();
                 if (baseTd == null)
                     return false;
 
-                if (publicVirtuals.Contains($"{baseTd.FullName}::{md.Name}/{md.Parameters.Count}"))
-                    return true;
+                foreach (MethodDefinition baseMd in baseTd.Methods)
+                {
+                    if (baseMd.IsVirtual && baseMd.Name == md.Name && baseMd.Parameters.Count == md.Parameters.Count)
+                        return baseMd.IsPublic;
+                }
 
                 baseReference = baseTd.BaseType;
             }
 
             return false;
         }
+
+        private static bool IsProcessedScope(IMetadataScope scope) =>
+            scope is ModuleDefinition || (scope is AssemblyNameReference anr && anr.Name == "FishNet.Runtime");
 
         /// <summary>
         /// Creates delegates for user declared serializers.
