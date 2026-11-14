@@ -734,6 +734,19 @@ namespace FishNet.Managing.Predicting
         }
 
         /// <summary>
+        /// Returns the tick of the client a state update is for.
+        /// </summary>
+        /// <param name = "remoteTick">Tick of the last replicate run for the client.</param>
+        /// <param name = "estimatedTick">RemoteTick plus the server ticks passed since.</param>
+        /// <param name = "ticksSinceReplicate">Server ticks passed since a replicate was last run for the client.</param>
+        /// <param name = "replicateExpected">True if the last replicate run was not default, meaning the client is still sending.</param>
+        /// <param name = "maximumLateTicks">How many ticks replicates may be late before the client is considered to have stopped sending.</param>
+        internal static uint GetStateClientTick(uint remoteTick, uint estimatedTick, uint ticksSinceReplicate, bool replicateExpected, uint maximumLateTicks)
+        {
+            return replicateExpected && ticksSinceReplicate <= maximumLateTicks ? remoteTick : estimatedTick;
+        }
+
+        /// <summary>
         /// Sends written states for clients.
         /// </summary>
         internal void SendStateUpdate()
@@ -751,7 +764,32 @@ namespace FishNet.Managing.Predicting
                 // If client has performed a replicate recently.
                 if (!nc.ReplicateTick.IsUnset)
                 {
-                    lastReplicateTick = nc.ReplicateTick.Value();
+                    /* ReplicateTick.Value() is the tick of the last replicate run
+                     * plus the ticks passed since. On a tick which ran a replicate
+                     * that is the tick of the replicate.
+                     *
+                     * On a tick which ran default data because the queue was empty
+                     * Value() is still one tick higher than before. That is correct
+                     * when the client stopped sending: a client only stops once
+                     * its data is default, so the default data run on the server
+                     * is the next tick of the client.
+                     *
+                     * It is not correct when the replicates are late. The state would
+                     * be for a tick the server has not run the replicate of yet; the
+                     * client reconciles to it, replays without that replicate, and is
+                     * moved back by one tick of its own movement for every such tick.
+                     * Then moves forward again when the late replicates are run and
+                     * states are sent with their ticks.
+                     *
+                     * A client which stops sending sends its default data first, as the
+                     * resends of its last non-default replicate. If the last replicate run
+                     * was not default then the queue is empty because replicates are late,
+                     * and the tick of the last replicate run is used as it is. This is
+                     * only known when RedundancyCount is more than 1, and is only done for
+                     * up to a second so that the client does not replay more than that. */
+                    TimeManager timeManager = _networkManager.TimeManager;
+                    bool replicateExpected = RedundancyCount > 1 && nc.LastInputReplicateLocalTick >= nc.ReplicateTick.LocalTick;
+                    lastReplicateTick = GetStateClientTick(nc.ReplicateTick.RemoteTick, nc.ReplicateTick.Value(), nc.ReplicateTick.LocalTickDifference(timeManager), replicateExpected, timeManager.TickRate);
                 }
                 /* If not then use what is estimated to be the clients
                  * current tick along with desired interpolation.

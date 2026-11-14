@@ -717,6 +717,15 @@ namespace FishNet.Object
                 //     data.Data.SetTick(tm.LocalTick);
 
                 uint tick = data.Data.GetTick();
+                /* Note when the owner sent data which is not default. The owner will
+                 * keep sending after such data, which state updates use to know
+                 * if an empty queue is late data or an owner that stopped sending. */
+                if (isServerStarted && state.ContainsCreated() && Owner.IsValid)
+                {
+                    Func<T, bool> isDefaultDel = PublicPropertyComparer<T>.IsDefault;
+                    if (isDefaultDel != null && !isDefaultDel.Invoke(data.Data))
+                        Owner.LastInputReplicateLocalTick = tm.LocalTick;
+                }
 
                 SetReplicateTick(tick, state.ContainsCreated());
 
