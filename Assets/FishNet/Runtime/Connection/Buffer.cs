@@ -250,7 +250,8 @@ namespace FishNet.Connection
             uint tick = _networkManager.TimeManager.LocalTick;
             /* Buffers only span several ticks when outgoing data is flushed less often than every tick. Only then
              * is the tick marked, so a send interval of 1 writes exactly what it did before. */
-            bool markTicks = _networkManager.TransportManager.GetSendInterval(_asServer) > 1;
+            bool markTicks = _networkManager.TransportManager.GetSendInterval(_asServer) > 1 ||
+                             (_asServer && _networkManager.TransportManager.ConnectionSendIntervalsUsed);
 
             //True if nothing has been written to the buffer.
             bool isBufferEmpty = ba.Length == _reserve;

@@ -1189,7 +1189,7 @@ namespace FishNet.Managing.Timing
                  * call IterateOutgoing directly and are not affected. */
                 FishNet.Managing.Transporting.TransportManager transportManager = NetworkManager.TransportManager;
                 if (transportManager.ShouldFlushOutgoing(asServer: true, LocalTick))
-                    transportManager.IterateOutgoing(asServer: true);
+                    transportManager.IterateOutgoing(asServer: true, scheduled: true);
                 if (transportManager.ShouldFlushOutgoing(asServer: false, LocalTick))
                     transportManager.IterateOutgoing(asServer: false);
             }

@@ -110,6 +110,30 @@ namespace FishNet.Connection
         }
 
         /// <summary>
+        /// Ticks between flushes of this connection's unreliable data; 0 uses the server's interval
+        /// (<see cref="TransportManager.ServerSendInterval"/>). Reliable data is never held past the server's own interval, so
+        /// replies are not slowed. Use it to send fewer packets to clients that do not need every tick.
+        /// </summary>
+        public byte SendInterval { get; private set; }
+
+        /// <summary>
+        /// Sets <see cref="SendInterval"/>; 0 returns the connection to the server's interval.
+        /// </summary>
+        public void SetSendInterval(byte interval)
+        {
+            if (interval == SendInterval)
+                return;
+            SendInterval = interval;
+            if (interval != 0 && NetworkManager != null)
+                NetworkManager.TransportManager.NoteConnectionSendInterval();
+        }
+
+        /// <summary>
+        /// True when reliable data is waiting to be sent to this connection.
+        /// </summary>
+        internal bool HasReliableDataToSend => _toClientBundles.Count > (int)Channel.Reliable && _toClientBundles[(int)Channel.Reliable].HasData;
+
+        /// <summary>
         /// Returns a PacketBundle for a channel. ResetPackets must be called afterwards.
         /// </summary>
         /// <param name = "channel"></param>
