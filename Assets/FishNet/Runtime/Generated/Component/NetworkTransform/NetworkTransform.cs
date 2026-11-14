@@ -154,6 +154,11 @@ namespace FishNet.Component.Transforming
         public class GoalData : IResettable
         {
             public uint ReceivedTick;
+            /// <summary>
+            /// The server tick this data describes, kept even for a reliable settle (whose Transforms.Tick is
+            /// cleared). Timed playback reaches this data exactly when the playback clock passes it.
+            /// </summary>
+            public uint PlaybackTick;
             public RateData Rates = new();
             public TransformData Transforms = new();
 
@@ -163,6 +168,7 @@ namespace FishNet.Component.Transforming
             public void ResetState()
             {
                 ReceivedTick = 0;
+                PlaybackTick = 0;
                 Transforms.ResetState();
                 Rates.ResetState();
             }
@@ -617,6 +623,246 @@ namespace FishNet.Component.Transforming
         /// Current GoalData being used.
         /// </summary>
         private GoalData _currentGoalData;
+
+        #region Timed playback.
+        /* Opt-in (TimedPlayback). Received transforms are drawn at ONE shared point in the past: the newest server tick this
+         * client has received (smoothed), minus Interpolation ticks, or more while data has recently arrived late
+         * (PlaybackClock). The default playback starts once Interpolation goals are queued and then consumes them at a fixed
+         * rate without looking at a clock, so each object's delay is whatever it happened to be when its playback last
+         * (re)started: about 3 ticks after spawning, 3 or 4 after a stop-and-go, about 1 after a reliable settle. Games that
+         * rewind the world to what a client saw (lag compensation) need that delay to be known and the same for every object.
+         * Here each goal is reached when the clock passes its tick, a late or early object is sped up or slowed down back
+         * onto the clock, and a far-off one snaps. Clients only; the server's playback of client-authoritative data is
+         * unchanged. */
+        /// <summary>
+        /// True to draw received transforms on the shared playback clock (see the region note). False (the default) keeps
+        /// the queue-count playback.
+        /// </summary>
+        public static bool TimedPlayback = false;
+        /// <summary>The draw tick timed playback is steering to this frame (set before MoveToTarget runs).</summary>
+        private double _timedTarget;
+        /// <summary>True while MoveToTarget runs under timed playback: no queue-count speed-up, and goals wait for their tick.</summary>
+        private bool _timedStepActive;
+        /// <summary>Ticks behind the clock beyond which an object snaps instead of catching up.</summary>
+        private const double TimedSnapTicks = 6d;
+        /// <summary>Queued goals kept under timed playback; older ones are dropped (the object is then far behind and snaps).</summary>
+        private const int TimedMaximumQueue = 32;
+        /// <summary>Most a newly started object is fast-forwarded to reach the clock, in ticks.</summary>
+        private const double TimedMaximumCatchUpTicks = 4d;
+        /// <summary>Speed change per tick of error: an object one tick behind plays at 1.5x until it is back on the clock.</summary>
+        private const float TimedCorrectionGain = 0.5f;
+        private const float TimedMinimumRate = 0.25f;
+        private const float TimedMaximumRate = 3f;
+
+        /// <summary>True when this object is drawn on the shared playback clock: a client's view of data it receives.</summary>
+        private bool IsTimedPlayback => TimedPlayback && !IsServerStarted && IsClientInitialized;
+
+        /// <summary>
+        /// The server tick this client draws received transforms at this frame under <see cref="TimedPlayback"/>, or 0
+        /// before it has received anything. Never newer than <paramref name="minimumDelayTicks"/> behind the newest data,
+        /// and further behind when data has recently arrived late (see PlaybackClock). A game can send this tick with its
+        /// input so the server rewinds to exactly what was on screen, whatever the delay is.
+        /// </summary>
+        public static double PlaybackDrawTick(TimeManager timeManager, double minimumDelayTicks)
+        {
+            return PlaybackClock.DrawTick(timeManager, minimumDelayTicks);
+        }
+
+        /// <summary>
+        /// The shared playback clock: the newest server tick this client has received, smoothed so it advances steadily
+        /// although data arrives in steps (a send interval above 1 delivers two ticks at once). Computed once per frame.
+        /// </summary>
+        /// <remarks>
+        /// Also the ADAPTIVE DELAY. Data that arrives later than the delay leaves an object with nothing to move toward, so
+        /// it pauses and catches up. The clock records how far behind itself each arrival was and keeps the delay above the
+        /// recent worst: it grows at once when data comes in late and shrinks back slowly (DelayRecoveryTicksPerSecond)
+        /// when the connection is steady, capped at MaximumDelayTicks. A steady connection plays at the minimum delay; a
+        /// jittery one plays a little further behind and does not pause. Safe for hits because the delay in force is part
+        /// of the tick every input claims.
+        /// </remarks>
+        private static class PlaybackClock
+        {
+            /// <summary>Most the delay grows to, in ticks: beyond this the connection is broken, not jittery.</summary>
+            private const double MaximumDelayTicks = 8d;
+            /// <summary>Margin kept above the latest arrival's lateness, in ticks.</summary>
+            private const double DelayMarginTicks = 0.5d;
+            /// <summary>How fast the remembered worst lateness fades once arrivals are steady, ticks per second.</summary>
+            private const double LatenessFadeTicksPerSecond = 0.5d;
+            /// <summary>How fast the delay shrinks toward what the connection needs, ticks per second.</summary>
+            private const double DelayRecoveryTicksPerSecond = 0.5d;
+            private static double _worstLateness;
+            private static double _extraDelay;
+
+            /// <summary>The draw tick: the clock less the larger of the minimum delay and the adaptive one; 0 before any data.</summary>
+            public static double DrawTick(TimeManager timeManager, double minimumDelayTicks)
+            {
+                double reference = Reference(timeManager);
+                if (reference <= 0d)
+                    return 0d;
+                return reference - System.Math.Max(minimumDelayTicks, _extraDelay);
+            }
+
+            /// <summary>How quickly the clock follows the arrival pattern, in seconds.</summary>
+            private const double TimeConstantSeconds = 1d;
+            /// <summary>An arrival this far from the smoothed clock (a stall, a reconnect) resets it instead of being averaged in.</summary>
+            private const double ResyncTicks = 10d;
+            private static int _frame = -1;
+            private static TimeManager _timeManager;
+            private static double _offset;
+            private static bool _hasOffset;
+            private static double _reference;
+            private static double _lastTime;
+
+            /// <summary>The smoothed newest received server tick, or 0 when the client has received nothing yet.</summary>
+            public static double Reference(TimeManager timeManager)
+            {
+                if (timeManager == null)
+                    return 0d;
+                if (_frame == Time.frameCount && ReferenceEquals(_timeManager, timeManager))
+                    return _reference;
+
+                _frame = Time.frameCount;
+                if (!ReferenceEquals(_timeManager, timeManager))
+                {
+                    _timeManager = timeManager;
+                    _hasOffset = false;
+                    _worstLateness = 0d;
+                    _extraDelay = 0d;
+                }
+
+                uint remote = timeManager.LastPacketTick.LastRemoteTick;
+                double tickDelta = timeManager.TickDelta;
+                if (remote == TimeManager.UNSET_TICK || tickDelta <= 0d)
+                {
+                    _hasOffset = false;
+                    _reference = 0d;
+                    return 0d;
+                }
+
+                double now = Time.unscaledTimeAsDouble;
+                double clock = now / tickDelta;
+                double sample = clock - remote;
+                if (!_hasOffset || System.Math.Abs(sample - _offset) > ResyncTicks)
+                {
+                    _offset = sample;
+                    _hasOffset = true;
+                }
+                else
+                {
+                    double elapsed = System.Math.Max(0d, now - _lastTime);
+                    _offset += (sample - _offset) * (1d - System.Math.Exp(-elapsed / TimeConstantSeconds));
+                }
+                double frameSeconds = System.Math.Max(0d, now - _lastTime);
+                _lastTime = now;
+                _reference = clock - _offset;
+
+                /* Staleness, every frame: how far the clock has run past the newest tick received. That is exactly what
+                 * runs an object out of data once it exceeds the delay. Steady batched arrivals peak about a tick past it;
+                 * data that is late keeps growing it until it arrives, and the delay grows with it, so playback slows
+                 * instead of stopping. */
+                double staleness = _reference - remote;
+                if (staleness > _worstLateness)
+                    _worstLateness = staleness;
+                _worstLateness = System.Math.Max(0d, _worstLateness - LatenessFadeTicksPerSecond * frameSeconds);
+                double needed = System.Math.Min(MaximumDelayTicks, _worstLateness + DelayMarginTicks);
+                if (needed > _extraDelay)
+                    _extraDelay = needed;
+                else
+                    _extraDelay = System.Math.Max(needed, _extraDelay - DelayRecoveryTicksPerSecond * frameSeconds);
+                return _reference;
+            }
+        }
+
+        /// <summary>The tick this object is drawn at now: its current goal's tick less the time still to go.</summary>
+        private double TimedDrawnTick(double tickDelta)
+        {
+            GoalData current = _currentGoalData;
+            return current.PlaybackTick - System.Math.Max(0d, current.Rates.TimeRemaining) / tickDelta;
+        }
+
+        /// <summary>The tick at which a goal starts: when the object leaves the previous goal for it.</summary>
+        private static double TimedStartTick(GoalData goal)
+        {
+            uint span = goal.Rates.TickSpan < 1 ? 1u : goal.Rates.TickSpan;
+            return (double)goal.PlaybackTick - span;
+        }
+
+        /// <summary>
+        /// One frame of timed playback: start the next goal when its tick comes, keep a playing object on the clock by
+        /// changing its speed, and snap one that has fallen far behind.
+        /// </summary>
+        private void MoveToTargetTimed(float delta)
+        {
+            if (!DoSettingsAllowSmoothing())
+                return;
+
+            double target = PlaybackClock.DrawTick(_timeManager, _interpolation);
+            if (target <= 0d)
+            {
+                // Nothing received yet: FishNet's own playback until the clock exists.
+                MoveToTarget(delta);
+                return;
+            }
+
+            double tickDelta = _timeManager.TickDelta;
+            _timedTarget = target;
+            _timedStepActive = true;
+            try
+            {
+                if (_currentGoalData == null)
+                {
+                    if (_goalDataQueue.Count == 0)
+                        return;
+                    double start = TimedStartTick(_goalDataQueue.Peek());
+                    if (target < start)
+                        return;
+                    // Its tick has come (or passed): start it, already as far along as the clock says it should be.
+                    SetCurrentGoalData(_goalDataQueue.Dequeue());
+                    double behind = target - start;
+                    if (behind > TimedSnapTicks)
+                    {
+                        SnapTimed(target);
+                        return;
+                    }
+                    MoveToTarget((float)(System.Math.Min(behind, TimedMaximumCatchUpTicks) * tickDelta));
+                    return;
+                }
+
+                double error = target - TimedDrawnTick(tickDelta);
+                if (error > TimedSnapTicks)
+                {
+                    SnapTimed(target);
+                    return;
+                }
+                float rate = Mathf.Clamp(1f + (float)error * TimedCorrectionGain, TimedMinimumRate, TimedMaximumRate);
+                MoveToTarget(delta * rate);
+            }
+            finally
+            {
+                _timedStepActive = false;
+            }
+        }
+
+        /// <summary>Puts a far-behind object straight onto the newest goal at or before the clock; drops the goals in between.</summary>
+        private void SnapTimed(double target)
+        {
+            GoalData latest = null;
+            while (_goalDataQueue.Count > 0 && _goalDataQueue.Peek().PlaybackTick <= target)
+            {
+                if (latest != null)
+                    ResettableObjectCaches<GoalData>.Store(latest);
+                latest = _goalDataQueue.Dequeue();
+            }
+            if (latest != null)
+                SetCurrentGoalData(latest);
+            if (_currentGoalData == null)
+                return;
+            if (_synchronizeParent)
+                SetParent(_currentGoalData.Transforms.ParentBehaviour, _currentGoalData.Rates);
+            SetInstantRates(_currentGoalData.Rates, 1, 0f);
+            SnapProperties(_currentGoalData.Transforms, true);
+        }
+        #endregion
         /// <summary>
         /// True if the transform has changed since it started.
         /// </summary>
@@ -790,7 +1036,11 @@ namespace FishNet.Component.Transforming
             using (_pm_OnUpdate.Auto())
             {
                 float deltaTime = _useScaledTime ? Time.deltaTime : Time.unscaledDeltaTime;
-                MoveToTarget(deltaTime);
+                // Under timed playback a client draws what it receives on the shared playback clock.
+                if (IsTimedPlayback)
+                    MoveToTargetTimed(deltaTime);
+                else
+                    MoveToTarget(deltaTime);
             }
         }
 
@@ -1649,7 +1899,8 @@ namespace FishNet.Component.Transforming
                 float multiplier = 1f;
                 int queueCount = _goalDataQueue.Count;
                 //Increase move rate slightly if over queue count.
-                if (queueCount > _interpolation + 1)
+                // Not under timed playback, whose caller already sets the speed from the clock.
+                if (queueCount > _interpolation + 1 && !_timedStepActive)
                     multiplier += 0.05f;
 
                 //Rate to update. Changes per property.
@@ -1702,11 +1953,16 @@ namespace FishNet.Component.Transforming
                 {
                     float leftOver = Mathf.Abs(rd.TimeRemaining);
                     //If more in buffer then run next buffer.
-                    if (queueCount > 0)
+                    // Under timed playback the next goal also waits for its tick.
+                    if (queueCount > 0 && (!_timedStepActive || TimedStartTick(_goalDataQueue.Peek()) <= _timedTarget))
                     {
                         SetCurrentGoalData(_goalDataQueue.Dequeue());
                         if (leftOver > 0f)
                             MoveToTarget(leftOver);
+                    }
+                    // Under timed playback, a queued goal whose tick has not come yet; hold here until it does.
+                    else if (queueCount > 0)
+                    {
                     }
                     //No more in buffer, see if can extrapolate.
                     else
@@ -2394,6 +2650,8 @@ namespace FishNet.Component.Transforming
             }
 
             _lastReceiveReliable = channel == Channel.Reliable;
+            // The tick this data describes, before a reliable settle clears Transforms.Tick.
+            nextGd.PlaybackTick = nextTd.Tick;
             /* If channel is reliable then this is a settled packet.
              * Set tick to UNSET. When this occurs time calculations
              * assume only 1 tick has passed. */
@@ -2406,6 +2664,8 @@ namespace FishNet.Component.Transforming
             nextGd.ReceivedTick = _timeManager.LocalTick;
 
             bool currentDataNull = _currentGoalData == null;
+            // Under timed playback a client's received data is queued and reached on the playback clock (MoveToTargetTimed).
+            bool timed = !asServer && IsTimedPlayback;
             /* If extrapolating then immediately break the extrapolation
              * in favor of newest results. This will keep the buffer
              * at 0 until the transform settles but the only other option is
@@ -2416,6 +2676,10 @@ namespace FishNet.Component.Transforming
             if (!currentDataNull && _currentGoalData.Transforms.ExtrapolationState == TransformData.ExtrapolateState.Active)
             {
                 SetCurrentGoalData(nextGd);
+            }
+            else if (timed)
+            {
+                _goalDataQueue.Enqueue(nextGd);
             }
             /* If queue isn't started and its buffered enough
              * to satisfy interpolation then set ready
@@ -2451,7 +2715,13 @@ namespace FishNet.Component.Transforming
              * when connections are unstable results may come in chunks
              * and for a better experience the older parts of the chunks
              * will be dropped. */
-            if (_goalDataQueue.Count > _interpolation + 3)
+            // Under timed playback only a runaway queue is trimmed (oldest first); the clock catches up or snaps.
+            if (timed)
+            {
+                while (_goalDataQueue.Count > TimedMaximumQueue)
+                    ResettableObjectCaches<GoalData>.Store(_goalDataQueue.Dequeue());
+            }
+            else if (_goalDataQueue.Count > _interpolation + 3)
             {
                 while (_goalDataQueue.Count > _interpolation)
                 {
