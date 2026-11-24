@@ -467,6 +467,7 @@ namespace FishNet.Connection
             StoreSplitReader();
 
             ServerConnectionTick = 0;
+            SendInterval = 0;
             PacketTick.Reset();
             LocalTick.Reset();
             TransportIndex = -1;
