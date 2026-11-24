@@ -34,6 +34,11 @@ namespace FishNet.Transporting
         UNUSED2 = 19,
         StateUpdate = 20,
         // Not used with network traffic statistics.
-        Version = 21
+        Version = 21,
+        /// <summary>
+        /// The tick changes mid-bundle. Followed by the new tick (uint, unpacked); every message after it in the same
+        /// bundle belongs to that tick. Only written by a side whose send interval is above 1, where one bundle may hold several ticks.
+        /// </summary>
+        TickMarker = 22
     }
 }

@@ -808,6 +808,14 @@ namespace FishNet.Managing.Server
                 #if DEVELOPMENT
                 NetworkManager.PacketIdHistory.ReceivedPacket(packetId, packetFromServer: false);
                 #endif
+                /* The bundle moves to a later tick here: messages after the marker are read against that tick, as
+                 * they would have been in a bundle of their own. */
+                if (packetId == PacketId.TickMarker)
+                {
+                    tick = reader.ReadTickUnpacked();
+                    timeManager.LastPacketTick.Update(tick);
+                    continue;
+                }
                 connection.LocalTick.Update(timeManager, tick, EstimatedTick.OldTickOption.Discard);
                 connection.PacketTick.Update(timeManager, tick, EstimatedTick.OldTickOption.SetLastRemoteTick);
                 /* If connection isn't authenticated and isn't a broadcast

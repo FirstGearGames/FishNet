@@ -3,6 +3,7 @@ using FishNet.Managing.Logging;
 using FishNet.Managing.Transporting;
 using FishNet.Object;
 using FishNet.Serializing;
+using FishNet.Transporting;
 using FishNet.Utility.Performance;
 using System;
 using System.Collections.Generic;
@@ -36,6 +37,14 @@ namespace FishNet.Connection
         /// </summary>
         internal bool HasData { get; private set; }
         /// <summary>
+        /// Tick the most recently written data belongs to: the header's, or the latest tick marker's.
+        /// </summary>
+        internal uint Tick { get; private set; }
+        /// <summary>
+        /// Bytes a tick marker uses: PacketId (2) and tick (4).
+        /// </summary>
+        internal const int TICK_MARKER_LENGTH = 6;
+        /// <summary>
         /// Bytes to reserve when resetting.
         /// </summary>
         private int _reserve;
@@ -68,8 +77,9 @@ namespace FishNet.Connection
         /// <summary>
         /// Copies segments without error checking, including tick for the first time data is added.
         /// </summary>
+        /// <param name = "markTicks">True to write a tick marker before data from a later tick than the buffer holds.</param>
         /// <param name = "segment"></param>
-        internal void CopySegment(uint tick, ArraySegment<byte> segment)
+        internal void CopySegment(uint tick, bool markTicks, ArraySegment<byte> segment)
         {
             /* If data has not been written to buffer yet
              * then write tick to the start. */
@@ -77,6 +87,19 @@ namespace FishNet.Connection
             {
                 int pos = 0;
                 Writer.WriteUInt32Unpacked(Data, tick, ref pos);
+                Tick = tick;
+            }
+            /* Data from a later tick than the buffer holds so far: write a tick marker first so the receiver
+             * reads this segment against its own tick rather than the header's. */
+            else if (markTicks && tick != Tick)
+            {
+                ushort marker = (ushort)PacketId.TickMarker;
+                Data[Length] = (byte)marker;
+                Data[Length + 1] = (byte)(marker >> 8);
+                int pos = Length + 2;
+                Writer.WriteUInt32Unpacked(Data, tick, ref pos);
+                Length += TICK_MARKER_LENGTH;
+                Tick = tick;
             }
 
             Buffer.BlockCopy(segment.Array, segment.Offset, Data, Length, segment.Count);
@@ -134,15 +157,20 @@ namespace FishNet.Connection
         /// True if being used as an sendLast bundle.
         /// </summary>
         private bool _isSendLastBundle;
+        /// <summary>
+        /// True if this bundle holds data sent by the server, false if sent by the client.
+        /// </summary>
+        private bool _asServer;
 
-        internal PacketBundle(NetworkManager manager, int mtu, int reserve = 0, DataOrderType orderType = DataOrderType.Default)
+        internal PacketBundle(NetworkManager manager, int mtu, bool asServer, int reserve = 0, DataOrderType orderType = DataOrderType.Default)
         {
             _isSendLastBundle = orderType == DataOrderType.Last;
             // If this is not the send last packetBundle then make a new one.
             if (!_isSendLastBundle)
-                _sendLastBundle = new(manager, mtu, reserve, DataOrderType.Last);
+                _sendLastBundle = new(manager, mtu, asServer, reserve, DataOrderType.Last);
 
             _networkManager = manager;
+            _asServer = asServer;
             _maximumTransportUnit = mtu;
             /* Allow bytes for the tick.
              * Modify reserve after making sendLast bundle
@@ -219,6 +247,10 @@ namespace FishNet.Connection
             /* A buffer is added during initialization, so one
              * will always be present. */
             ByteBuffer ba = _buffers[_bufferIndex];
+            uint tick = _networkManager.TimeManager.LocalTick;
+            /* Buffers only span several ticks when outgoing data is flushed less often than every tick. Only then
+             * is the tick marked, so a send interval of 1 writes exactly what it did before. */
+            bool markTicks = _networkManager.TransportManager.GetSendInterval(_asServer) > 1;
 
             //True if nothing has been written to the buffer.
             bool isBufferEmpty = ba.Length == _reserve;
@@ -233,7 +265,9 @@ namespace FishNet.Connection
             {
                 if (!forceNewBuffer)
                 {
-                    bool canBufferHoldSegmentCount = segment.Count <= ba.Remaining;
+                    // A segment from a later tick also needs room for its tick marker.
+                    int markerLength = markTicks && ba.Tick != tick ? ByteBuffer.TICK_MARKER_LENGTH : 0;
+                    bool canBufferHoldSegmentCount = segment.Count + markerLength <= ba.Remaining;
 
                     if (!canBufferHoldSegmentCount)
                         forceNewBuffer = true;
@@ -256,8 +290,7 @@ namespace FishNet.Connection
                 }
             }
 
-            uint tick = _networkManager.TimeManager.LocalTick;
-            ba.CopySegment(tick, segment);
+            ba.CopySegment(tick, markTicks, segment);
         }
 
         /// <summary>

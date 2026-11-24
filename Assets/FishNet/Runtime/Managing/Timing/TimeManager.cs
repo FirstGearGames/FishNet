@@ -1184,8 +1184,14 @@ namespace FishNet.Managing.Timing
             }
             else
             {
-                NetworkManager.TransportManager.IterateOutgoing(asServer: true);
-                NetworkManager.TransportManager.IterateOutgoing(asServer: false);
+                /* Each side flushes on its send interval's ticks. On the ticks in between, outgoing messages stay in the
+                 * connection bundles and leave with the next flush. Paths that must send immediately (kicks, stopping)
+                 * call IterateOutgoing directly and are not affected. */
+                FishNet.Managing.Transporting.TransportManager transportManager = NetworkManager.TransportManager;
+                if (transportManager.ShouldFlushOutgoing(asServer: true, LocalTick))
+                    transportManager.IterateOutgoing(asServer: true);
+                if (transportManager.ShouldFlushOutgoing(asServer: false, LocalTick))
+                    transportManager.IterateOutgoing(asServer: false);
             }
         }
 
