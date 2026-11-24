@@ -348,6 +348,18 @@ namespace FishNet.Managing.Predicting
         public void SetMaximumServerReplicates(byte value) => _maximumServerReplicates = (byte)Mathf.Clamp(value, MINIMUM_REPLICATE_QUEUE_SIZE, MAXIMUM_REPLICATE_QUEUE_SIZE);
 
         /// <summary>
+        /// Sets how many states to hold in a buffer before running them. Use this when the arrival pattern of replicates
+        /// changes at runtime, such as a client that sends several ticks of input per packet and needs a deeper queue so
+        /// the server does not run out of input between packets. The value is clamped and validated as in the inspector.
+        /// </summary>
+        public void SetStateInterpolation(byte value)
+        {
+            _stateInterpolation = (byte)Mathf.Clamp(value, 0, MAXIMUM_PAST_INPUTS);
+            if (_networkManager != null)
+                ValidateClampInterpolation();
+        }
+
+        /// <summary>
         /// Maximum number of replicates a server can queue per object. Higher values will reduce the chance of dropped input when the client's connection is unstable, but will potentially add latency to the client's object both on the server and client.
         /// </summary>
         public byte GetMaximumServerReplicates() => _maximumServerReplicates;
