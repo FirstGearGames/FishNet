@@ -405,6 +405,26 @@ namespace FishNet.Managing.Transporting
         public int GetMTUReserve() => _customMtuReserve;
 
         /// <summary>
+        /// Sets the IntermediateLayer from code, after the NetworkManager has initialized and before the server or client starts.
+        /// Use it when the layer is chosen at runtime, for example from configuration, rather than assigned in the inspector.
+        /// </summary>
+        /// <param name = "layer">Layer to use.</param>
+        /// <param name = "mtuOverhead">The most the layer can add to a packet. It is added to the MTU reserve so a packet the layer grows still fits.</param>
+        /// <returns>False if the NetworkManager has not initialized, the server or client has already started, or a layer is already set.</returns>
+        public bool SetIntermediateLayer(IntermediateLayer layer, int mtuOverhead)
+        {
+            if (layer == null || _intermediateLayer != null)
+                return false;
+            if (_networkManager == null || _networkManager.IsClientStarted || _networkManager.IsServerStarted)
+                return false;
+            if (mtuOverhead > 0)
+                SetMTUReserve(GetMTUReserve() + mtuOverhead);
+            _intermediateLayer = layer;
+            _intermediateLayer.InitializeOnce(this);
+            return true;
+        }
+
+        /// <summary>
         /// Returns the lowest MTU of all channels. When using multipass this will evaluate all transports within Multipass.
         /// </summary>
         /// <param name = "channel"></param>
