@@ -7,6 +7,8 @@ namespace FishNet.Editing.Beta
     public class BetaModeMenu : MonoBehaviour
     {
         #region const.
+        private const string NETWORKTRANSFORM_POSITION_PACKING_DEFINE = "FISHNET_NETWORKTRANSFORM_POSITION_PACKING";
+        private const string NETWORKTRANSFORM_COMPACT_UPDATES_DEFINE = "FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES";
         private const string STABLE_RECURSIVE_DESPAWNS_DEFINE = "FISHNET_STABLE_RECURSIVE_DESPAWNS";
         private const string THREADED_TICKSMOOTHERS_DEFINE = "FISHNET_THREADED_TICKSMOOTHERS";
         private const string THREADED_COLLIDER_ROLLBACK_DEFINE = "FISHNET_THREADED_COLLIDER_ROLLBACK";
@@ -97,6 +99,44 @@ namespace FishNet.Editing.Beta
             bool result = DeveloperMenu.RemoveOrAddDefine(THREADED_COLLIDER_ROLLBACK_DEFINE, removeDefine: useStable);
             if (result)
                 Debug.LogWarning($"Beta Threaded Collider Rollbacks are now {GetBetaEnabledText(useStable)}.");
+        }
+        #endregion
+
+        #region Beta NetworkTransform Position Packing
+        /* Content: NetworkTransform Position Packing
+         *      Adds Position Packing Bits and Position Compression Scale to NetworkTransform, so positions can be packed into 24 bits or at a scale other than 100.
+         *      This changes what is sent over the network, so the define is set for every build target: a server and its clients must be built with the same setting. */
+        #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+        [MenuItem("Tools/Fish-Networking/Beta/Disable NetworkTransform Position Packing", false, -1101)]
+        private static void DisableBetaNetworkTransformPositionPacking() => SetBetaNetworkTransformPositionPacking(useStable: true);
+        #else
+        [MenuItem("Tools/Fish-Networking/Beta/Enable NetworkTransform Position Packing", false, -1101)]
+        private static void EnableBetaNetworkTransformPositionPacking() => SetBetaNetworkTransformPositionPacking(useStable: false);
+        #endif
+        private static void SetBetaNetworkTransformPositionPacking(bool useStable)
+        {
+            bool result = DeveloperMenu.RemoveOrAddDefineForAllBuildTargets(NETWORKTRANSFORM_POSITION_PACKING_DEFINE, removeDefine: useStable);
+            if (result)
+                Debug.LogWarning($"Beta NetworkTransform Position Packing is now {GetBetaEnabledText(useStable)} for all build targets. Servers and clients must be built with the same setting.");
+        }
+        #endregion
+
+        #region Beta NetworkTransform Compact Updates
+        /* Content: NetworkTransform Compact Updates
+         *      Sends upright rotations as a 16-bit heading, and with 24-bit Position Packing sends positions as their low 16 bits, restored by the receiver from its last value.
+         *      This changes what is sent over the network, so the define is set for every build target: a server and its clients must be built with the same setting. */
+        #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES
+        [MenuItem("Tools/Fish-Networking/Beta/Disable NetworkTransform Compact Updates", false, -1102)]
+        private static void DisableBetaNetworkTransformCompactUpdates() => SetBetaNetworkTransformCompactUpdates(useStable: true);
+        #else
+        [MenuItem("Tools/Fish-Networking/Beta/Enable NetworkTransform Compact Updates", false, -1102)]
+        private static void EnableBetaNetworkTransformCompactUpdates() => SetBetaNetworkTransformCompactUpdates(useStable: false);
+        #endif
+        private static void SetBetaNetworkTransformCompactUpdates(bool useStable)
+        {
+            bool result = DeveloperMenu.RemoveOrAddDefineForAllBuildTargets(NETWORKTRANSFORM_COMPACT_UPDATES_DEFINE, removeDefine: useStable);
+            if (result)
+                Debug.LogWarning($"Beta NetworkTransform Compact Updates are now {GetBetaEnabledText(useStable)} for all build targets. Servers and clients must be built with the same setting.");
         }
         #endregion
 

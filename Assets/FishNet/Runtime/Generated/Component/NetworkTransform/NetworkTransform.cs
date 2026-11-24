@@ -35,6 +35,23 @@ namespace FishNet.Component.Transforming
             Rigidbody2D = 3
         }
 
+        #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+        /// <summary>
+        /// Width of each packed position axis.
+        /// </summary>
+        public enum PositionPackingBits : byte
+        {
+            /// <summary>
+            /// 2 bytes per axis. This is the stock format.
+            /// </summary>
+            Sixteen = 0,
+            /// <summary>
+            /// 3 bytes per axis.
+            /// </summary>
+            TwentyFour = 1
+        }
+        #endif
+
         private struct ReceivedClientData
         {
             /// <summary>
@@ -372,6 +389,20 @@ namespace FishNet.Component.Transforming
             Rotation = AutoPackType.Packed,
             Scale = AutoPackType.Unpacked
         };
+        #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+        /// <summary>
+        /// Bits used for each packed position axis. Positions outside the packed range are sent unpacked.
+        /// </summary>
+        [Tooltip("Bits used for each packed position axis. Sixteen is 2 bytes per axis and TwentyFour is 3. Positions outside the packed range are sent unpacked, 4 bytes per axis. The server and clients must use the same value.")]
+        [SerializeField]
+        private PositionPackingBits _positionPackingBits = PositionPackingBits.Sixteen;
+        /// <summary>
+        /// Positions are multiplied by this value before they are packed. Resolution is 1 divided by this value, and the packed range is the largest packed value divided by it.
+        /// </summary>
+        [Tooltip("Positions are multiplied by this value before they are packed. Resolution is 1 divided by this value. The packed range is 32766 (Sixteen) or 8388606 (TwentyFour) divided by this value, so the default 100 gives 0.01 resolution within +/-327.66 or +/-83886.06. The server and clients must use the same value.")]
+        [SerializeField]
+        private float _positionCompressionScale = 100f;
+        #endif
         /// <summary>
         /// True to use scaled deltaTime when smoothing.
         /// </summary>
@@ -1198,6 +1229,148 @@ namespace FishNet.Component.Transforming
             NetworkManager.LogWarning($"{gameObject.name} [Id {ObjectId}] is childed but the parent {_cachedTransform.parent.name} does not contain a NetworkBehaviour component. To synchronize parents the parent object must have a NetworkBehaviour component, even if empty.");
         }
 
+        #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+        /// <summary>
+        /// Largest scaled value sent as a 24-bit packed position. Like the 16-bit maximum, it is one below the type's maximum.
+        /// </summary>
+        private const float POSITION_PACKING_24_MAX_VALUE = (1 << 23) - 2;
+
+        /// <summary>
+        /// Returns the position compression scale, or 100 if the serialized value is not positive.
+        /// </summary>
+        private float GetPositionCompressionScale() => _positionCompressionScale > 0f ? _positionCompressionScale : 100f;
+        #endif
+
+        /// <summary>
+        /// Writes a position axis which has already been scaled and range checked.
+        /// </summary>
+        private void WritePackedPosition(PooledWriter writer, float compressed)
+        {
+            #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            if (_positionPackingBits == PositionPackingBits.TwentyFour)
+            {
+                //Round rather than truncate so the error is at most half a step, with no bias toward the origin.
+                int value = (int)Math.Round(compressed, MidpointRounding.AwayFromZero);
+                writer.WriteUInt16Unpacked((ushort)value);
+                writer.WriteUInt8Unpacked((byte)(value >> 16));
+                return;
+            }
+            #endif
+            writer.WriteInt16((short)compressed);
+        }
+
+        /// <summary>
+        /// Reads a position axis written by WritePackedPosition.
+        /// </summary>
+        private float ReadPackedPosition(PooledReader reader)
+        {
+            #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            if (_positionPackingBits == PositionPackingBits.TwentyFour)
+            {
+                int value = reader.ReadUInt16Unpacked() | (reader.ReadUInt8Unpacked() << 16);
+                //Sign extend from 24 bits.
+                value = (value << 8) >> 8;
+                return value / GetPositionCompressionScale();
+            }
+            return reader.ReadInt16() / GetPositionCompressionScale();
+            #else
+            return reader.ReadInt16() / 100f;
+            #endif
+        }
+
+        #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES
+        /* Compact updates (beta). Two smaller encodings for the unreliable updates observers receive most of.
+         *
+         * Positions (24-bit packing only): an axis is sent as the low 16 bits of its 24-bit value, flagged with both of its
+         * size bits, a combination that is otherwise never written. The reader restores the high bits from the last value it
+         * holds for that axis, choosing the value nearest to it, which is exact while the object is within half the 16-bit
+         * range of what the reader last received (327 m at the default scale). That reference is ANY earlier update, not the
+         * previous one, so a lost or reordered packet costs nothing. The writer only wraps when it has a sent value to measure
+         * against and the axis moved less than WRAPPED_POSITION_SAFE_UNITS since it, which leaves half the range for readers
+         * that missed updates. A teleport, a first send or a large jump goes out in full as before.
+         *
+         * Rotation (Packed only): a rotation about the up axis alone is sent as a 16-bit heading (0.0055 degrees, finer than
+         * the 32-bit quaternion). Anything tilted sends an escape value and then the quaternion as before. */
+        /// <summary>
+        /// Largest move, in packed units, from the last sent value that is still wrapped: a quarter of the 16-bit range.
+        /// </summary>
+        private const int WRAPPED_POSITION_SAFE_UNITS = 16384;
+        /// <summary>
+        /// Heading code that announces a full quaternion follows.
+        /// </summary>
+        private const ushort COMPACT_ROTATION_ESCAPE = ushort.MaxValue;
+        /// <summary>
+        /// Largest x or z component of a rotation still sent as a heading (about 0.01 degrees of tilt).
+        /// </summary>
+        private const float COMPACT_ROTATION_TILT_TOLERANCE = 1e-4f;
+
+        #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+        /// <summary>
+        /// Returns if this send may wrap its positions: 24-bit packing and a previous send to measure against.
+        /// </summary>
+        private bool CanWrapPositions(TransformPackingData packing, TransformData lastSent)
+        {
+            return lastSent != null && !lastSent.IsDefault && packing.Position != AutoPackType.Unpacked && _positionPackingBits == PositionPackingBits.TwentyFour;
+        }
+
+        /// <summary>
+        /// Writes the low 16 bits of a scaled position axis when it is close enough to the last sent value. Returns false without writing otherwise.
+        /// </summary>
+        private static bool TryWriteWrappedPosition(PooledWriter writer, float compressed, float previousCompressed)
+        {
+            if (Math.Abs(compressed) > POSITION_PACKING_24_MAX_VALUE || Math.Abs(compressed - previousCompressed) >= WRAPPED_POSITION_SAFE_UNITS)
+                return false;
+            int value = (int)Math.Round(compressed, MidpointRounding.AwayFromZero);
+            writer.WriteUInt16Unpacked((ushort)value);
+            return true;
+        }
+
+        /// <summary>
+        /// Reads a wrapped position axis: the value with these low 16 bits nearest to the reader's last value for the axis.
+        /// </summary>
+        private float ReadWrappedPosition(PooledReader reader, float reference)
+        {
+            float scale = GetPositionCompressionScale();
+            ushort low = reader.ReadUInt16Unpacked();
+            int referenceValue = (int)Math.Round(reference * scale, MidpointRounding.AwayFromZero);
+            int value = referenceValue + (short)(ushort)(low - (ushort)referenceValue);
+            return value / scale;
+        }
+        #endif
+
+        /// <summary>
+        /// Writes a rotation as a 16-bit heading when it is upright, otherwise the escape value and a packed quaternion.
+        /// </summary>
+        private static void WriteCompactRotation(PooledWriter writer, Quaternion rotation)
+        {
+            if (Math.Abs(rotation.x) <= COMPACT_ROTATION_TILT_TOLERANCE && Math.Abs(rotation.z) <= COMPACT_ROTATION_TILT_TOLERANCE && (rotation.y != 0f || rotation.w != 0f))
+            {
+                double degrees = 2d * Math.Atan2(rotation.y, rotation.w) * (180d / Math.PI);
+                degrees %= 360d;
+                if (degrees < 0d)
+                    degrees += 360d;
+                int code = (int)Math.Round(degrees / 360d * COMPACT_ROTATION_ESCAPE, MidpointRounding.AwayFromZero);
+                if (code >= COMPACT_ROTATION_ESCAPE)
+                    code = 0;
+                writer.WriteUInt16Unpacked((ushort)code);
+                return;
+            }
+            writer.WriteUInt16Unpacked(COMPACT_ROTATION_ESCAPE);
+            writer.WriteQuaternion32(rotation);
+        }
+
+        /// <summary>
+        /// Reads a rotation written by WriteCompactRotation.
+        /// </summary>
+        private static Quaternion ReadCompactRotation(PooledReader reader)
+        {
+            ushort code = reader.ReadUInt16Unpacked();
+            if (code == COMPACT_ROTATION_ESCAPE)
+                return reader.ReadQuaternion32();
+            return Quaternion.Euler(0f, (float)(code * (360d / COMPACT_ROTATION_ESCAPE)), 0f);
+        }
+        #endif
+
         /// <summary>
         /// Serializes only changed data into writer.
         /// </summary>
@@ -1225,12 +1398,25 @@ namespace FishNet.Component.Transforming
             /* Maximum value compressed may be
              * to send as compressed. */
             float maxValue = short.MaxValue - 1;
+            #if FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            //Positions use their own scale and width. Scale uses the values above.
+            float positionMultiplier = GetPositionCompressionScale();
+            float positionMaxValue = _positionPackingBits == PositionPackingBits.TwentyFour ? POSITION_PACKING_24_MAX_VALUE : maxValue;
+            #else
+            float positionMultiplier = multiplier;
+            float positionMaxValue = maxValue;
+            #endif
 
             Transform t = _cachedTransform;
             /* Position. */
             if (_synchronizePosition)
             {
                 AutoPackType localPacking = packing.Position;
+                #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+                //What was last sent, read before it is updated below.
+                bool wrapPositions = CanWrapPositions(packing, dataToUpdate);
+                Vector3 previousSent = wrapPositions ? dataToUpdate.Position : default;
+                #endif
                 //PositionX
                 if (ChangedContains(changed, ChangedDelta.PositionX))
                 {
@@ -1239,11 +1425,18 @@ namespace FishNet.Component.Transforming
                     if (canUpdateData)
                         dataToUpdate.Position.x = original;
 
-                    compressed = original * multiplier;
-                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
+                    compressed = original * positionMultiplier;
+                    #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+                    if (wrapPositions && TryWriteWrappedPosition(writer, compressed, previousSent.x * positionMultiplier))
+                    {
+                        flagsA |= UpdateFlagA.X2 | UpdateFlagA.X4;
+                    }
+                    else
+                    #endif
+                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= positionMaxValue)
                     {
                         flagsA |= UpdateFlagA.X2;
-                        writer.WriteInt16((short)compressed);
+                        WritePackedPosition(writer, compressed);
                     }
                     else
                     {
@@ -1260,11 +1453,18 @@ namespace FishNet.Component.Transforming
                     if (canUpdateData)
                         dataToUpdate.Position.y = original;
 
-                    compressed = original * multiplier;
-                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
+                    compressed = original * positionMultiplier;
+                    #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+                    if (wrapPositions && TryWriteWrappedPosition(writer, compressed, previousSent.y * positionMultiplier))
+                    {
+                        flagsA |= UpdateFlagA.Y2 | UpdateFlagA.Y4;
+                    }
+                    else
+                    #endif
+                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= positionMaxValue)
                     {
                         flagsA |= UpdateFlagA.Y2;
-                        writer.WriteInt16((short)compressed);
+                        WritePackedPosition(writer, compressed);
                     }
                     else
                     {
@@ -1281,11 +1481,18 @@ namespace FishNet.Component.Transforming
                     if (canUpdateData)
                         dataToUpdate.Position.z = original;
 
-                    compressed = original * multiplier;
-                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= maxValue)
+                    compressed = original * positionMultiplier;
+                    #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+                    if (wrapPositions && TryWriteWrappedPosition(writer, compressed, previousSent.z * positionMultiplier))
+                    {
+                        flagsA |= UpdateFlagA.Z2 | UpdateFlagA.Z4;
+                    }
+                    else
+                    #endif
+                    if (localPacking != AutoPackType.Unpacked && Math.Abs(compressed) <= positionMaxValue)
                     {
                         flagsA |= UpdateFlagA.Z2;
-                        writer.WriteInt16((short)compressed);
+                        WritePackedPosition(writer, compressed);
                     }
                     else
                     {
@@ -1306,7 +1513,12 @@ namespace FishNet.Component.Transforming
                     flagsA |= UpdateFlagA.Rotation;
                     /* Rotation can always use pack settings even
                      * if childed. Unsual transform scale shouldn't affect rotation. */
-                    writer.WriteQuaternion(t.localRotation, _packing.Rotation);
+                    #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES
+                    if (_packing.Rotation == AutoPackType.Packed)
+                        WriteCompactRotation(writer, t.localRotation);
+                    else
+                    #endif
+                        writer.WriteQuaternion(t.localRotation, _packing.Rotation);
                 }
             }
 
@@ -1433,22 +1645,40 @@ namespace FishNet.Component.Transforming
             int readerRemaining;
             readerRemaining = reader.Remaining;
             //X
+            #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            //Both size flags: the low 16 bits of a 24-bit value.
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.X2) && UpdateFlagAContains(flagsA, UpdateFlagA.X4))
+                nextTransformData.Position.x = ReadWrappedPosition(reader, prevTransformData.Position.x);
+            else
+            #endif
             if (UpdateFlagAContains(flagsA, UpdateFlagA.X2))
-                nextTransformData.Position.x = reader.ReadInt16() / 100f;
+                nextTransformData.Position.x = ReadPackedPosition(reader);
             else if (UpdateFlagAContains(flagsA, UpdateFlagA.X4))
                 nextTransformData.Position.x = reader.ReadSingle();
             else
                 nextTransformData.Position.x = prevTransformData.Position.x;
             //Y
+            #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            //Both size flags: the low 16 bits of a 24-bit value.
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.Y2) && UpdateFlagAContains(flagsA, UpdateFlagA.Y4))
+                nextTransformData.Position.y = ReadWrappedPosition(reader, prevTransformData.Position.y);
+            else
+            #endif
             if (UpdateFlagAContains(flagsA, UpdateFlagA.Y2))
-                nextTransformData.Position.y = reader.ReadInt16() / 100f;
+                nextTransformData.Position.y = ReadPackedPosition(reader);
             else if (UpdateFlagAContains(flagsA, UpdateFlagA.Y4))
                 nextTransformData.Position.y = reader.ReadSingle();
             else
                 nextTransformData.Position.y = prevTransformData.Position.y;
             //Z
+            #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES && FISHNET_NETWORKTRANSFORM_POSITION_PACKING
+            //Both size flags: the low 16 bits of a 24-bit value.
+            if (UpdateFlagAContains(flagsA, UpdateFlagA.Z2) && UpdateFlagAContains(flagsA, UpdateFlagA.Z4))
+                nextTransformData.Position.z = ReadWrappedPosition(reader, prevTransformData.Position.z);
+            else
+            #endif
             if (UpdateFlagAContains(flagsA, UpdateFlagA.Z2))
-                nextTransformData.Position.z = reader.ReadInt16() / 100f;
+                nextTransformData.Position.z = ReadPackedPosition(reader);
             else if (UpdateFlagAContains(flagsA, UpdateFlagA.Z4))
                 nextTransformData.Position.z = reader.ReadSingle();
             else
@@ -1461,7 +1691,12 @@ namespace FishNet.Component.Transforming
             if (UpdateFlagAContains(flagsA, UpdateFlagA.Rotation))
             {
                 //Always use _packing value even if childed.
-                nextTransformData.Rotation = reader.ReadQuaternion(_packing.Rotation);
+                #if FISHNET_NETWORKTRANSFORM_COMPACT_UPDATES
+                if (_packing.Rotation == AutoPackType.Packed)
+                    nextTransformData.Rotation = ReadCompactRotation(reader);
+                else
+                #endif
+                    nextTransformData.Rotation = reader.ReadQuaternion(_packing.Rotation);
                 changedFull |= ChangedFull.Rotation;
             }
             else
