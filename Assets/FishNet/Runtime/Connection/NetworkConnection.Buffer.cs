@@ -36,7 +36,7 @@ namespace FishNet.Connection
             for (byte i = 0; i < TransportManager.CHANNEL_COUNT; i++)
             {
                 int mtu = NetworkManager.TransportManager.GetLowestMTU(i);
-                _toClientBundles.Add(new(NetworkManager, mtu));
+                _toClientBundles.Add(new(NetworkManager, mtu, asServer: true));
             }
         }
 

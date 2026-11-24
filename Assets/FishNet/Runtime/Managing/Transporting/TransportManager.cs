@@ -80,6 +80,24 @@ namespace FishNet.Managing.Transporting
         [SerializeField]
         private IntermediateLayer _intermediateLayer;
         /// <summary>
+        /// Ticks between flushes of the server's outgoing data. 1 sends after every tick. With a larger value, messages written
+        /// on the ticks in between stay in each connection's bundle and leave with the next flush: the same messages in fewer,
+        /// fuller packets. Each message is still read against the tick it was written on (see PacketId.TickMarker).
+        /// </summary>
+        public byte ServerSendInterval => _serverSendInterval;
+        [Tooltip("Ticks between flushes of the server's outgoing data. 1 sends after every tick; larger values send the same messages in fewer, fuller packets.")]
+        [Range(1, byte.MaxValue)]
+        [SerializeField]
+        private byte _serverSendInterval = 1;
+        /// <summary>
+        /// Ticks between flushes of the client's outgoing data. See <see cref="ServerSendInterval"/>.
+        /// </summary>
+        public byte ClientSendInterval => _clientSendInterval;
+        [Tooltip("Ticks between flushes of the client's outgoing data. 1 sends after every tick; larger values send the same messages in fewer, fuller packets.")]
+        [Range(1, byte.MaxValue)]
+        [SerializeField]
+        private byte _clientSendInterval = 1;
+        /// <summary>
         /// </summary>
         [Tooltip("Latency simulation settings.")]
         [SerializeField]
@@ -351,7 +369,7 @@ namespace FishNet.Managing.Transporting
             for (byte i = 0; i < CHANNEL_COUNT; i++)
             {
                 int mtu = GetLowestMTU(i);
-                _toServerBundles.Add(new(_networkManager, mtu));
+                _toServerBundles.Add(new(_networkManager, mtu, asServer: false));
             }
         }
 
@@ -519,6 +537,36 @@ namespace FishNet.Managing.Transporting
         /// <param name = "segment">Data to send.</param>
         /// <param name = "connection">Connection to send to. Use null for all clients.</param>
         /// <param name = "splitLargeMessages">True to split large packets which exceed MTU and send them in order on the reliable channel.</param>
+        /// <summary>
+        /// Sets how many ticks pass between flushes of outgoing data for the server or the client. Values below 1 are treated as 1.
+        /// </summary>
+        /// <param name = "asServer">True to set the server's interval, false the client's.</param>
+        /// <param name = "interval">Ticks between flushes; 1 flushes after every tick.</param>
+        public void SetSendInterval(bool asServer, byte interval)
+        {
+            if (interval < 1)
+                interval = 1;
+
+            if (asServer)
+                _serverSendInterval = interval;
+            else
+                _clientSendInterval = interval;
+        }
+
+        /// <summary>
+        /// Returns the send interval for the server or the client.
+        /// </summary>
+        public byte GetSendInterval(bool asServer) => asServer ? _serverSendInterval : _clientSendInterval;
+
+        /// <summary>
+        /// Returns if outgoing data for the server or the client is flushed on the given tick.
+        /// </summary>
+        internal bool ShouldFlushOutgoing(bool asServer, uint tick)
+        {
+            byte interval = GetSendInterval(asServer);
+            return interval <= 1 || tick % interval == 0;
+        }
+
         internal void SendToClient(byte channelId, ArraySegment<byte> segment, NetworkConnection connection, DataOrderType orderType = DataOrderType.Default)
         {
             channelId = GetFallbackChannelIdAsNeeded(channelId);
