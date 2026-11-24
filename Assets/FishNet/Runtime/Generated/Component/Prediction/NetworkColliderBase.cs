@@ -115,9 +115,24 @@ namespace FishNet.Component.Prediction
         /// This may be useful if you wish to run physics differently for stacked scenes.
         private void TimeManager_OnPostPhysicsSimulation(float delta)
         {
+            if (SkipEmptyServerCheck != null && IsServerStarted && !HasEnteredColliders && SkipEmptyServerCheck())
+                return;
             uint tick = IsServerStarted || !PredictionManager.IsReconciling ? TimeManager.LocalTick : PredictionManager.ClientReplayTick;
             CheckColliders(tick);
         }
+
+        /// <summary>
+        /// Optional condition the server asks before a tick's check while nothing is inside. Returning true skips that check.
+        /// An empty check invokes no callbacks, so skipping one is exact as long as true is returned only when nothing could
+        /// be inside. A check with something inside always runs, so exits are never missed. Not used on clients, where
+        /// checks are replayed with prediction.
+        /// </summary>
+        public System.Func<bool> SkipEmptyServerCheck { get; set; }
+
+        /// <summary>
+        /// True if any collider was inside at the last check, or if this cannot be known.
+        /// </summary>
+        protected virtual bool HasEnteredColliders => true;
         
         /// <summary>
         /// Returns if colliders should be checked. If colliders can be checked data needed by all collider checks (2D and 3D) is set.

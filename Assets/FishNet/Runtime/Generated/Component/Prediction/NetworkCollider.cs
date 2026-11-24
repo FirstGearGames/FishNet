@@ -123,6 +123,12 @@ namespace FishNet.Component.Prediction
         }
 
         /// <summary>
+        /// The server discards the previous tick's entries after each check, so any entry left means something was inside
+        /// at the last check.
+        /// </summary>
+        protected override bool HasEnteredColliders => _enteredColliders == null || _enteredColliders.Count > 0;
+
+        /// <summary>
         /// Checks for any collider changes;
         /// </summary>
         protected override void CheckColliders(uint localTick)
