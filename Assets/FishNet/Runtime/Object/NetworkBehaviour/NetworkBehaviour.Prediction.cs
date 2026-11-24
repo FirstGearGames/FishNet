@@ -214,6 +214,10 @@ namespace FishNet.Object
         /// </summary>
         private uint _lastReadReplicateTick = TimeManager.UNSET_TICK;
         /// <summary>
+        /// True when a replicate send was due on a tick the client does not flush on; it is written with the next flush.
+        /// </summary>
+        private bool _replicateSendPending;
+        /// <summary>
         /// Last tick read for a reconcile. This is only set on the client.
         /// </summary>
         private uint _lastReadReconcileRemoteTick = TimeManager.UNSET_TICK;
@@ -327,6 +331,7 @@ namespace FishNet.Object
             _lastOrderedReplicatedTick = TimeManager.UNSET_TICK;
             _lastReplicateReadRemoteTick = TimeManager.UNSET_TICK;
             _lastReadReplicateTick = TimeManager.UNSET_TICK;
+            _replicateSendPending = false;
 
             ClearReplicateCache();
         }
@@ -578,11 +583,25 @@ namespace FishNet.Object
             bool sendData = _remainingReplicateResends > 0;
             if (sendData)
             {
+                _remainingReplicateResends--;
+                _replicateSendPending = true;
+            }
+            /* A client that flushes every N ticks (TransportManager send interval) used to write one replicate per tick, each
+             * carrying the last RedundancyCount inputs, so one packet held N messages repeating each other's inputs. It writes
+             * once, on the tick the packet leaves, carrying RedundancyCount + N - 1 inputs: the ticks since the last flush
+             * plus the same redundancy, so every input still travels in as many packets as before. */
+            if (_replicateSendPending)
+            {
                 /* If not server then send to server.
                  * If server then send to clients. */
                 bool toServer = !IsServerStarted;
-                Replicate_SendAuthoritative(toServer, methodHash, redundancyCount, replicatesHistory, dataTick, dataContainer.Channel, GetDeltaSerializeOption());
-                _remainingReplicateResends--;
+                byte interval = toServer ? NetworkManager.TransportManager.GetSendInterval(asServer: false) : (byte)1;
+                if (interval <= 1 || NetworkManager.TransportManager.ShouldFlushOutgoing(asServer: false, TimeManager.LocalTick))
+                {
+                    int pastInputs = redundancyCount + Math.Max(0, interval - 1);
+                    Replicate_SendAuthoritative(toServer, methodHash, pastInputs, replicatesHistory, dataTick, dataContainer.Channel, GetDeltaSerializeOption());
+                    _replicateSendPending = false;
+                }
             }
 
             SetReplicateTick(dataTick, createdReplicate: true);
@@ -1024,7 +1043,8 @@ namespace FishNet.Object
             //If from a client that is not clientHost do some safety checks.
             if (!fromServer && !Owner.IsLocalClient)
             {
-                if (readReplicates.Count > pm.RedundancyCount)
+                // A client flushing every N ticks writes RedundancyCount + N - 1 inputs. The server learns N from its own client send interval.
+                if (readReplicates.Count > pm.RedundancyCount + Math.Max(0, NetworkManager.TransportManager.GetSendInterval(asServer: false) - 1))
                 {
                     sender.Kick(reader, KickReason.ExploitAttempt, LoggingType.Common, $"Connection {sender.ToString()} sent too many past replicates. Connection will be kicked immediately.");
                     return;
